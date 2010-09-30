@@ -1,0 +1,185 @@
+#!/bin/bash
+
+# cxm - Clustered Xen Management API and tools
+# Copyleft 2010 - Nicolas AGIUS <nagius@astek.fr>
+
+###########################################################################
+#
+# This file is part of cxm.
+#
+# cxm is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+#
+###########################################################################
+
+# Mock : simulate cat 
+
+case "$@" in
+	"/proc/net/vlan/config")
+		cat <<EOF
+LAN Dev name    | VLAN ID
+Name-Type: VLAN_NAME_TYPE_RAW_PLUS_VID_NO_PAD
+eth1.200      | 200  | eth1
+eth2.205      | 205  | eth2
+EOF
+	;;
+
+	"/proc/net/dev")
+		cat <<EOF
+Inter-|   Receive                                                |  Transmit
+ face |bytes    packets errs drop fifo frame compressed multicast|bytes    packets errs drop fifo colls carrier compressed
+    lo:  954954    4118    0    0    0     0          0         0   954954    4118    0    0    0     0       0          0
+  eth0:4333181258 18198089    0    0    0     0          0   2295523 2903830359 15373905    0    0    0     0       0          0
+  eth1:       0       0    0    0    0     0          0         0        0       0    0    0    0     0       0          0
+  sit0:       0       0    0    0    0     0          0         0        0       0    0    0    0     0       0          0
+xenbr123:4000460532 18170230    0    0    0     0          0   3248771 2836763015 15350225    0    0    0     0       0          0
+eth1.200:       0       0    0    0    0     0          0         0        0       0    0    0    0     0       0          0
+xenbr2004:       0       0    0    0    0     0          0         0      468       6    0    0    0     0       0          0
+eth2.205:       0       0    0    0    0     0          0         0        0       0    0    0    0     0       0          0
+xenbr12:       0       0    0    0    0     0          0         0      468       6    0    0    0     0       0          0
+vif0.0:       0       0    0    0    0     0          0         0        0       0    0    0    0     0       0          0
+ veth0:       0       0    0    0    0     0          0         0        0       0    0    0    0     0       0          0
+vif0.1:       0       0    0    0    0     0          0         0        0       0    0    0    0     0       0          0
+ veth1:       0       0    0    0    0     0          0         0        0       0    0    0    0     0       0          0
+vif0.2:       0       0    0    0    0     0          0         0        0       0    0    0    0     0       0          0
+ veth2:       0       0    0    0    0     0          0         0        0       0    0    0    0     0       0          0
+vif0.3:       0       0    0    0    0     0          0         0        0       0    0    0    0     0       0          0
+ veth3:       0       0    0    0    0     0          0         0        0       0    0    0    0     0       0          0
+vif0.4:       0       0    0    0    0     0          0         0        0       0    0    0    0     0       0          0
+ veth4:       0       0    0    0    0     0          0         0        0       0    0    0    0     0       0          0
+vif0.5:       0       0    0    0    0     0          0         0        0       0    0    0    0     0       0          0
+ veth5:       0       0    0    0    0     0          0         0        0       0    0    0    0     0       0          0
+vif0.6:       0       0    0    0    0     0          0         0        0       0    0    0    0     0       0          0
+ veth6:       0       0    0    0    0     0          0         0        0       0    0    0    0     0       0          0
+vif0.7:       0       0    0    0    0     0          0         0        0       0    0    0    0     0       0          0
+ veth7:       0       0    0    0    0     0          0         0        0       0    0    0    0     0       0          0
+vif0.8:       0       0    0    0    0     0          0         0        0       0    0    0    0     0       0          0
+ veth8:       0       0    0    0    0     0          0         0        0       0    0    0    0     0       0          0
+EOF
+	;;
+
+	"/proc/diskstats")
+		cat <<EOF
+   1    0 ram0 0 0 0 0 0 0 0 0 0 0 0
+   1    1 ram1 0 0 0 0 0 0 0 0 0 0 0
+   1    2 ram2 0 0 0 0 0 0 0 0 0 0 0
+   1    3 ram3 0 0 0 0 0 0 0 0 0 0 0
+ 104    0 cciss/c0d0 4743754 17394 28926759 1132876 3738837 8513744 97694118 67920880 0 10190936 69054044
+ 104    1 cciss/c0d0p1 259518 1623 1060967 44144 7227 2403 19258 53864 0 97732 98028
+ 104    2 cciss/c0d0p2 259105 513 2072802 28576 106 2601 21656 2220 0 28952 30840
+ 104    3 cciss/c0d0p3 285857 6016 2777726 136972 2803588 6272969 72612456 57577772 0 6128348 57715096
+ 104    4 cciss/c0d0p4 87 0 118 68 0 0 0 0 0 68 68
+ 104    5 cciss/c0d0p5 282101 3946 2719150 162440 886525 1967800 22835144 8449124 0 3365960 8611740
+ 104    6 cciss/c0d0p6 259615 894 1038842 33040 29655 15227 89764 215900 0 187592 248984
+ 104    7 cciss/c0d0p7 3397277 4354 19256086 727464 11736 252744 2115840 1622000 0 731200 2349196
+   3    0 hda 0 0 0 0 0 0 0 0 0 0 0
+   2    0 fd0 0 0 0 0 0 0 0 0 0 0 0
+   8    0 sda 53322462 2928 503083610 9633396 964286 93279 5709963 108420 0 9661404 9744876
+   8    1 sda1 53322250 2910 503082638 9633240 964286 93279 5709963 108420 0 9661428 9744892
+   9    0 md0 0 0 0 0 0 0 0 0 0 0 0
+  10    0 sdb 58756867 9865 506432638 6433240 947286 92349 4609963 456420 0 4671428 8646292
+  11    0 sdc 98544853 2875 503864638 9687540 964975 97869 8759963 784420 0 9061428 9967473
+ 253    0 dm-0 274527 0 4184302 167912 264480 0 2115840 40190424 0 159316 40358356
+ 253    1 dm-1 259071 0 2071700 35580 0 0 0 0 0 35584 35584
+ 253    2 dm-2 259071 0 2071700 29572 0 0 0 0 0 29580 29580
+ 253    3 dm-3 259071 0 2071700 185380 0 0 0 0 0 185380 185380
+ 253    4 dm-4 259071 0 2071700 27896 0 0 0 0 0 27892 27892
+ 253    5 dm-5 259071 0 2071700 71368 0 0 0 0 0 71360 71372
+ 253    6 dm-6 259071 0 2071700 49232 0 0 0 0 0 49236 49236
+ 253    7 dm-7 259071 0 2071700 51616 0 0 0 0 0 51608 51612
+ 253    8 dm-8 259071 0 2071700 55820 0 0 0 0 0 55820 55820
+ 253    9 dm-9 259071 0 2071700 53544 0 0 0 0 0 53544 53544
+EOF
+	;;
+
+	"/sys/bus/xen-backend/devices/vbd-72-*/statistics/rd_req")
+		cat <<EOF
+1045
+672
+108
+79
+27
+EOF
+	;;
+
+	"/sys/bus/xen-backend/devices/vbd-72-*/statistics/wr_req")
+		cat <<EOF
+988
+683
+475
+114
+33
+EOF
+	;;
+
+	"/sys/bus/xen-backend/devices/vbd-73-*/statistics/rd_req")
+		cat <<EOF
+2
+4
+0
+0
+0
+0
+0
+EOF
+	;;
+
+	"/sys/bus/xen-backend/devices/vbd-73-*/statistics/wr_req")
+		cat <<EOF
+3
+16
+0
+35
+0
+14
+0
+EOF
+	;;
+
+	"./stubs/cfg/"*)
+		cat <<EOF
+kernel = "/boot/vmlinuz-2.6"
+ramdisk = "/boot/initramfs-2.6"
+memory = "512"
+maxmem = "1536"
+vcpus = "4"
+name = "test1.home.net"
+vif = [ 'xenbr1', 'xenbr2' ]
+disk = [ 'phy:/dev/vgrack/root-test1.home.net,/dev/xvda1,w',
+         'phy:/dev/LVM_XEN/usr-test1.home.net,/dev/xvda2,w',
+         'phy:/dev/vgrack/WOO-test1.home.net,/dev/xvda3,w' ]
+root = "/dev/xvda1 ro"
+extra = ""
+kernel = "/boot/vmlinuz-2.6.18-149.el5xen"
+ramdisk = "/boot/initrd-2.6.18-149.el5xen-debian.img"
+memory = "128"
+maxmem = "1536"
+vcpus = "2"
+vcpu_avail = "1"
+name = "test2.home.net"
+vif = []
+disk = [ 'phy:/dev/vgrack/root-test2.home.net,/dev/sda1,w',
+         'phy:/dev/vgrack/usr-test2.home.net,/dev/sda2,w',
+         'phy:/dev/vgrack/swap-test2.home.net,/dev/sda8,w' ]
+root = "/dev/sda1 ro"
+extra = ""
+EOF
+	;;
+
+	*)
+	echo "Error: bad params: $@" >&2
+	exit 1
+	;;
+esac
+
+

@@ -1,0 +1,42 @@
+#!/bin/bash
+
+# cxm - Clustered Xen Management API and tools
+# Copyleft 2010 - Nicolas AGIUS <nagius@astek.fr>
+
+###########################################################################
+#
+# This file is part of cxm.
+#
+# cxm is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+#
+###########################################################################
+
+# Mock : simulate lvdisplay
+
+case "$@" in
+	"-c /dev/vgrack/root-test1.home.net /dev/LVM_XEN/usr-test1.home.net /dev/vgrack/WOO-test1.home.net")
+		cat <<EOF
+  /dev/vgrack/root-test1.home.net:vgrack:3:1:-1:0:4096000:500:-1:0:-1:253:110
+  /dev/LVM_XEN/usr-test1.home.net:LVM_XEN:3:1:-1:0:41943040:5120:-1:0:-1:253:2
+  /dev/vgrack/WOO-test1.home.net:vgrack:3:1:-1:0:419430400:51200:-1:0:-1:253:162
+EOF
+	;;
+
+	*)
+	echo "Error: bad params: $@" >&2
+	exit 1
+	;;
+esac
+
+

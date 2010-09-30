@@ -1,0 +1,30 @@
+#!/bin/bash
+
+# cxm - Clustered Xen Management API and tools
+# Copyleft 2010 - Nicolas AGIUS <nagius@astek.fr>
+
+###########################################################################
+#
+# This file is part of cxm.
+#
+# cxm is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+#
+###########################################################################
+
+# Mock : simulate /sbin/mounted.ocfs2 -f
+
+cat <<EOF
+Device                FS     Nodes
+/dev/mapper/vgrack-xenconf  ocfs2  xen0node01.home.net, xen0node02.home.net, xen0node03.home.net
+EOF

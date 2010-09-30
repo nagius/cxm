@@ -1,0 +1,67 @@
+#!/bin/bash
+
+# cxm - Clustered Xen Management API and tools
+# Copyleft 2010 - Nicolas AGIUS <nagius@astek.fr>
+
+###########################################################################
+#
+# This file is part of cxm.
+#
+# cxm is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+#
+###########################################################################
+
+# Mock : simulate grep
+
+case "$@" in
+	"Dynamic /proc/interrupts")
+		cat <<EOF
+56:   52961969          0     Dynamic-irq  timer0
+257:   27837395          0     Dynamic-irq  resched0
+258:         57          0     Dynamic-irq  callfunc0
+259:          0   26080147     Dynamic-irq  resched1
+260:          0        201     Dynamic-irq  callfunc1
+261:          0   40370462     Dynamic-irq  timer1
+262:      41442       8640     Dynamic-irq  xenbus
+270:       4991         53     Dynamic-irq  blkif-backend
+271:        578          2     Dynamic-irq  blkif-backend
+272:       7250        282     Dynamic-irq  blkif-backend
+273:        122          2     Dynamic-irq  blkif-backend
+274:        126          2     Dynamic-irq  blkif-backend
+275:         91          2     Dynamic-irq  blkif-backend
+276:         24          0     Dynamic-irq  blkif-backend
+277:       4574        496     Dynamic-irq  blkif-backend
+278:        437        141     Dynamic-irq  blkif-backend
+279:       7045        501     Dynamic-irq  blkif-backend
+280:        115          9     Dynamic-irq  blkif-backend
+281:        110         19     Dynamic-irq  blkif-backend
+282:         79         14     Dynamic-irq  blkif-backend
+283:         24          0     Dynamic-irq  blkif-backend
+284:     175808       8144     Dynamic-irq  blkif-backend
+285:         24          0     Dynamic-irq  blkif-backend
+286:       4230        316     Dynamic-irq  blkif-backend
+287:         19          0     Dynamic-irq  blkif-backend
+288:         19          0     Dynamic-irq  blkif-backend
+289:         19          0     Dynamic-irq  blkif-backend
+290:          4          0     Dynamic-irq  blkif-backend
+EOF
+	;;
+
+	*)
+	echo "Error: bad params: $@" >&2
+	exit 1
+	;;
+esac
+
+

@@ -1,0 +1,15 @@
+#xenmgt-autoconf
+kernel = "/boot/vmlinuz-2.6"
+ramdisk = "/boot/initramfs-2.6"
+memory = "512"
+maxmem = "1536"
+vcpus = "4"
+name = "test1.home.net"
+vif = [ 'xenbr1', 'xenbr2' ]
+disk = [ 'phy:/dev/vgrack/root-test1.home.net,/dev/xvda1,w',
+         'phy:/dev/LVM_XEN/usr-test1.home.net,/dev/xvda2,w',
+         'phy:/dev/vgrack/WOO-test1.home.net,/dev/xvda3,w' ]
+root = "/dev/xvda1 ro"
+extra = ""
+#SYSADMIN=
+#VMTYPE=FAI/V_DEFAULT

@@ -1,0 +1,17 @@
+#xenmgt-autoconf
+kernel = "/boot/vmlinuz-2.6.18-149.el5xen"
+ramdisk = "/boot/initrd-2.6.18-149.el5xen-debian.img"
+memory = "128"
+maxmem = "1536"
+vcpus = "2"
+vcpu_avail = "1"
+name = "test2.home.net"
+vif = []
+disk = [ 'phy:/dev/vgrack/root-test2.home.net,/dev/sda1,w',
+         'phy:/dev/vgrack/usr-test2.home.net,/dev/sda2,w',
+         'phy:/dev/vgrack/var-test2.home.net,/dev/sda3,w',
+         'phy:/dev/vgrack/swap-test2.home.net,/dev/sda8,w' ]
+root = "/dev/sda1 ro"
+extra = ""
+#SYSADMIN=
+#VMTYPE=FAI/V_DEFAULT
