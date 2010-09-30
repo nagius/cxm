@@ -1,0 +1,70 @@
+.TH cxm "1" "September 2010" "cxm 0.5" "User Commands"
+.SH NAME
+cxm \- Clustered Xen Management tool
+.SH SYNOPSIS
+cxm create <vm> | shutdown <vm> | migrate <vm> <dest> | search <vm> | console <vm> | activate <vm> | deactivate <vm> | infos | list | check | eject [option]
+.SH DESCRIPTION
+This command is used to manage virtuals machines on a cluster of Xen nodes.
+.SS "options:"
+.TP
+\fB\-\-version\fR
+show program's version number and exit
+.TP
+\fB\-h\fR, \fB\-\-help\fR
+show this help message and exit
+.TP
+\fB\-d\fR, \fB\-\-debug\fR
+Enable debug mode
+.TP
+\fB\-f\fR hostname, \fB\-\-force\-node\fR=\fIhostname\fR
+Specify the node to operate with
+.TP
+\fB\-q\fR, \fB\-\-quiet\fR
+Quiet mode: suppress extra outputs
+.TP
+\fB\-s\fR, \fB\-\-use\-ssh\fR
+Use SSH instead of Xen\-API
+.TP
+\fB\-c\fR, \fB\-\-console\fR
+Attach console to the domain as soon as it has
+started.
+.SH SUBCOMMANDS
+.SS "infos"
+.TP
+Show the state of the cluster, with each active node and their load.
+.SS "list"
+.TP
+Display the list of started VM for eath nodes. If \fB\-\-force\-node\fR is given, show only or the specified node.
+.SS "create <fqdn>"
+.TP
+Start the virtual machine. If \fB\-\-force\-node\fR is not given, the vm will be starting on the node holding the 'auto' symlink.
+.SS "shutdown <fqdn>"
+.TP
+Shutdown the virtual machine. If \fB\-\-force\-node\fR is not given, the vm will be search on the cluster.
+.SS "migrate <fqdn> <dest_node>"
+.TP
+Live migrate the virtual machine. If \fB\-\-force\-node\fR is not given, the vm will be search on the cluster.
+.SS "search <fqdn>"
+.TP
+Search the cluster for the virtual machine. 'auto' symlinks founds are also reported.
+.SS "console <fqdn>"
+.TP
+Attach console to the virtual machine. This command work only on localhost.
+.SS "activate <fqdn>"
+.TP
+Activate all the Logicals Volumes of the virtual machine. If \fB\-\-force\-node\fR is not given, operation is done on localhost.
+.SS "deactivate <fqdn>"
+.TP
+Dectivate all the Logicals Volumes of the virtual machine. If \fB\-\-force\-node\fR is not given, operation is done on localhost.
+.SS "check"
+.TP
+Perform a sanity check of the cluster. Miss-activation or missing VM are reported.
+.SS "eject"
+.TP
+Migrate all running VM on localhost to others nodes.
+.SH "SEE ALSO"
+xm(1)
+.SH BUGS
+No known bugs.
+.SH AUTHOR
+Nicolas AGIUS <nagius@astek.fr>
