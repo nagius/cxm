@@ -28,7 +28,7 @@ import unittest, os
 class VMTests(unittest.TestCase):
 
 	def setUp(self):
-		cxm.core.cfg['VMCONF_PATH'] = "tests/stubs/cfg/"
+		cxm.core.cfg['VMCONF_DIR'] = "tests/stubs/cfg/"
 
 	def test_get_lvs(self):
 		lvs = ['/dev/vgrack/root-test1.home.net', '/dev/LVM_XEN/usr-test1.home.net', '/dev/vgrack/WOO-test1.home.net']

@@ -63,7 +63,7 @@ QUIET=False
 USESSH=False
 
 # TODO: Variable de configuration a remplacer par un fichier
-cfg = { 'VMCONF_PATH' :"/etc/xen/vm/",
+cfg = { 'VMCONF_DIR' :"/etc/xen/vm/",
 		'PATH': "" }
 
 

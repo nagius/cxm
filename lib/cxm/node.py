@@ -255,7 +255,7 @@ class Node:
 
 	def deactivate_all_lv(self):
 		"""Deactivate all the logicals volumes used by stopped VM on this node."""
-		for vm in [ vm.strip() for vm in self.run("ls -F "+ core.cfg['VMCONF_PATH'] +" | grep -v '/'").readlines() ]:
+		for vm in [ vm.strip() for vm in self.run("ls -F "+ core.cfg['VMCONF_DIR'] +" | grep -v '/'").readlines() ]:
 			if not self.is_vm_started(vm):
 				self.deactivate_lv(vm)
 
@@ -272,7 +272,7 @@ class Node:
 		console - (boolean) Attach console to the domain
 		"""
 
-		args = [core.cfg['VMCONF_PATH'] + vmname]
+		args = [core.cfg['VMCONF_DIR'] + vmname]
 		if core.USESSH:
 			self.run("xm create " + args[0])
 		else:
@@ -402,7 +402,7 @@ class Node:
 		# Get all LVs used by VMs
 		used_lvs = list()
 		regex = re.compile('phy:([^,]+).*')
-		for line in self.run("cat "+ core.cfg['VMCONF_PATH'] +"* 2>/dev/null").readlines():
+		for line in self.run("cat "+ core.cfg['VMCONF_DIR'] +"* 2>/dev/null").readlines():
 			try:
 				used_lvs.append(regex.search(line).group(1))
 			except:

@@ -43,7 +43,7 @@ class VM:
 		self.config=dict()
 		self.metrics=None
 
-		execfile("%s/%s" % (core.cfg['VMCONF_PATH'],vmname) ,dict(),self.config)
+		execfile("%s/%s" % (core.cfg['VMCONF_DIR'],vmname) ,dict(),self.config)
 		if core.DEBUG: print "DEBUG config",vmname,"=",self.config
 		
 	def __repr__(self):

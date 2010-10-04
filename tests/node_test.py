@@ -30,7 +30,7 @@ class NodeTests(MockerTestCase):
 
 	def setUp(self):
 		cxm.core.cfg['PATH'] = "tests/stubs/bin/"
-		cxm.core.cfg['VMCONF_PATH'] = "tests/stubs/cfg/"
+		cxm.core.cfg['VMCONF_DIR'] = "tests/stubs/cfg/"
 		cxm.core.QUIET=True
 		#cxm.core.DEBUG=True
 
@@ -202,7 +202,7 @@ class NodeTests(MockerTestCase):
 		xm.server = None
 		bidon = xm.SERVER_LEGACY_XMLRPC
 		xm.serverType=None
-		xm.xm_importcommand('create', [cxm.core.cfg['VMCONF_PATH'] + vmname])
+		xm.xm_importcommand('create', [cxm.core.cfg['VMCONF_DIR'] + vmname])
 		self.mocker.replay()
 
 		cxm.node.main=xm
