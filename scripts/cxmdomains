@@ -349,10 +349,14 @@ stop()
 	rdnames
     fi
 
-	# Ejecting node from cluster
-	cxm eject
+	if [ "$1" = "soft-stop" ]; then
+		# Ejecting node from cluster
+		cxm eject
+		echo -n "Shutting down un-migrated Xen domains:"
+	else
+		echo -n "Shutting down Xen domains (without trying migration):"
+	fi
 
-    echo -n "Shutting down un-migrated Xen domains:"
     name=;id=
     while read LN; do
 	parseln "$LN" || continue
@@ -391,46 +395,6 @@ stop()
 	    echo -n "(zomb)"
 	    continue
 	fi
-#
-#	if test -n "$XENDOMAINS_MIGRATE"; then
-#	    echo -n "(migr)"
-#	    watchdog_xm migrate &
-#	    WDOG_PID=$!
-#	    XMR=`xm migrate $id $XENDOMAINS_MIGRATE 2>&1 1>/dev/null`
-#	    if test $? -ne 0; then
-#		echo -e "\nAn error occurred while migrating domain:\n$XMR\n"
-#		rc_failed $?
-#		echo -e '!'
-#
-#		kill $WDOG_PID >/dev/null 2>&1
-#	    else
-#		kill $WDOG_PID >/dev/null 2>&1
-#		
-#		echo -e .
-#		usleep 1000
-#		continue
-#	    fi
-#	fi
-
-# Pas de save en cluster
-#	if test -n "$XENDOMAINS_SAVE"; then
-#	    echo -n "(save)"
-#	    watchdog_xm save &
-#	    WDOG_PID=$!
-#	    mkdir -p "$XENDOMAINS_SAVE"
-#	    XMR=`xm save $id $XENDOMAINS_SAVE/$name 2>&1 1>/dev/null`
-#	    if test $? -ne 0; then
-#		echo -e "\nAn error occurred while saving domain:\n$XMR\n"
-#		rc_failed $?
-#		echo -e '!'
-#		kill $WDOG_PID >/dev/null 2>&1
-#	    else
-#		kill $WDOG_PID >/dev/null 2>&1
-#		echo -e .
-#		usleep 1000
-#		continue
-#	    fi
-#	fi
 
 	if test -n "$XENDOMAINS_SHUTDOWN"; then
 	    # XENDOMAINS_SHUTDOWN should be "--halt --wait"
@@ -528,7 +492,12 @@ case "$1" in
 	;;
 
     stop)
-	stop
+	stop "soft-stop"
+	rc_status -v
+	;;
+
+    shutdown)
+	stop 
 	rc_status -v
 	;;
 
@@ -545,8 +514,14 @@ case "$1" in
 	rc_status -v
 	;;
 
+    check)
+	echo "Checking for XenCluster sanity:" 
+	cxm check
+	rc_status -v
+	;;
+
     *)
-	echo "Usage: $0 {start|stop|status}"
+	echo "Usage: $0 {start|stop|shutdown|status|check}"
 	rc_failed 3
 	rc_status -v
 	;;
