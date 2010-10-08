@@ -24,9 +24,10 @@
 #
 ###########################################################################
 
+# Note that some part of code came from xen/xm
 
 # TODO snapshot
-# TODO Add a cache to metrics.get_ram_infos()
+# TODO Add a cache to metrics.get_ram_infos() ?
 # TODO add load balancing in create
 
 
@@ -81,11 +82,11 @@ def get_nodes_list():
 #   return ['xen0node03.virt.s1.p.fti.net','xen0node01.virt.s1.p.fti.net','xen0node02.virt.s1.p.fti.net']
 
 def get_api_version():
+	"""Return the version number of this API."""
 	return VERSION
 
 
 if __name__ == "__main__":
-	"""Main is used to run test case."""
 	pass
 
 # vim: ts=4:sw=4:ai

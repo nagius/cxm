@@ -152,12 +152,12 @@ class MetricsTests(MockerTestCase):
 				'domid': '73',
 				'name_label': 'test1.home.net'},
 			 '7efcbac8-4714-88ee-007c-0246a3cb52b8': {
-				'name_label': 'tests.virt.home.net',
+				'name_label': 'test2.home.net',
 				'domid': '72'}
 			}
 
 		val= {  'test1.home.net':{ 'Read': 6, 'Write': 68 }, 
-				'tests.virt.home.net': {'Read': 1931, 'Write': 2293}}
+				'test2.home.net': {'Read': 1931, 'Write': 2293}}
 
 		xs = self.mocker.mock()
 		xs.xenapi.VM.get_all_records()
@@ -174,7 +174,7 @@ class MetricsTests(MockerTestCase):
 				'VIFs': [],
 				'name_label': 'test1.home.net'},
 			 '7efcbac8-4714-88ee-007c-0246a3cb52b8': {
-				'name_label': 'tests.virt.home.net',
+				'name_label': 'test2.home.net',
 				'VIFs': [ 'a7d7bd0d-8885-6989-53e5-4e56559a286c', 'c31514fb-1471-194b-14eb-3bd54bdbf4cb' ]}
 			}
 
@@ -185,7 +185,7 @@ class MetricsTests(MockerTestCase):
                                           'io_total_read_kbs': 8331.623046875,
                                           'io_total_write_kbs': 0.375 }}
 
-		val = {'tests.virt.home.net': [{'Rx': 7900011, 'Tx': 1010}, {'Rx': 8531582, 'Tx': 384}], 'test1.home.net': []}
+		val = {'test2.home.net': [{'Rx': 7900011, 'Tx': 1010}, {'Rx': 8531582, 'Tx': 384}], 'test1.home.net': []}
 
 		xs = self.mocker.mock()
 		xs.xenapi.VM.get_all_records()
@@ -309,6 +309,17 @@ class MetricsTests(MockerTestCase):
 		result=self.metrics.get_vms_record()
 		self.assertEqual(result, val)
 
+	def test_get_lvs_size__empty(self):
+		self.assertEqual(self.metrics.get_lvs_size([]), dict())
+		
+	def test_get_lvs_size(self):
+		lvs=['/dev/vgrack/root-test1.home.net','/dev/LVM_XEN/usr-test1.home.net','/dev/vgrack/WOO-test1.home.net']
+		val={'/dev/LVM_XEN/usr-test1.home.net': 524288.0, 
+			'/dev/vgrack/WOO-test1.home.net': 1048576.0, 
+			'/dev/vgrack/root-test1.home.net': 4194304.0}
+
+		self.assertEqual(self.metrics.get_lvs_size(lvs), val)
+		
 
 
 if __name__ == "__main__":

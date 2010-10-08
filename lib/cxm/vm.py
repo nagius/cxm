@@ -79,7 +79,7 @@ class VM:
 		self.__ram=str(ram)
 
 	def get_vcpu(self):
-		"""Return the number of vcpu allocated to the vm."""
+		"""Return the number of actives vcpu allocated to the vm."""
 		if self.__vcpu:
 			return int(self.__vcpu)
 		else:
@@ -116,7 +116,6 @@ class VM:
 
 
 if __name__ == "__main__":
-	"""Main is used to run test case."""
 	pass
 
 # vim: ts=4:sw=4:ai

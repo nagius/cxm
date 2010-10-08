@@ -24,8 +24,6 @@
 #
 ###########################################################################
 
-# Note that some part of code came from xen/xm 
-
 """This module hold the Node class."""
 
 import platform, paramiko, re, time, popen2, socket, StringIO

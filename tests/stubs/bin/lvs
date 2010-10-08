@@ -36,6 +36,14 @@ case "$@" in
   vgrack    swap-test2.home.net                                      -wi---
 EOF
 	;;
+
+	"-o vg_name,lv_name,lv_size --noheading --units k --nosuffix /dev/vgrack/root-test1.home.net /dev/LVM_XEN/usr-test1.home.net /dev/vgrack/WOO-test1.home.net")
+		cat <<EOF
+  vgrack root-test1.home.net   4194304.00
+  LVM_XEN usr-test1.home.net  524288.00
+  vgrack WOO-test1.home.net   1048576.00
+EOF
+	;;
 	
 	*)
 		echo "Error: bad params: $@" >&2

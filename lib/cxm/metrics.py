@@ -243,6 +243,21 @@ class Metrics:
 		# Return the higher
 		return (irq_load<ram_load and ram_load or irq_load)
 
+	def get_lvs_size(self, lvs):
+		"""Return a dict containnig size (in kilobytes) of each specified LVs."""
+
+		if len(lvs)<=0:
+			return dict() # empty return if no LV given 
+
+		size=dict()
+		for line in self.node.run("lvs -o vg_name,lv_name,lv_size --noheading --units k --nosuffix " + " ".join(lvs)).readlines():
+			infos=line.strip().split()
+			lv_name="/dev/" + infos[0] + "/" + infos[1]
+
+			if lv_name in lvs:  # In case of output error, don't feed with scrappy data
+				size[lv_name]=float(infos[2])
+
+		return size
 
 # vim: ts=4:sw=4:ai
 
