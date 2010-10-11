@@ -64,8 +64,11 @@ QUIET=False
 USESSH=False
 
 # TODO: Variable de configuration a remplacer par un fichier
-cfg = { 'VMCONF_DIR' :"/etc/xen/vm/",
-		'PATH': "" }
+cfg = { 
+	'VMCONF_DIR' :"/etc/xen/vm/",
+	'PATH': "",
+	'NOREFRESH': False,
+	}
 
 
 #@staticmethod

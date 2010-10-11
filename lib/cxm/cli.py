@@ -234,6 +234,9 @@ def main():
 	parser.add_option("-q", "--quiet",
 					  action="store_true", dest="quiet", default=False,
 					  help="Quiet mode: suppress extra outputs")
+	parser.add_option("-n", "--no-refresh",
+					  action="store_true", dest="norefresh", default=False,
+					  help="Don't refresh LVM metadatas (DANGEROUS)")
 	parser.add_option("-s", "--use-ssh",
 					  action="store_true", dest="usessh", default=False,
 					  help="Use SSH instead of Xen-API")
@@ -248,6 +251,7 @@ def main():
 	core.DEBUG=options.debug
 	core.QUIET=options.quiet
 	core.USESSH=options.usessh
+	core.cfg['NOREFRESH']=options.norefresh
 
 	# Command-line parsing similar to 'xm'
 	try:

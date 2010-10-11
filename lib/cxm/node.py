@@ -237,7 +237,8 @@ class Node:
 
 	def refresh_lvm(self,vgs):
 		"""Perform a LVM refresh."""
-		self.run("lvchange --refresh " + " ".join(vgs))
+		if not core.cfg['NOREFRESH']:
+			self.run("lvchange --refresh " + " ".join(vgs))
 
 	def deactivate_lv(self,vmname):
 		"""Deactivate the logicals volumes of the specified VM on this node.
