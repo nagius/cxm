@@ -53,7 +53,7 @@ class Metrics:
 	def get_host_nr_cpus(self):
 		"""Return the number of CPU on the host."""
 		host_record = self.server.xenapi.host.get_record(self.server.xenapi.session.get_this_host(self.server.getSession()))
-		if core.DEBUG: print "DEBUG Xen-Api: ", host_record
+		if core.cfg['DEBUG']: print "DEBUG Xen-Api: ", host_record
 		return host_record['cpu_configuration']['nr_cpus']
 
 	def get_vms_cpu_usage(self):
@@ -62,7 +62,7 @@ class Metrics:
 
 		# Get domains' infos
 		doms=self.node.legacy_server.xend.domains(True)
-		if core.DEBUG: print "DEBUG Legacy-Api: ", doms
+		if core.cfg['DEBUG']: print "DEBUG Legacy-Api: ", doms
 
 		# Timestamp used to compute CPU percentage
 		timestamp=time.time()
@@ -105,7 +105,7 @@ class Metrics:
 		if not dom_recs: dom_recs = self.server.xenapi.VM.get_all_records()
 
 		vif_metrics_recs = self.server.xenapi.VIF_metrics.get_all_records()
-		if core.DEBUG: print "DEBUG Xen-Api: ", vif_metrics_recs
+		if core.cfg['DEBUG']: print "DEBUG Xen-Api: ", vif_metrics_recs
 
 		vifs_doms_metrics=dict()
 		for dom_rec in dom_recs.values():
@@ -178,7 +178,7 @@ class Metrics:
 	def get_vms_record(self):
 		"""Return a tree with CPU, disks'IO and network IO for all running VMs."""
 		dom_recs = self.server.xenapi.VM.get_all_records()
-		if core.DEBUG: print "DEBUG Xen-Api: ", dom_recs
+		if core.cfg['DEBUG']: print "DEBUG Xen-Api: ", dom_recs
 		
 		# Fetch all datas once
 		vms_cpu=self.get_vms_cpu_usage()
@@ -213,13 +213,13 @@ class Metrics:
 	def get_ram_infos(self):
 		"""Return a dict with the free, used, and total ram of this node."""
 		# TODO add a cache
-		if core.USESSH:
+		if core.cfg['USESSH']:
 			vals=map(int, self.node.run('xm info | grep -E total_memory\|free_memory | cut -d: -f 2').read().strip().split())
 			return { 'total':vals[0], 'free':vals[1], 'used':vals[0]-vals[1] }
 		else:
 			host_record = self.server.xenapi.host.get_record(self.server.xenapi.session.get_this_host(self.server.getSession()))
 			host_metrics_record = self.server.xenapi.host_metrics.get_record(host_record["metrics"])
-			if core.DEBUG: print "DEBUG Xen-Api: ", host_metrics_record
+			if core.cfg['DEBUG']: print "DEBUG Xen-Api: ", host_metrics_record
 
 			total=int(host_metrics_record["memory_total"])/1024/1024
 			free=int(host_metrics_record["memory_free"])/1024/1024

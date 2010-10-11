@@ -32,8 +32,8 @@ class XenClusterTests(MockerTestCase):
 
 		cxm.core.cfg['PATH'] = "tests/stubs/bin/"
 		cxm.core.cfg['VMCONF_DIR'] = "tests/stubs/cfg/"
-		cxm.core.QUIET=True
-	#	cxm.core.DEBUG=True
+		cxm.core.cfg['QUIET']=True
+	#	cxm.core.cfg['DEBUG']=True
 
 		# Dummy mocker
 		dummy_mock = Mocker()

@@ -33,8 +33,8 @@ class MetricsTests(MockerTestCase):
 	def setUp(self):
 
 		cxm.core.cfg['PATH'] = "tests/stubs/bin/"
-		cxm.core.QUIET=True
-	#	cxm.core.DEBUG=True
+		cxm.core.cfg['QUIET']=True
+	#	cxm.core.cfg['DEBUG']=True
 
 		# Mock xen session object
 		xs_mock = Mocker()

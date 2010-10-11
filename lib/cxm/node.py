@@ -47,11 +47,11 @@ class Node:
 		This constructor open SSH and XenAPI connections to the node.
 		If the node is not online, this will fail with an uncatched exception from paramiko or XenAPI.
 		"""
-		if not core.QUIET : print "Connecting to "+ hostname + "..."
+		if not core.cfg['QUIET'] : print "Connecting to "+ hostname + "..."
 		self.hostname=hostname
 
 		# Open SSH channel (localhost use popen2)
-		if not self.is_local_node() or core.USESSH:
+		if not self.is_local_node() or core.cfg['USESSH']:
 			self.ssh = paramiko.SSHClient()
 			self.ssh.load_system_host_keys()
 			#self.ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
@@ -61,10 +61,10 @@ class Node:
 		if self.is_local_node():
 			# Use unix socket on localhost
 			self.server = XenAPI.Session("httpu:///var/run/xend/xen-api.sock")
-			if core.DEBUG: print "DEBUG Xen-Api: using unix socket."
+			if core.cfg['DEBUG']: print "DEBUG Xen-Api: using unix socket."
 		else:
 			self.server = XenAPI.Session("http://"+hostname+":9363")
-			if core.DEBUG: print "DEBUG Xen-Api: using tcp socket."
+			if core.cfg['DEBUG']: print "DEBUG Xen-Api: using tcp socket."
 		self.server.login_with_password("root", "")
 
 		# Prepare connection with legacy API
@@ -117,8 +117,8 @@ class Node:
 #		else:
 		
 # Deadlock bug if cmd's output is bigger than 65k
-#       if(self.is_local_node() and not core.USESSH):
-#           if core.DEBUG : print "DEBUG SHELL: "+ self.get_hostname() +" -> "+cmd
+#       if(self.is_local_node() and not core.cfg['USESSH']):
+#           if core.cfg['DEBUG'] : print "DEBUG SHELL: "+ self.get_hostname() +" -> "+cmd
 #           stdout, stdin, stderr = popen2.popen3(cmd,9300000)
 #           msg=stderr.read()
 #           if(len(msg)>0):
@@ -127,8 +127,8 @@ class Node:
 		if(core.cfg['PATH']):
 			cmd=core.cfg['PATH'] + "/" + cmd
 
-		if(self.is_local_node() and not core.USESSH):
-			if core.DEBUG : print "DEBUG SHELL: "+ self.get_hostname() +" -> "+cmd
+		if(self.is_local_node() and not core.cfg['USESSH']):
+			if core.cfg['DEBUG'] : print "DEBUG SHELL: "+ self.get_hostname() +" -> "+cmd
 
 			# Create buffers
 			stdout=StringIO.StringIO()
@@ -147,7 +147,7 @@ class Node:
 				if(len(msg)>0):
 					raise ClusterNodeError(self.hostname,ClusterNodeError.SHELL_ERROR,msg)
 		else:
-			if core.DEBUG : print "DEBUG SSH: "+ self.get_hostname() +" -> "+cmd
+			if core.cfg['DEBUG'] : print "DEBUG SSH: "+ self.get_hostname() +" -> "+cmd
 			stdin, stdout, stderr = self.ssh.exec_command(cmd)
 			# Lock bug workaround : Check exit status before trying to read stderr
 			# Because sometimes, when stdout is big (maybe >65k ?), strderr.read() hand on
@@ -168,14 +168,14 @@ class Node:
 		
 	def is_vm_started(self, vmname):
 		"""Return True if the specified vm is started on this node."""
-		if core.USESSH:
+		if core.cfg['USESSH']:
 			for vm in self.run("xm list | awk '{print $1;}'").readlines():
 				if vmname == vm.strip():
 					return True
 			return False
 		else:
 			vm=self.server.xenapi.VM.get_by_name_label(vmname)
-			if core.DEBUG: print "DEBUG Xen-Api: ", vm
+			if core.cfg['DEBUG']: print "DEBUG Xen-Api: ", vm
 			return len(vm)>0	
 
 	def is_vm_autostart_enabled(self, vmname):
@@ -212,10 +212,10 @@ class Node:
 
 	def get_vm_started(self):
 		"""Return the number of started vm on this node."""
-		if core.USESSH:
+		if core.cfg['USESSH']:
 			return int(self.run('xenstore-list /local/domain | wc -l').read())-1 # don't count Dom0
 		else:
-			if core.DEBUG: print "DEBUG Xen-Api: ", self.server.xenapi.VM.get_all()
+			if core.cfg['DEBUG']: print "DEBUG Xen-Api: ", self.server.xenapi.VM.get_all()
 			return len(self.server.xenapi.VM.get_all())-1
 
 	def get_vgs(self,lvs):
@@ -272,7 +272,7 @@ class Node:
 		"""
 
 		args = [core.cfg['VMCONF_DIR'] + vmname]
-		if core.USESSH:
+		if core.cfg['USESSH']:
 			self.run("xm create " + args[0])
 		else:
 			if self.is_local_node():
@@ -299,7 +299,7 @@ class Node:
 
 		Raise a ClusterNodeError if the vm is not started on this node.
 		"""
-		if core.USESSH:
+		if core.cfg['USESSH']:
 			self.run("xm migrate -l " + vmname + " " + dest_node.get_hostname())
 		else:
 #			if self.is_local_node():
@@ -329,7 +329,7 @@ class Node:
 		"""
 		MAX_TIMOUT=60	# Time waiting for VM shutdown 
 
-		if core.USESSH:
+		if core.cfg['USESSH']:
 			self.run("xm shutdown " + vmname)
 		else:
 			try:
@@ -349,7 +349,7 @@ class Node:
 	
 	def get_vm(self, vmname):
 		"""Return the VM instance corresponding to the given vmname."""
-		if core.USESSH:
+		if core.cfg['USESSH']:
 			line=self.run("xm list | grep " + vmname + " | awk '{print $1,$2,$3,$4;}'").read()
 			if len(line)<1:
 				raise ClusterNodeError(self.get_hostname(),ClusterNodeError.VM_NOT_RUNNING,vmname)
@@ -368,14 +368,14 @@ class Node:
 	def get_vms(self):
 		"""Return the list of VM instance for each running vm."""
 		vms=list()
-		if core.USESSH:
+		if core.cfg['USESSH']:
 			for line in self.run("xm list | awk '{print $1,$2,$3,$4;}' | tail -n +3").readlines():
 				(name, id, ram, vcpu)=line.strip().split()
 				vms.append(VM(name, id, ram, vcpu))
 		else:
 			dom_recs = self.server.xenapi.VM.get_all_records()
 			dom_metrics_recs = self.server.xenapi.VM_metrics.get_all_records()
-			if core.DEBUG: print "DEBUG Xen-Api: ", dom_recs
+			if core.cfg['DEBUG']: print "DEBUG Xen-Api: ", dom_recs
 
 			for dom_rec in dom_recs.values():
 				if dom_rec['name_label'] != "Domain-0":
@@ -387,7 +387,7 @@ class Node:
 
 	def check_lvs(self):
 		"""Perform a sanity check of the LVM activation on this node."""
-		if not core.QUIET: print "Checking LV activation on",self.get_hostname(),"..." 
+		if not core.cfg['QUIET']: print "Checking LV activation on",self.get_hostname(),"..." 
 		safe=True
 
 		# Get all active LVs on the node
@@ -409,11 +409,11 @@ class Node:
 
 		# Compute the intersection of the two lists (active and used LVs)
 		active_and_used_lvs = list(Set(active_lvs) & Set(used_lvs))
-		if core.DEBUG: print "DEBUG active_and_used_lvs =", active_and_used_lvs
+		if core.cfg['DEBUG']: print "DEBUG active_and_used_lvs =", active_and_used_lvs
 
 		# Get all LVs of running VM
 		running_lvs = [ lv for vm in self.get_vms() for lv in vm.get_lvs() ]
-		if core.DEBUG: print "DEBUG running_lvs =", running_lvs
+		if core.cfg['DEBUG']: print "DEBUG running_lvs =", running_lvs
 
 		# Compute activated LVs without running vm
 		lvs_without_vm = list(Set(active_and_used_lvs) - Set(running_lvs))
@@ -431,16 +431,16 @@ class Node:
 
 	def check_autostart(self):
 		"""Perform a sanity check of the autostart links."""
-		if not core.QUIET: print "Checking autostart links on",self.get_hostname(),"..." 
+		if not core.cfg['QUIET']: print "Checking autostart links on",self.get_hostname(),"..." 
 		safe=True
 
 		# Get all autostart links on the node
 		links = [ link.strip() for link in self.run("ls /etc/xen/auto/").readlines() ]
-		if core.DEBUG: print "DEBUG links =", links
+		if core.cfg['DEBUG']: print "DEBUG links =", links
 
 		# Get all running VM
 		running_vms = [ vm.name for vm in self.get_vms() ]
-		if core.DEBUG: print "DEBUG running_vms =", running_vms
+		if core.cfg['DEBUG']: print "DEBUG running_vms =", running_vms
 
 		# Compute running vm without autostart link
 		link_without_vm = list(Set(links) - Set(running_vms))

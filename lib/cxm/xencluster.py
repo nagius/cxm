@@ -48,7 +48,7 @@ class XenCluster:
 
 		If a node is not online, this will fail with an uncatched exception from paramiko or XenAPI.
 		"""
-		if not core.QUIET : print "Loading cluster..."
+		if not core.cfg['QUIET'] : print "Loading cluster..."
 
 		if not nodeslist:
 			nodeslist=core.get_nodes_list()
@@ -217,7 +217,7 @@ class XenCluster:
 				failed.append(vm) # Not enough room for this one
 				continue  # Next !
 
-			if not core.QUIET: print "Migrating",vm.name,"to",selected_node.get_hostname()
+			if not core.cfg['QUIET']: print "Migrating",vm.name,"to",selected_node.get_hostname()
 			self.migrate(vm.name,ejected_node.get_hostname(),selected_node.get_hostname())
 
 		if len(failed)>0:
@@ -228,7 +228,7 @@ class XenCluster:
 
 		Return a corresponding exit code (0=sucess, 0!=error)
 		"""
-		if not core.QUIET: print "Checking for duplicate VM..."
+		if not core.cfg['QUIET']: print "Checking for duplicate VM..."
 		safe=True
 
 		# Get cluster wide VM list
@@ -236,7 +236,7 @@ class XenCluster:
 		for node in self.get_nodes():
 			vm_by_node[node.get_hostname()]=node.get_vms()
 	
-		if core.DEBUG: print "DEBUG vm_by_node=",vm_by_node
+		if core.cfg['DEBUG']: print "DEBUG vm_by_node=",vm_by_node
 	
 		# Invert key/value of the dict
 		node_by_vm=dict()
@@ -247,7 +247,7 @@ class XenCluster:
 				except KeyError:
 					node_by_vm[vm.name]=[node]
 
-		if core.DEBUG: print "DEBUG node_by_vm =",node_by_vm
+		if core.cfg['DEBUG']: print "DEBUG node_by_vm =",node_by_vm
 
 		# Check duplicate VM
 		for vm, nodes in node_by_vm.items():

@@ -45,11 +45,14 @@ Some method could raise ClusterError and ClusterNodeError exceptions.
 This module require Xen's modules xen/xm for XenAPI access 
 and paramiko module for SSH links.
 
-Some globals booleans variables are avalaible to change the behavior of this module :
+Some globals configurations variables are avalaibles via the dict cfg[] to change the behavior of this module :
 
- - DEBUG : Print additionnal information about internals datas
- - QUIET : Just print essentials outpouts (usefull for batch parsing)
- - USESSH : Does'nt use the XenAPI, send (mostly) all command via SSH.
+ - DEBUG (bool) : Print additionnal information about internals datas
+ - QUIET (bool) : Just print essentials outpouts (usefull for batch parsing)
+ - USESSH (bool) : Don't use the XenAPI, send (mostly) all command via SSH.
+ - NOREFRESH (bool) : Don't refresh LVM metadatas (DANGEROUS).
+ - VMCONF_DIR (string) : Path to find the VM's configurations files.
+ - PATH (string) : Default path to find extern binaries (Only usefull for testing).
 
 """
 
@@ -58,16 +61,15 @@ import os
 
 VERSION="0.5.1"
 
-# Global read only variables
-DEBUG=False
-QUIET=False
-USESSH=False
-
+# Global configuration
 # TODO: Variable de configuration a remplacer par un fichier
 cfg = { 
 	'VMCONF_DIR' :"/etc/xen/vm/",
 	'PATH': "",
 	'NOREFRESH': False,
+	'DEBUG': False,
+	'QUIET': False,
+	'USESSH': False,
 	}
 
 

@@ -90,7 +90,7 @@ def cxm_create(cluster, vm, options):
 			node=cluster.get_local_node()
 			print "** Warning: no autostart link found. Starting VM here."
 	
-	if not core.QUIET : print "Starting",vm,"on",node.get_hostname(),"..."
+	if not core.cfg['QUIET'] : print "Starting",vm,"on",node.get_hostname(),"..."
 	cluster.start_vm(node,vm,options.console)
 
 def cxm_migrate(cluster, vm, dest, options):
@@ -101,7 +101,7 @@ def cxm_migrate(cluster, vm, dest, options):
 	node=select_node_by_vm(cluster, vm, options)
 
 	src_hostname=node.get_hostname()
-	if not core.QUIET : print "Migrating",vm,"from",src_hostname,"to",dest,"..."
+	if not core.cfg['QUIET'] : print "Migrating",vm,"from",src_hostname,"to",dest,"..."
 	cluster.migrate(vm, src_hostname, dest)
 
 def cxm_shutdown(cluster, vm, options):
@@ -112,7 +112,7 @@ def cxm_shutdown(cluster, vm, options):
 
 	node=select_node_by_vm(cluster, vm, options)
 
-	if not core.QUIET : print "Shutting down",vm,"on",node.get_hostname(),"..."
+	if not core.cfg['QUIET'] : print "Shutting down",vm,"on",node.get_hostname(),"..."
 	node.shutdown(vm)
 
 def cxm_console(cluster, vm, options):
@@ -136,7 +136,7 @@ def cxm_activate(cluster, vm, options):	# Exclusive activation
 	else:
 		node=cluster.get_local_node()
 	
-	if not core.QUIET : print "Activating LVs of",vm,"on",node.get_hostname(),"..."
+	if not core.cfg['QUIET'] : print "Activating LVs of",vm,"on",node.get_hostname(),"..."
 	cluster.activate_vm(node,vm)
 
 def cxm_deactivate(cluster, vm, options):
@@ -149,7 +149,7 @@ def cxm_deactivate(cluster, vm, options):
 	else:
 		node=cluster.get_local_node()
 
-	if not core.QUIET : print "Deactivating LVs of",vm,"on",node.get_hostname(),"..."
+	if not core.cfg['QUIET'] : print "Deactivating LVs of",vm,"on",node.get_hostname(),"..."
 	node.deactivate_lv(vm)
 
 def cxm_infos(cluster):
@@ -162,7 +162,7 @@ def cxm_infos(cluster):
 
 def cxm_search(cluster,vm):
 	"""Search the specified vm on the cluster."""
-	if not core.QUIET : print "Searching", vm, "..."
+	if not core.cfg['QUIET'] : print "Searching", vm, "..."
 
 	# Search started vm
 	found=cluster.search_vm_started(vm)
@@ -189,7 +189,7 @@ def cxm_list(cluster, options):
 	
 	for node in nodes:
 		print "\nOn", node.get_hostname(), ":"
-		if not core.QUIET: 
+		if not core.cfg['QUIET']: 
 			print "-----" + "-" * len(node.get_hostname())
 			print '\n    %-40s %4s  %5s  %6s' % ("Name","Mem", "VCPUs","State")
 		for vm in node.get_vms():
@@ -209,7 +209,7 @@ def cxm_start(cluster, options):
 	else:
 		node=cluster.get_local_node()
 
-	if not core.QUIET : print "Initialize cluster on",node.get_hostname(),"..."
+	if not core.cfg['QUIET'] : print "Initialize cluster on",node.get_hostname(),"..."
 	node.deactivate_all_lv()
 
 def cxm_eject(cluster, options):
@@ -220,7 +220,7 @@ def cxm_eject(cluster, options):
 	else:
 		node=cluster.get_local_node()
 
-	if not core.QUIET : print "Ejecting all running VM from",node.get_hostname(),"..."
+	if not core.cfg['QUIET'] : print "Ejecting all running VM from",node.get_hostname(),"..."
 	cluster.emergency_eject(node)
 
 def main():
@@ -248,9 +248,9 @@ def main():
 
 	(options, args) = parser.parse_args()
 
-	core.DEBUG=options.debug
-	core.QUIET=options.quiet
-	core.USESSH=options.usessh
+	core.cfg['DEBUG']=options.debug
+	core.cfg['QUIET']=options.quiet
+	core.cfg['USESSH']=options.usessh
 	core.cfg['NOREFRESH']=options.norefresh
 
 	# Command-line parsing similar to 'xm'
