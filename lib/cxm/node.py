@@ -400,12 +400,8 @@ class Node:
 
 		# Get all LVs used by VMs
 		used_lvs = list()
-		regex = re.compile('phy:([^,]+).*')
-		for line in self.run("cat "+ core.cfg['VMCONF_DIR'] +"* 2>/dev/null").readlines():
-			try:
-				used_lvs.append(regex.search(line).group(1))
-			except:
-				pass
+		for vm in [ vm.strip() for vm in self.run("ls -F "+ core.cfg['VMCONF_DIR'] +" | grep -v '/'").readlines() ]:
+			used_lvs.extend(VM(vm).get_lvs())
 
 		# Compute the intersection of the two lists (active and used LVs)
 		active_and_used_lvs = list(Set(active_lvs) & Set(used_lvs))
