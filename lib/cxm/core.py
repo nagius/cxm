@@ -55,13 +55,12 @@ Some globals configurations variables are avalaibles via the dict cfg[] to chang
 
 """
 
-import os
+import os, sys
 
 
 VERSION="0.5.1"
 
-# Global configuration
-# TODO: Variable de configuration a remplacer par un fichier
+# Default configuration
 cfg = { 
 	'VMCONF_DIR' :"/etc/xen/vm/",
 	'PATH': "",
@@ -89,6 +88,13 @@ def get_api_version():
 	"""Return the version number of this API."""
 	return VERSION
 
+def load_cfg():
+	"""Load the global configuration file into the cfg dict."""
+	try:
+		execfile("/etc/xen/cxm.conf",dict(),cfg)
+	except Exception,e:
+		print "Configuration file error: %s" % e
+		sys.exit(3)
 
 if __name__ == "__main__":
 	pass

@@ -227,18 +227,18 @@ def main():
 	"""Run cxm command line interface."""
 	parser = OptionParser(version="%prog "+core.VERSION)
 	parser.add_option("-d", "--debug",
-					  action="store_true", dest="debug", default=False,
+					  action="store_true", dest="debug", default=core.cfg['DEBUG'],
 					  help="Enable debug mode")
 	parser.add_option("-f", "--force-node", dest="node", metavar="hostname", default=None,
 					  help="Specify the node to operate with")
 	parser.add_option("-q", "--quiet",
-					  action="store_true", dest="quiet", default=False,
+					  action="store_true", dest="quiet", default=core.cfg['QUIET'],
 					  help="Quiet mode: suppress extra outputs")
 	parser.add_option("-n", "--no-refresh",
-					  action="store_true", dest="norefresh", default=False,
+					  action="store_true", dest="norefresh", default=core.cfg['NOREFRESH'],
 					  help="Don't refresh LVM metadatas (DANGEROUS)")
 	parser.add_option("-s", "--use-ssh",
-					  action="store_true", dest="usessh", default=False,
+					  action="store_true", dest="usessh", default=core.cfg['USESSH'],
 					  help="Use SSH instead of Xen-API")
 	parser.add_option("-c", "--console",
 					  action="store_true", dest="console", default=False,
