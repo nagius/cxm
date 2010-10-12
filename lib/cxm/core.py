@@ -28,7 +28,6 @@
 
 # TODO snapshot
 # TODO Add a cache to metrics.get_ram_infos() ?
-# TODO add load balancing in create
 
 
 """

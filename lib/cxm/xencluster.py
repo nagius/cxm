@@ -48,7 +48,7 @@ class XenCluster:
 
 		If a node is not online, this will fail with an uncatched exception from paramiko or XenAPI.
 		"""
-		if not core.cfg['QUIET'] : print "Loading cluster..."
+		if not core.cfg['QUIET']: print "Loading cluster..."
 
 		if not nodeslist:
 			nodeslist=core.get_nodes_list()
@@ -129,6 +129,8 @@ class XenCluster:
 				
 	def start_vm(self, node, vmname, console):
 		"""Start the specified VM on the given node.
+		If there is not enough ram on the given node, the VM will be started 
+		on the node with the highest free ram and the autostart link will be updated accordingly.
 
 		node - (Node) Selected host
 		vmname - (String) VM hostname 
@@ -138,9 +140,21 @@ class XenCluster:
 		# Resources checks
 		needed_ram=vm.VM(vmname).get_ram()
 		free_ram=node.metrics.get_free_ram()
-		if needed_ram>free_ram:
-			raise ClusterNodeError(node.get_hostname(),ClusterNodeError.NOT_ENOUGH_RAM,"need "+str(needed_ram)+"M, has "+str(free_ram)+"M.")
-			# TODO start the vm on another node
+		if needed_ram>free_ram: 
+			# Not enough ram, switching to another node
+			old_node=node
+
+			# Get the node with the highest free ram
+			pool=self.get_nodes()
+			pool.sort(key=lambda x: x.metrics.get_free_ram(), reverse=True)
+			node=pool[0]
+
+			# Last resources checks
+			free_ram=node.metrics.get_free_ram()
+			if needed_ram>free_ram:
+				raise ClusterNodeError(node.get_hostname(),ClusterNodeError.NOT_ENOUGH_RAM,"need "+str(needed_ram)+"M, has "+str(free_ram)+"M.")
+
+			if not core.cfg['QUIET']: print " -> Not enough ram, starting it on %s." % node.get_hostname()
 
 		self.activate_vm(node,vmname)
 		try:
@@ -149,6 +163,11 @@ class XenCluster:
 			node.deactivate_lv(vmname)
 			raise e
 
+		# Update autostart link only if another node has been selected
+		if 'old_node' in locals():
+			old_node.disable_vm_autostart(vmname)
+			node.enable_vm_autostart(vmname)
+			
 	def migrate(self, vmname, src_hostname, dst_hostname):
 		"""Live migration of specified VM from src to dst.
 

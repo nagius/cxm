@@ -166,12 +166,47 @@ class XenClusterTests(MockerTestCase):
 		
 		self.cluster.start_vm(node, vmname, False)
 
+	def test_start_vm__switch_node(self):
+		vmname="test1.home.net"
+		
+		n1_mocker = Mocker()
+		node1 = n1_mocker.mock()
+		node1.metrics.get_free_ram()
+		n1_mocker.result(64)
+		n1_mocker.count(1,None)
+		node1.is_vm_started(vmname)
+		n1_mocker.result(False)
+		node1.deactivate_lv(vmname)
+		node1.disable_vm_autostart(vmname)
+		n1_mocker.replay()
+
+		n2_mocker = Mocker()
+		node2 = n2_mocker.mock()
+		node2.metrics.get_free_ram()
+		n2_mocker.result(1024)
+		n2_mocker.count(1,None)
+		node2.is_vm_started(vmname)
+		n2_mocker.result(False)
+		node2.deactivate_lv(vmname)
+		node2.activate_lv(vmname)
+		node2.start_vm(vmname,False)
+		node2.enable_vm_autostart(vmname)
+		n2_mocker.replay()
+
+		self.cluster.nodes={'host2': node2, 'host1': node1}
+		
+		self.cluster.start_vm(node1, vmname, False)
+
+		n1_mocker.verify()
+		n2_mocker.verify()
+
 	def test_start_vm__ram_error(self):
 		vmname="test1.home.net"
 		
 		node = self.mocker.mock()
 		node.metrics.get_free_ram()
 		self.mocker.result(64)
+		self.mocker.count(1,None)
 		node.get_hostname()
 		self.mocker.result(platform.node())
 		self.mocker.replay()
