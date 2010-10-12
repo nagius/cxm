@@ -232,37 +232,7 @@ start()
     fi
 
 	# Initiate the cluster 
-	cxm start
-
-# Pas de restauration en cluster
-#    saved_domains=" "
-#    if [ "$XENDOMAINS_RESTORE" = "true" ] &&
-#       contains_something "$XENDOMAINS_SAVE"
-#    then
-#	mkdir -p $(dirname "$LOCKFILE")
-#	touch $LOCKFILE
-#	echo -n "Restoring Xen domains:"
-#	saved_domains=`ls $XENDOMAINS_SAVE`
-#        for dom in $XENDOMAINS_SAVE/*; do
-#            if [ -f $dom ] ; then
-#                HEADER=`head -c 16 $dom | head -n 1 2> /dev/null`
-#                if [ $HEADER = "LinuxGuestRecord" ]; then
-#                    echo -n " ${dom##*/}"
-#                    XMR=`xm restore $dom 2>&1 1>/dev/null`
-#                    #xm restore $dom
-#                    if [ $? -ne 0 ]; then
-#                        echo -e "\nAn error occurred while restoring domain ${dom##*/}:\n$XMR"
-#                        rc_failed $?
-#                        echo -e '!'
-#                    else
-#                        # mv $dom ${dom%/*}/.${dom##*/}
-#                        rm $dom
-#                    fi
-#                fi
-#            fi
-#        done
-#	echo -e
-#    fi
+	cxm init
 
     if contains_something "$XENDOMAINS_AUTO"
     then

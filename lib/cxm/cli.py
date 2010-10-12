@@ -201,7 +201,7 @@ def cxm_check(cluster):
 		print " -> Errors has been found. You should correct it."
 		sys.exit(1)
 
-def cxm_start(cluster, options):
+def cxm_init(cluster, options):
 	"""Initialize the cluster at startup."""
 
 	if options.node:
@@ -261,6 +261,9 @@ def main():
 		if args[0].startswith("cr"):	# create
 			# Start a new vm
 			cxm_create(cluster,os.path.basename(args[1]),options)
+		elif args[0].startswith("init"):	# init
+			# Initiate the cluster
+			cxm_init(cluster, options)		# TODO a deplacer dans cxm-manager
 		elif args[0].startswith("mi"):	# migrate
 			# Live migration
 			cxm_migrate(cluster, os.path.basename(args[1]), args[2], options)
@@ -291,9 +294,6 @@ def main():
 		elif args[0].startswith("ej"):	# eject
 			# Migrate all vm to others nodes
 			cxm_eject(cluster,options)
-		elif args[0].startswith("start"):	# start
-			# Initiate the cluster
-			cxm_start(cluster, options)		# TODO a deplacer dans cxm-manager
 		else:
 			parser.print_help()
 	except IndexError:
