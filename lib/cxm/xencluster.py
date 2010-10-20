@@ -28,6 +28,7 @@
 """This module hold the XenCluster class."""
 
 import os, platform
+from sets import Set
 
 import core, node, vm
 from node import ClusterNodeError
@@ -274,6 +275,10 @@ class XenCluster:
 				print " ** WARNING : " + vm + " is running on " + " and ".join(nodes)
 				safe=False
 
+		# Check bridges
+		if not self.check_bridges():
+			safe=False
+
 		# Other checks
 		for node in self.get_nodes():
 			# Check (non)activation of LVs
@@ -285,6 +290,36 @@ class XenCluster:
 				safe=False
 				
 		return safe
+
+	def check_bridges(self):
+		"""Perform a check on briges' configurations.
+
+		Return a corresponding exit code (0=sucess, 0!=error)
+		"""
+		if not core.cfg['QUIET']: print "Checking bridges configurations..."
+		safe=True
+
+		# Get a dict with bridges of each nodes
+		nodes_bridges=dict()
+		for node in self.get_nodes():
+			nodes_bridges[node.get_hostname()]=node.get_bridges()
+
+		if core.cfg['DEBUG']: print "DEBUG nodes_bridges =",nodes_bridges
+
+		# Compare bridges lists for each nodes
+		missing=dict()
+		for node in nodes_bridges.keys():
+			for bridges in nodes_bridges.values():
+				missing.setdefault(node,[]).extend(list(Set(bridges) - Set(nodes_bridges[node])))
+
+		# Show missing bridges without duplicates
+		for node in missing.keys():
+			if missing[node]:
+				print " ** WARNING : Missing bridges on %s : %s" % (node,", ".join(list(Set(missing[node]))))
+				safe=False
+
+		return safe
+
 
 class ClusterError(Exception):
 

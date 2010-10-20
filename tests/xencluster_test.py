@@ -381,8 +381,11 @@ class XenClusterTests(MockerTestCase):
 		n1 = n1_mocker.mock()
 		n1.get_hostname()
 		n1_mocker.result("node1")
+		n1_mocker.count(1,None)
 		n1.get_vms()
 		n1_mocker.result([vm1, vm2])
+		n1.get_bridges()
+		n1_mocker.result(['xenbr1','xenbr2'])
 		n1.check_lvs()
 		n1_mocker.result(True)
 		n1.check_autostart()
@@ -393,8 +396,11 @@ class XenClusterTests(MockerTestCase):
 		n2 = n2_mocker.mock()
 		n2.get_hostname()
 		n2_mocker.result('node2')
+		n2_mocker.count(1,None)
 		n2.get_vms()
 		n2_mocker.result([vm2, vm3])
+		n2.get_bridges()
+		n2_mocker.result(['xenbr1','xenbr2'])
 		n2.check_lvs()
 		n2_mocker.result(True)
 		n2.check_autostart()
@@ -404,6 +410,50 @@ class XenClusterTests(MockerTestCase):
 		self.cluster.nodes={'node1': n1, 'node2': n2}
 
 		self.assertEqual(self.cluster.check(),False)
+
+	def test_check_bridges__nok(self):
+
+		n1_mocker = Mocker()
+		n1 = n1_mocker.mock()
+		n1.get_hostname()
+		n1_mocker.result("node1")
+		n1.get_bridges()
+		n1_mocker.result(['xenbr1','xenbr2','xenbr3'])
+		n1_mocker.replay()
+
+		n2_mocker = Mocker()
+		n2 = n2_mocker.mock()
+		n2.get_hostname()
+		n2_mocker.result('node2')
+		n2.get_bridges()
+		n2_mocker.result(['xenbr4','xenbr2'])
+		n2_mocker.replay()
+
+		self.cluster.nodes={'node1': n1, 'node2': n2}
+
+		self.assertEqual(self.cluster.check_bridges(),False)
+		
+	def test_check_bridges__ok(self):
+
+		n1_mocker = Mocker()
+		n1 = n1_mocker.mock()
+		n1.get_hostname()
+		n1_mocker.result("node1")
+		n1.get_bridges()
+		n1_mocker.result(['xenbr2','xenbr1'])
+		n1_mocker.replay()
+
+		n2_mocker = Mocker()
+		n2 = n2_mocker.mock()
+		n2.get_hostname()
+		n2_mocker.result('node2')
+		n2.get_bridges()
+		n2_mocker.result(['xenbr1','xenbr2'])
+		n2_mocker.replay()
+
+		self.cluster.nodes={'node1': n1, 'node2': n2}
+
+		self.assertEqual(self.cluster.check_bridges(),True)
 
 	def test_emergency_eject(self):
 		migrate = self.mocker.replace(cxm.xencluster.XenCluster.migrate)
