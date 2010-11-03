@@ -310,7 +310,7 @@ class NodeTests(MockerTestCase):
 		self.mocker.replay()
 		self.node.server=xs
 
-		self.node.get_vms()		
+		self.assertEqual(isinstance(self.node.get_vms()[0], cxm.vm.VM),True)
 
 	def test_check_lvs_ok(self):
 		vm_records = {
