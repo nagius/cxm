@@ -57,7 +57,10 @@ class Metrics:
 		return host_record['cpu_configuration']['nr_cpus']
 
 	def get_vms_cpu_usage(self):
-		"""Return a dict with the computed CPU usage (in percent) for all runing VMs."""
+		"""
+		Return a dict with the computed CPU usage (in percent) for all runing VMs.
+		NOTE : Work only on local node (because use the legacy Xen-API).
+		"""
 		cpu=dict()
 
 		# Get domains' infos
@@ -203,11 +206,11 @@ class Metrics:
 		return self.get_ram_infos()['free']
 
 	def get_total_ram(self):
-		"""Return the amount of ram of this node."""
+		"""Return the amount of ram of this node (including Dom0 and Hypervisor)."""
 		return self.get_ram_infos()['total']
 
 	def get_used_ram(self):
-		"""Return the amount of userd ram of this node."""
+		"""Return the amount of used ram (including Dom0 and Hypervisor) of this node."""
 		return self.get_ram_infos()['used']
 
 	def get_ram_infos(self):
@@ -225,6 +228,16 @@ class Metrics:
 			free=int(host_metrics_record["memory_free"])/1024/1024
 
 			return { 'total': total, 'free':free, 'used':total-free }
+
+	def get_available_ram(self, vms=None):
+		"""Return the amount of really available ram (for VM usage, excluding Dom0 and Hypervisor) of this node."""
+		if not vms: vms = self.node.get_vms() # Get all vm running on this node
+
+		# Compute amount of ram used by VMs
+		used_ram = sum(map(lambda x: x.get_ram(), vms))
+
+		# Return really available ram for VM
+		return self.get_free_ram() + used_ram
 
 	def get_load(self):
 		"""Return the load of this node.

@@ -33,6 +33,7 @@ class MetricsTests(MockerTestCase):
 	def setUp(self):
 
 		cxm.core.cfg['PATH'] = "tests/stubs/bin/"
+		cxm.core.cfg['VMCONF_DIR'] = "tests/stubs/cfg/"
 		cxm.core.cfg['QUIET']=True
 	#	cxm.core.cfg['DEBUG']=True
 
@@ -320,6 +321,45 @@ class MetricsTests(MockerTestCase):
 
 		self.assertEqual(self.metrics.get_lvs_size(lvs), val)
 		
+	def test_get_available_ram(self):
+		val=2432
+		vm_records = {
+			'6ab3fd4c-d1d3-158e-d72d-3fc4831ae1e5': {
+				'domid': '73',
+				'metrics': '237f589-e62b-5573-915b-51117c9eb52e',
+				'name_label': 'test1.home.net'},
+			'a7d7bd0d-8885-6989-53e5-4e56559a286c': {
+				'name_label': 'test2.home.net',
+				'metrics': 'c31514fb-1471-194b-14eb-3bd54bdbf4cb',
+				'domid': '74'},
+			'7efcbac8-4714-88ee-007c-0246a3cb52b8': {
+				'name_label': 'Domain-0',
+				'metrics': '0208f543-e60b-5622-839b-51080c9eb63e',
+				'domid': '72'}
+		}
+		metrics_records = { 
+			'237f589-e62b-5573-915b-51117c9eb52e': {'memory_actual': "268435456"}, 
+			'c31514fb-1471-194b-14eb-3bd54bdbf4cb': {'memory_actual': "134217728"}, 
+			'0208f543-e60b-5622-839b-51080c9eb63e': {'memory_actual': "1073741824"}
+		}
+		host_record = {'memory_free': '2147483648', 'memory_total': '4118376448'}
+
+		xs = self.mocker.mock()
+		xs.xenapi.VM.get_all_records()
+		self.mocker.result(vm_records)
+		xs.xenapi.VM_metrics.get_all_records()
+		self.mocker.result(metrics_records)
+		xs.getSession()
+		xs.xenapi.session.get_this_host(ANY)
+		xs.xenapi.host.get_record(ANY)
+		self.mocker.result({'metrics': 'dd26c77a-5dfb-f445-0429-a29587ca1822'})
+		xs.xenapi.host_metrics.get_record('dd26c77a-5dfb-f445-0429-a29587ca1822')
+		self.mocker.result(host_record)
+		self.mocker.replay()
+		self.node.server=xs
+		self.metrics.server=xs
+
+		self.assertEqual(self.metrics.get_available_ram(), val)
 
 
 if __name__ == "__main__":
