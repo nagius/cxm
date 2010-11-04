@@ -31,21 +31,19 @@ import node, core
 
 class Metrics:
 
-	"""This class is used to retrieve metrics of node's vms."""
+	"""This class is used to retrieve metrics of its node and vms."""
 
 	def __init__(self, node):
 		self.node=node
 		self.server=node.server
 
-		# CPU Usage available only on localhost
-		if node.is_local_node():
-			# Initialize cpu_cache
-			self.cpu_cache=dict()
-			self.cpu_cache['timestamp']=time.time()-1 # Avoid divide by zero at startup
+		# Initialize cpu_cache
+		self.cpu_cache=dict()
+		self.cpu_cache['timestamp']=time.time()-1 # Avoid divide by zero at startup
 
-			# Feed cache with first values (need twice call)
-			self.get_vms_cpu_usage()
-			self.get_vms_cpu_usage()
+		# Feed cache with first values (need twice call)
+		self.get_vms_cpu_usage()
+		self.get_vms_cpu_usage()
 
 	def __repr__(self):
 		return "<Metrics Instance : "+ self.node.hostname +">"
@@ -57,10 +55,7 @@ class Metrics:
 		return host_record['cpu_configuration']['nr_cpus']
 
 	def get_vms_cpu_usage(self):
-		"""
-		Return a dict with the computed CPU usage (in percent) for all runing VMs.
-		NOTE : Work only on local node (because use the legacy Xen-API).
-		"""
+		"""Return a dict with the computed CPU usage (in percent) for all runing VMs."""
 		cpu=dict()
 
 		# Get domains' infos

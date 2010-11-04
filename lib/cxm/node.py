@@ -89,12 +89,14 @@ class Node:
 
 	def get_legacy_server(self):
 		"""Return the legacy API socket."""
-		if self.is_local_node():
-			if self.__legacy_server is None:
+		if self.__legacy_server is None:
+			if self.is_local_node():
 				self.__legacy_server=ServerProxy("httpu:///var/run/xend/xmlrpc.sock")
-			return self.__legacy_server
-		else:
-			raise ClusterNodeError(self.hostname,ClusterNodeError.LEGACY_ERROR,"unix socket")
+				if core.cfg['DEBUG']: print "DEBUG Legacy Api: using unix socket."
+			else:
+				self.__legacy_server=ServerProxy("http://"+self.hostname+":8006")
+				if core.cfg['DEBUG']: print "DEBUG Legacy Api: using tcp socket."
+		return self.__legacy_server
 
 	def get_metrics(self):
 		"""Return the metrics instance of this node."""
@@ -468,8 +470,7 @@ class ClusterNodeError(Exception):
 	VM_NOT_RUNNING=2
 	SSH_ERROR=3
 	SHELL_ERROR=4
-	LEGACY_ERROR=5
-	NOT_ENOUGH_RAM=6
+	NOT_ENOUGH_RAM=5
 
 	def __init__(self, nodename, type, value=""):
 		self.nodename=nodename
@@ -485,8 +486,6 @@ class ClusterNodeError(Exception):
 			msg = "SSH failure: " + self.value
 		elif(self.type==self.SHELL_ERROR):
 			msg = "Local Exec failure: " + self.value
-		elif(self.type==self.LEGACY_ERROR):
-			msg = "Legacy-API unavailable: " + self.value + " is not available on remote host."
 		elif(self.type==self.NOT_ENOUGH_RAM):
 			msg = "There is not enough ram: " + self.value
 		else:
@@ -496,7 +495,6 @@ class ClusterNodeError(Exception):
 
 
 if __name__ == "__main__":
-	"""Main is used to run test case."""
 	pass
 
 
