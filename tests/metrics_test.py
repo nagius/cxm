@@ -41,6 +41,15 @@ class MetricsTests(MockerTestCase):
 		xs_mock = Mocker()
 		xs = xs_mock.mock()
 		xs.login_with_password("root", "")
+		xs.xenapi.VM.get_all_records()
+		xs_mock.result({
+			'6ab3fd4c-d1d3-158e-d72d-3fc4831ae1e5': {
+				'domid': '73',
+				'name_label': 'test1.home.net'},
+			'7efcbac8-4714-88ee-007c-0246a3cb52b8': {
+				'name_label': 'test2.home.net',
+				'domid': '72'}
+		})
 		xs_mock.replay()
 
 		# Mock XenAPI Server
@@ -157,7 +166,7 @@ class MetricsTests(MockerTestCase):
 				'domid': '72'}
 			}
 
-		val= {  'test1.home.net':{ 'Read': 6, 'Write': 68 }, 
+		val= {  'test1.home.net': {'Read': 6, 'Write': 68 }, 
 				'test2.home.net': {'Read': 1931, 'Write': 2293}}
 
 		xs = self.mocker.mock()
@@ -167,6 +176,28 @@ class MetricsTests(MockerTestCase):
 		self.metrics.server=xs
 
 		result=self.metrics.get_vms_disk_io()
+		self.assertEqual(result, val)
+
+	def test_get_vms_disk_io_rate(self):
+		vm_records= {
+			'6ab3fd4c-d1d3-158e-d72d-3fc4831ae1e5': {
+				'domid': '73',
+				'name_label': 'test1.home.net'},
+			 '7efcbac8-4714-88ee-007c-0246a3cb52b8': {
+				'name_label': 'test2.home.net',
+				'domid': '72'}
+			}
+
+		val= {  'test1.home.net': {'Read': 0, 'Write': 0 }, 
+				'test2.home.net': {'Read': 0, 'Write': 0 }}
+
+		xs = self.mocker.mock()
+		xs.xenapi.VM.get_all_records()
+		self.mocker.result(vm_records)
+		self.mocker.replay()
+		self.metrics.server=xs
+		
+		result=self.metrics.get_vms_disk_io_rate()
 		self.assertEqual(result, val)
 
 	def test_get_vms_net_io(self):

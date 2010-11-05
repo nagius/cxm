@@ -45,6 +45,10 @@ class Metrics:
 		self.get_vms_cpu_usage()
 		self.get_vms_cpu_usage()
 
+		# Initialize io_cache
+		self.io_cache={'timestamp': time.time()}
+		self.get_vms_disk_io_rate() # First call to feed cache with current value
+
 	def __repr__(self):
 		return "<Metrics Instance : "+ self.node.hostname +">"
 
@@ -74,7 +78,7 @@ class Metrics:
 						(dom_info['cpu_time']-self.cpu_cache[dom_info['name']])*100/(timestamp-self.cpu_cache['timestamp']),1
 					)
 
-				# Update cpu_cache with new the computed value
+				# Update cpu_cache with the new value
 				self.cpu_cache[dom_info['name']]=dom_info['cpu_time']
 
 			except KeyError:
@@ -86,7 +90,7 @@ class Metrics:
 		return cpu
 
 	def get_vms_disk_io(self,dom_recs=None):
-		"""Return a dict with disks'IO stats for all runing VMs."""
+		"""Return a dict with disks'IO stats for all runing VMs (including Dom0)."""
 		if not dom_recs: dom_recs = self.server.xenapi.VM.get_all_records()
 
 		io=dict()
@@ -97,6 +101,37 @@ class Metrics:
 				self.node.run("cat /sys/bus/xen-backend/devices/vbd-" + dom_rec['domid'] + "-*/statistics/wr_req 2>/dev/null").readlines() ]
 			io[dom_rec['name_label']]={ 'Read': sum(io_read), 'Write': sum(io_write) }
 		return io
+
+	def get_vms_disk_io_rate(self,dom_recs=None):
+		"""Return a dict with disks'IO bandwith (ie. IO/s) for all runing VMs."""
+		io_rate=dict()
+
+		# Timestamp used to compute per second rate
+		timestamp=time.time()
+
+		io=self.get_vms_disk_io(dom_recs)
+		for vm in io.keys():
+			io_rate[vm]=dict()
+			try:
+				# Compute io rate
+				io_rate[vm]['Read']=int((io[vm]['Read']-self.io_cache[vm]['Read'])/(timestamp-self.io_cache['timestamp']))
+				io_rate[vm]['Write']=int((io[vm]['Write']-self.io_cache[vm]['Write'])/(timestamp-self.io_cache['timestamp']))
+
+			except KeyError: # First call, don't feed io_rate: return an empty dict
+				# Initialize io_cache with the current value
+				self.io_cache[vm]={'Read': io[vm]['Read'], 'Write': io[vm]['Write']}
+			except ZeroDivisionError:
+				io_rate[vm]['Read']=0
+				io_rate[vm]['Write']=0
+
+			# Update io_cache with the current value
+			self.io_cache[vm]['Read']=io[vm]['Read']
+			self.io_cache[vm]['Write']=io[vm]['Write']
+
+		# Update timestamp of cached values
+		self.io_cache['timestamp']=timestamp
+
+		return io_rate
 
 	def get_vms_net_io(self,dom_recs=None):
 		"""Return a dict with network IO stats for all runing VMs."""
