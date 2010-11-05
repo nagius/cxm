@@ -135,7 +135,7 @@ def update_data():
 	for vm in vms:
 		pp.add_str('0.8.'+str(oid)+'.1',vm.name)
 		pp.add_int('0.8.'+str(oid)+'.2',vm.id)
-		pp.add_int('0.8.'+str(oid)+'.3',vms_stat[vm.name]['cpu'])
+		pp.add_int('0.8.'+str(oid)+'.3',"%.1f" % round(vms_stat[vm.name]['cpu'],1))
 		pp.add_int('0.8.'+str(oid)+'.4',vm.get_vcpu())
 		pp.add_int('0.8.'+str(oid)+'.5',vm.get_ram())
 		pp.add_cnt('0.8.'+str(oid)+'.6.2',vms_stat[vm.name]['disk']['Read'])
@@ -148,7 +148,7 @@ def update_data():
 		oid+=1
 
 	# For the dom0
-	pp.add_int('0.8.0.3',vms_stat['Domain-0']['cpu'])
+	pp.add_int('0.8.0.3',"%.1f" % round(vms_stat['Domain-0']['cpu'],1))
 
 
 

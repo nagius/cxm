@@ -38,12 +38,8 @@ class Metrics:
 		self.server=node.server
 
 		# Initialize cpu_cache
-		self.cpu_cache=dict()
-		self.cpu_cache['timestamp']=time.time()-1 # Avoid divide by zero at startup
-
-		# Feed cache with first values (need twice call)
-		self.get_vms_cpu_usage()
-		self.get_vms_cpu_usage()
+		self.cpu_cache={'timestamp': time.time()}
+		self.get_vms_cpu_usage() # First call to feed cache with current value
 
 		# Initialize io_cache
 		self.io_cache={'timestamp': time.time()}
@@ -59,7 +55,13 @@ class Metrics:
 		return host_record['cpu_configuration']['nr_cpus']
 
 	def get_vms_cpu_usage(self):
-		"""Return a dict with the computed CPU usage (in percent) for all runing VMs."""
+		"""
+		Return a dict  with the computed CPU usage for all runing VMs.
+
+		Values are floats with 16 digit of precision (python standard's binary float)
+		If you want a string with less precision, you can use "%.1f" % round(xxx).
+		If you want a number with less precision, you can use the Decimal module.
+		"""
 		cpu=dict()
 
 		# Get domains' infos
@@ -73,16 +75,20 @@ class Metrics:
 			dom_info=main.parse_doms_info(dom)
 
 			try:
-				if self.cpu_cache[dom_info['name']] != 0:
-					cpu[dom_info['name']]="%.1f" % round(
-						(dom_info['cpu_time']-self.cpu_cache[dom_info['name']])*100/(timestamp-self.cpu_cache['timestamp']),1
-					)
-
-				# Update cpu_cache with the new value
-				self.cpu_cache[dom_info['name']]=dom_info['cpu_time']
+				# String version with one digit after dot
+				# See http://stackoverflow.com/questions/56820/round-in-python-doesnt-seem-to-be-rounding-properly for reasons.
+				#cpu[dom_info['name']]="%.1f" % round(
+				#	(dom_info['cpu_time']-self.cpu_cache[dom_info['name']])*100/(timestamp-self.cpu_cache['timestamp']),1
+				#)
+				cpu[dom_info['name']]=(dom_info['cpu_time']-self.cpu_cache[dom_info['name']])*100/(timestamp-self.cpu_cache['timestamp'])
 
 			except KeyError:
-				self.cpu_cache[dom_info['name']]=0
+				pass
+			except ZeroDivisionError:
+				cpu[dom_info['name']]=0
+
+			# Update cpu_cache with the new value
+			self.cpu_cache[dom_info['name']]=dom_info['cpu_time']
 
 		# Update timestamp
 		self.cpu_cache['timestamp']=timestamp
