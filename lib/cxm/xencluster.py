@@ -279,6 +279,16 @@ class XenCluster:
 		if not solution:
 			print "No better solution found with a minimal gain of %s%%." % core.cfg['LB_MIN_GAIN']
 		else:
+			# Ask the user for a confirmation
+			if not core.cfg['QUIET'] :
+				print "Here is the proposed migration plan:"
+				for path in solution.get_path():
+					print "  -> Migrate",path['vm'],"from",path['src'],"to",path['dst']
+
+				if(raw_input("Proceed ? [y/N]:").upper() != "Y"):
+					print "Aborded by user."
+					return
+
 			# Do migrations to put the cluster in the selected state
 			for path in solution.get_path():
 				if not core.cfg['QUIET'] : print "Migrating",path['vm'],"from",path['src'],"to",path['dst'],"..."
