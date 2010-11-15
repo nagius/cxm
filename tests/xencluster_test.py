@@ -537,6 +537,98 @@ class XenClusterTests(MockerTestCase):
 		vm2_mocker.verify()
 		vm3_mocker.verify()
 
+	def test_loadbalance(self):
+		cxm.core.cfg['LB_MIN_GAIN']=10
+
+		migrate = self.mocker.replace(cxm.xencluster.XenCluster.migrate)
+		migrate('vm1', 'node1', 'node3')
+		self.mocker.replay()
+
+		vm1_mocker = Mocker()
+		vm1 = vm1_mocker.mock()
+		vm1.name
+		vm1_mocker.result('vm1')
+		vm1_mocker.count(1,None)
+		vm1.get_ram()
+		vm1_mocker.result(128)
+		vm1_mocker.replay()
+
+		vm2_mocker = Mocker()
+		vm2 = vm2_mocker.mock()
+		vm2.name
+		vm2_mocker.result('vm2')
+		vm2_mocker.count(1,None)
+		vm2.get_ram()
+		vm2_mocker.result(512)
+		vm2_mocker.replay()
+
+		vm3_mocker = Mocker()
+		vm3 = vm3_mocker.mock()
+		vm3.name
+		vm3_mocker.result('vm3')
+		vm3_mocker.count(1,None)
+		vm3.get_ram()
+		vm3_mocker.result(256)
+		vm3_mocker.replay()
+
+		n1_mocker = Mocker()
+		n1 = n1_mocker.mock()
+		n1.get_vms()
+		n1_mocker.result([vm1,vm2])
+		n1_mocker.count(1,None)
+		n1.get_hostname()
+		n1_mocker.result("node1")
+		n1_mocker.count(1,None)
+		n1.metrics.get_available_ram()
+		n1_mocker.result(512)
+		n1.metrics.get_vms_cpu_usage()
+		n1_mocker.result({'vm1': 12.0, 'vm2': 99.0})
+		n1.metrics.get_vms_disk_io_rate()
+		n1_mocker.result({'vm1': {'Read': 0, 'Write': 20 },'vm2': {'Read': 100, 'Write': 2 }})
+		n1_mocker.replay()
+
+		n2_mocker = Mocker()
+		n2 = n2_mocker.mock()
+		n2.get_vms()
+		n2_mocker.result([vm3])
+		n2.get_hostname()
+		n2_mocker.result("node2")
+		n2_mocker.count(1,None)
+		n2.metrics.get_available_ram()
+		n2_mocker.result(512)
+		n2.metrics.get_vms_cpu_usage()
+		n2_mocker.result({'vm3': 30.0})
+		n2.metrics.get_vms_disk_io_rate()
+		n2_mocker.result({'vm3': {'Read': 10, 'Write': 20 }})
+		n2_mocker.replay()
+
+		n3_mocker = Mocker()
+		n3 = n3_mocker.mock()
+		n3.get_vms()
+		n3_mocker.result([])
+		n3.get_hostname()
+		n3_mocker.result("node3")
+		n3_mocker.count(1,None)
+		n3.metrics.get_available_ram()
+		n3_mocker.result(512)
+		n3.metrics.get_vms_cpu_usage()
+		n3_mocker.result({})
+		n3.metrics.get_vms_disk_io_rate()
+		n3_mocker.result({})
+		n3_mocker.replay()
+
+		self.cluster.nodes={'node1': n1, 'node2': n2, 'node3': n3}
+
+		self.cluster.loadbalance()
+
+		n1_mocker.verify()
+		n2_mocker.verify()
+		n3_mocker.verify()
+		vm1_mocker.verify()
+		vm2_mocker.verify()
+		vm3_mocker.verify()
+		
+
 if __name__ == "__main__":
 	unittest.main()   
 

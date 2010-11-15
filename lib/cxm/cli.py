@@ -223,6 +223,13 @@ def cxm_eject(cluster, options):
 	if not core.cfg['QUIET'] : print "Ejecting all running VM from",node.get_hostname(),"..."
 	cluster.emergency_eject(node)
 
+def cxm_loadbalance(cluster):
+	"""Trigger the loadbalancer."""
+
+	if not core.cfg['QUIET'] : print "Starting loadbalancer..."
+	cluster.loadbalance()
+
+
 def main():
 	"""Run cxm command line interface."""
 	parser = OptionParser(version="%prog "+core.VERSION)
@@ -244,7 +251,7 @@ def main():
 					  action="store_true", dest="console", default=False,
 					  help="Attach console to the domain as soon as it has started.")
 
-	parser.usage = "%prog create <vm>|shutdown <vm>|migrate <vm> <dest>|search <vm>|console <vm>|activate <vm>|deactivate <vm>|infos|list|check|eject [option] "
+	parser.usage = "%prog create <vm>|shutdown <vm>|migrate <vm> <dest>|search <vm>|console <vm>|activate <vm>|deactivate <vm>|loadbalance|infos|list|check|eject [option] "
 
 	(options, args) = parser.parse_args()
 
@@ -294,6 +301,9 @@ def main():
 		elif args[0].startswith("ej"):	# eject
 			# Migrate all vm to others nodes
 			cxm_eject(cluster,options)
+		elif args[0].startswith("lo"):	# loadbalance
+			# Manually trigger the loadbalancer
+			cxm_loadbalance(cluster)
 		else:
 			parser.print_help()
 	except IndexError:

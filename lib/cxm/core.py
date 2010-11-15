@@ -28,10 +28,11 @@
 
 # TODO snapshot
 # TODO Add a cache to metrics.get_ram_infos() ?
+# Formaliser documentation des fonctions
 
 
 """
-This module provides an oriented object API for managing Xen Cluster.
+This package provides an oriented object API for managing Xen Cluster.
 
 Main classes are :
   - XenCluster : object used to do cluster wide actions
@@ -41,17 +42,21 @@ Main classes are :
 
 Some method could raise ClusterError and ClusterNodeError exceptions.
 
-This module require Xen's modules xen/xm for XenAPI access 
+This package require Xen's modules xen/xm for XenAPI access 
 and paramiko module for SSH links.
 
-Some globals configurations variables are avalaibles via the dict cfg[] to change the behavior of this module :
+Some globals variables are avalaibles in the configuration file "/etc/xen/cxm.conf" 
+to change the behavior of this package :
 
- - DEBUG (bool) : Print additionnal information about internals datas
- - QUIET (bool) : Just print essentials outpouts (usefull for batch parsing)
+ - DEBUG (bool) : Print additionnals informations about internals datas.
+ - QUIET (bool) : Just print essentials outpouts (usefull for batch parsing).
  - USESSH (bool) : Don't use the XenAPI, send (mostly) all command via SSH.
  - NOREFRESH (bool) : Don't refresh LVM metadatas (DANGEROUS).
  - VMCONF_DIR (string) : Path to find the VM's configurations files.
  - PATH (string) : Default path to find extern binaries (Only usefull for testing).
+ - LB_MAX_VM_PER_NODE (int) : Maximum number of VM on each node (used by loadbalancer). 
+ - LB_MAX_LAYER (int) : Maximum number of migration allowed for the loadbalancer.
+ - LB_MIN_GAIN (int) : % minimun gain of selected solution by the loadbalancer.
 
 """
 
@@ -68,6 +73,9 @@ cfg = {
 	'DEBUG': False,
 	'QUIET': False,
 	'USESSH': False,
+	'LB_MAX_VM_PER_NODE': 20,
+	'LB_MAX_LAYER': 4,
+	'LB_MIN_GAIN': 5,
 	}
 
 

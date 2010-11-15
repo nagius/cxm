@@ -27,10 +27,10 @@
 
 """This module hold the XenCluster class."""
 
-import os, platform
+import os, platform, time
 from sets import Set
 
-import core, node, vm
+import core, node, vm, loadbalancer
 from node import ClusterNodeError
 
 class XenCluster:
@@ -145,7 +145,7 @@ class XenCluster:
 			# Not enough ram, switching to another node
 			old_node=node
 
-			# Get the node with the highest free ram
+			# Get the node with the highest free ram (first fit increasing algorithm)
 			pool=self.get_nodes()
 			pool.sort(key=lambda x: x.metrics.get_free_ram(), reverse=True)
 			node=pool[0]
@@ -243,10 +243,51 @@ class XenCluster:
 		if len(failed)>0:
 			raise ClusterNodeError(ejected_node.get_hostname(),ClusterNodeError.NOT_ENOUGH_RAM,"Cannot migrate "+", ".join([vm.name for vm in failed]))
 	
+	def loadbalance(self):
+		"""
+		Run the loadbalancer on the cluster and migrate vm accordingly.
+		See cxm.loadbalancer module for details about algorithm.
+		"""
+		if not core.cfg['QUIET']: print "Recording metrics..."
+
+		current_state={}
+		vm_metrics={}
+		node_metrics={}
+		for node in self.get_nodes():
+			vms = node.get_vms()
+
+			# Get current cluster state
+			current_state[node.get_hostname()]=[ vm.name for vm in vms ]
+
+			# Get node's metrics
+			node_metrics[node.get_hostname()]={'ram': node.metrics.get_available_ram()}
+
+			# Get VM's metrics
+			cpu=node.metrics.get_vms_cpu_usage()
+			io=node.metrics.get_vms_disk_io_rate()
+			for vm in vms:
+				vm_metrics[vm.name]={}
+				vm_metrics[vm.name]['ram']=vm.get_ram()
+				vm_metrics[vm.name]['cpu']=cpu[vm.name]
+				vm_metrics[vm.name]['io']=io[vm.name]['Read']+io[vm.name]['Write']
+
+		# Initialize loadbalancer
+		lb=loadbalancer.LoadBalancer(current_state)
+		lb.set_metrics(vm_metrics, node_metrics)
+		solution=lb.get_solution()
+
+		if not solution:
+			print "No better solution found with a minimal gain of %s%%." % core.cfg['LB_MIN_GAIN']
+		else:
+			# Do migrations to put the cluster in the selected state
+			for path in solution.get_path():
+				if not core.cfg['QUIET'] : print "Migrating",path['vm'],"from",path['src'],"to",path['dst'],"..."
+				self.migrate(path['vm'], path['src'], path['dst'])
+
 	def check(self):
 		"""Perform a sanity check of the cluster.
 
-		Return a corresponding exit code (0=sucess, 0!=error)
+		Return a corresponding exit code (0=success, 0!=error)
 		"""
 		if not core.cfg['QUIET']: print "Checking for duplicate VM..."
 		safe=True
