@@ -231,7 +231,7 @@ class NodeTests(MockerTestCase):
 		
 		self.assertRaises(cxm.node.ClusterNodeError,self.node.migrate,vmname, self.node) 
 		
-	def test_shutdown_running(self):
+	def test_shutdown__running(self):
 		vmname="test1.home.net"
 
 		xs = self.mocker.mock()
@@ -246,8 +246,22 @@ class NodeTests(MockerTestCase):
 		
 		self.node.shutdown(vmname)		
 
+	def test_shutdown__hard_running(self):
+		vmname="test1.home.net"
 
-	def test_shutdown_not_running(self):
+		xs = self.mocker.mock()
+		xs.xenapi.VM.get_by_name_label(vmname)
+		self.mocker.result(['39cb706a-eae1-b5cd-2ed0-fbbd7cbb8ee8'])
+		xs.xenapi.VM.hard_shutdown('39cb706a-eae1-b5cd-2ed0-fbbd7cbb8ee8')
+		xs.xenapi.VM.get_by_name_label(vmname)
+		self.mocker.count(2)
+		self.mocker.result([])
+		self.mocker.replay()
+		self.node.server=xs
+		
+		self.node.shutdown(vmname, False)		
+
+	def test_shutdown__not_running(self):
 		vmname="test1.home.net"
 
 		xs = self.mocker.mock()

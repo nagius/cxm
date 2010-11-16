@@ -324,24 +324,32 @@ class Node:
 		"""Delete the autostart link for the specified vm."""
 		self.run("rm -f /etc/xen/auto/"+vmname)
 		
-	def shutdown(self, vmname):
+	def shutdown(self, vmname, clean=True):
 		"""Shutdown the specified vm.
 
+		If 'clean' is false, do a hard shutdown (destroy).
 		Raise a ClusterNodeError if the vm is not running.
 		"""
-		MAX_TIMOUT=60	# Time waiting for VM shutdown 
+		MAX_TIMOUT=20	# Time waiting for VM shutdown 
 
 		if core.cfg['USESSH']:
-			self.run("xm shutdown " + vmname)
+			if clean:
+				self.run("xm shutdown " + vmname)
+			else:
+				self.run("xm destroy " + vmname)
 		else:
 			try:
 				vm=self.server.xenapi.VM.get_by_name_label(vmname)[0]
 			except IndexError:
 				raise ClusterNodeError(self.get_hostname(),ClusterNodeError.VM_NOT_RUNNING,vmname)
-			self.server.xenapi.VM.clean_shutdown(vm)
+
+			if clean:
+				self.server.xenapi.VM.clean_shutdown(vm)
+			else:
+				self.server.xenapi.VM.hard_shutdown(vm)
 
 		# Wait until VM is down
-		time.sleep(2)
+		time.sleep(1)
 		timout=0
 		while(self.is_vm_started(vmname) and timout<=MAX_TIMOUT):
 			time.sleep(1)

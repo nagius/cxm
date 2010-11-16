@@ -2,7 +2,7 @@
 .SH NAME
 cxm \- Clustered Xen Management tool
 .SH SYNOPSIS
-cxm create <vm> | shutdown <vm> | migrate <vm> <dest> | search <vm> | console <vm> | activate <vm> | deactivate <vm> | loadbalance | infos | list | check | eject [option]
+cxm create <vm> | shutdown <vm> | destroy <vm> | migrate <vm> <dest> | search <vm> | console <vm> | activate <vm> | deactivate <vm> | loadbalance | infos | list | check | eject [option]
 .SH DESCRIPTION
 This command is used to manage virtuals machines on a cluster of Xen nodes.
 .SS "options:"
@@ -41,6 +41,9 @@ Start the virtual machine. If \fB\-\-force\-node\fR is not given, the vm will be
 .SS "shutdown <fqdn>"
 .TP
 Shutdown the virtual machine. If \fB\-\-force\-node\fR is not given, the vm will be search on the cluster.
+.SS "destroy <fqdn>"
+.TP
+Immediately terminate the virtual machine. If \fB\-\-force\-node\fR is not given, the vm will be search on the cluster.
 .SS "migrate <fqdn> <dest_node>"
 .TP
 Live migrate the virtual machine. If \fB\-\-force\-node\fR is not given, the vm will be search on the cluster.

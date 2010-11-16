@@ -105,7 +105,7 @@ def cxm_migrate(cluster, vm, dest, options):
 	cluster.migrate(vm, src_hostname, dest)
 
 def cxm_shutdown(cluster, vm, options):
-	"""Shutdown the specified VM. 
+	"""Properly shutdown the specified VM. 
 
 	If options.node is not given, search for the vm over the cluster.
 	"""
@@ -113,7 +113,23 @@ def cxm_shutdown(cluster, vm, options):
 	node=select_node_by_vm(cluster, vm, options)
 
 	if not core.cfg['QUIET'] : print "Shutting down",vm,"on",node.get_hostname(),"..."
-	node.shutdown(vm)
+	node.shutdown(vm, True)
+
+def cxm_destroy(cluster, vm, options):
+	"""Terminate the specified VM immediately. 
+
+	If options.node is not given, search for the vm over the cluster.
+	"""
+
+	node=select_node_by_vm(cluster, vm, options)
+
+	if not core.cfg['QUIET']: 
+		print "Destroying",vm,"on",node.get_hostname(),"..."
+		if(raw_input("Are you really sure ? [y/N]:").upper() != "Y"):
+			print "Aborded by user."
+			return
+
+	node.shutdown(vm, False)
 
 def cxm_console(cluster, vm, options):
 	"""Attach local console to the given VM."""
@@ -251,7 +267,7 @@ def main():
 					  action="store_true", dest="console", default=False,
 					  help="Attach console to the domain as soon as it has started.")
 
-	parser.usage = "%prog create <vm>|shutdown <vm>|migrate <vm> <dest>|search <vm>|console <vm>|activate <vm>|deactivate <vm>|loadbalance|infos|list|check|eject [option] "
+	parser.usage = "%prog create <vm>|shutdown <vm>|destroy <vm>|migrate <vm> <dest>|search <vm>|console <vm>|activate <vm>|deactivate <vm>|loadbalance|infos|list|check|eject [option] "
 
 	(options, args) = parser.parse_args()
 
@@ -262,6 +278,9 @@ def main():
 
 	# Command-line parsing similar to 'xm'
 	try:
+		if(len(args[0])<2):
+			raise IndexError("Missing argument")
+
 		cluster=xencluster.XenCluster()
 		atexit.register(cluster.__del__) # Workaround bug thread on exit
 
@@ -280,7 +299,7 @@ def main():
 		elif args[0].startswith("ac"):	# activate
 			# Activate LVs of a VM
 			cxm_activate(cluster, os.path.basename(args[1]), options)
-		elif args[0].startswith("de"):	# deactivate
+		elif args[0].startswith("dea"):	# deactivate
 			# Desactivate LVs of a VM
 			cxm_deactivate(cluster, os.path.basename(args[1]), options)
 		elif args[0].startswith("in"):	# infos
@@ -292,6 +311,9 @@ def main():
 		elif args[0].startswith("sh"):	# shutdown
 			# Cleanly shutdown the VM
 			cxm_shutdown(cluster, os.path.basename(args[1]), options)
+		elif args[0].startswith("des"):	# destroy
+			# Destroy the VM without care
+			cxm_destroy(cluster, os.path.basename(args[1]), options)
 		elif args[0].startswith("li"):	# list
 			# List all VM
 			cxm_list(cluster, options)
