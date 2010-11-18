@@ -231,8 +231,12 @@ start()
 	return; 
     fi
 
+	# Only one refresh before starting
+	VG=`vgs -o vg_name --noheading`
+	lvchange --refresh $VG
+
 	# Initiate the cluster 
-	cxm init
+	cxm init --no-refresh
 
     if contains_something "$XENDOMAINS_AUTO"
     then
@@ -254,7 +258,7 @@ start()
 	    if [ $? -eq 0 ] || is_running $dom; then
 		echo -n "(skip)"
 	    else
-		XMC=`cxm create --quiet $dom --force-node=$(hostname)`
+		XMC=`cxm create --quiet $dom --force-node=$(hostname) --no-refresh`
 		if [ $? -ne 0 ]; then
 		    echo -e "\nAn error occurred while creating domain ${dom##*/}: $XMC\n"
 		    rc_failed $?
