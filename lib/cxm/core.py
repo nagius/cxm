@@ -63,7 +63,7 @@ to change the behavior of this package :
 import os, sys
 
 
-VERSION="0.5.1"
+VERSION="0.6.0"
 
 # Default configuration
 cfg = { 
