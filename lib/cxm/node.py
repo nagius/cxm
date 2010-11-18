@@ -26,7 +26,7 @@
 
 """This module hold the Node class."""
 
-import platform, paramiko, re, time, popen2, socket, StringIO
+import platform, paramiko, re, time, popen2, socket, StringIO, sys
 from xen.xm import XenAPI
 from xen.xm import main
 from xen.util.xmlrpcclient import ServerProxy
@@ -330,7 +330,7 @@ class Node:
 		If 'clean' is false, do a hard shutdown (destroy).
 		Raise a ClusterNodeError if the vm is not running.
 		"""
-		MAX_TIMOUT=20	# Time waiting for VM shutdown 
+		MAX_TIMOUT=30	# Time waiting for VM shutdown 
 
 		if core.cfg['USESSH']:
 			if clean:
@@ -352,6 +352,9 @@ class Node:
 		time.sleep(1)
 		timout=0
 		while(self.is_vm_started(vmname) and timout<=MAX_TIMOUT):
+			if not core.cfg['QUIET']: 
+				sys.stdout.write(".")
+				sys.stdout.flush()
 			time.sleep(1)
 			timout += 1
 
