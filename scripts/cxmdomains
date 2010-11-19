@@ -231,6 +231,8 @@ start()
 	return; 
     fi
 
+	touch $LOCKFILE
+
 	# Only one refresh before starting
 	VG=`vgs -o vg_name --noheading`
 	lvchange --refresh $VG
@@ -240,7 +242,6 @@ start()
 
     if contains_something "$XENDOMAINS_AUTO"
     then
-	touch $LOCKFILE
 	echo -n "Starting auto clustered Xen domains:"
 	# We expect config scripts for auto starting domains to be in
 	# XENDOMAINS_AUTO - they could just be symlinks to files elsewhere
