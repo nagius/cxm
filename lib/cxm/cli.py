@@ -208,7 +208,7 @@ def cxm_list(cluster, options):
 		if not core.cfg['QUIET']: 
 			print "-----" + "-" * len(node.get_hostname())
 			print '\n    %-40s %4s  %5s  %6s' % ("Name","Mem", "VCPUs","State")
-		for vm in node.get_vms():
+		for vm in sorted(node.get_vms(),key=lambda x: x.name):
 			print '    %-40s %4d  %5d  %6s' % (vm.name, vm.ram, vm.vcpu, vm.state)
 		
 def cxm_check(cluster):
