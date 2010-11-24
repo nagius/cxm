@@ -254,6 +254,7 @@ class XenCluster:
 		vm_metrics={}
 		node_metrics={}
 		for node in self.get_nodes():
+			node.metrics.init_cache() # Early call to increase timeslice used to compute rates
 			vms = node.get_vms()
 
 			# Get current cluster state

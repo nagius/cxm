@@ -34,16 +34,26 @@ class Metrics:
 	"""This class is used to retrieve metrics of its node and vms."""
 
 	def __init__(self, node):
+		"""Instanciate new metrics associated with the given node."""
 		self.node=node
 		self.server=node.server
 
 		# Initialize cpu_cache
 		self.cpu_cache={'timestamp': time.time()}
-		self.get_vms_cpu_usage() # First call to feed cache with current value
 
 		# Initialize io_cache
 		self.io_cache={'timestamp': time.time()}
-		self.get_vms_disk_io_rate() # First call to feed cache with current value
+
+	def init_cache(self):
+		"""
+		Initialize the cache for rate computation.
+
+		If you don't call this function, the first call of get_vms_cpu_usage() and 
+		get_vms_disk_io_rate() will return dict with zero values.
+		"""
+		# First call to feed cache with current value
+		self.get_vms_cpu_usage() 
+		self.get_vms_disk_io_rate()
 
 	def __repr__(self):
 		return "<Metrics Instance : "+ self.node.hostname +">"
@@ -56,7 +66,7 @@ class Metrics:
 
 	def get_vms_cpu_usage(self):
 		"""
-		Return a dict  with the computed CPU usage for all runing VMs.
+		Return a dict with the computed CPU usage for all runing VMs.
 
 		Values are floats with 16 digit of precision (python standard's binary float)
 		If you want a string with less precision, you can use "%.1f" % round(xxx).
@@ -82,8 +92,8 @@ class Metrics:
 				#)
 				cpu[dom_info['name']]=(dom_info['cpu_time']-self.cpu_cache[dom_info['name']])*100/(timestamp-self.cpu_cache['timestamp'])
 
-			except KeyError:
-				pass
+			except KeyError: # First call: return zero values
+				cpu[dom_info['name']]=0
 			except ZeroDivisionError:
 				cpu[dom_info['name']]=0
 
@@ -123,9 +133,14 @@ class Metrics:
 				io_rate[vm]['Read']=int((io[vm]['Read']-self.io_cache[vm]['Read'])/(timestamp-self.io_cache['timestamp']))
 				io_rate[vm]['Write']=int((io[vm]['Write']-self.io_cache[vm]['Write'])/(timestamp-self.io_cache['timestamp']))
 
-			except KeyError: # First call, don't feed io_rate: return an empty dict
+			except KeyError: # First call
 				# Initialize io_cache with the current value
 				self.io_cache[vm]={'Read': io[vm]['Read'], 'Write': io[vm]['Write']}
+
+				# Return zero values for the first call
+				io_rate[vm]['Read']=0
+				io_rate[vm]['Write']=0
+
 			except ZeroDivisionError:
 				io_rate[vm]['Read']=0
 				io_rate[vm]['Write']=0
