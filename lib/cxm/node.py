@@ -330,7 +330,7 @@ class Node:
 		If 'clean' is false, do a hard shutdown (destroy).
 		Raise a ClusterNodeError if the vm is not running.
 		"""
-		MAX_TIMOUT=30	# Time waiting for VM shutdown 
+		MAX_TIMOUT=50	# Time waiting for VM shutdown 
 
 		if core.cfg['USESSH']:
 			if clean:
