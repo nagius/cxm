@@ -39,7 +39,7 @@ class CoreTests(unittest.TestCase):
 		self.assertEqual(result, values)
 
 	def test_api_version(self):
-		version = "0.5.1"
+		version = "0.6.1"
 
 		result=cxm.core.get_api_version()
 		self.assertEqual(result, version)

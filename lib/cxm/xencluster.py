@@ -157,9 +157,10 @@ class XenCluster:
 
 			if not core.cfg['QUIET']: print " -> Not enough ram, starting it on %s." % node.get_hostname()
 
+		# Start the VM
 		self.activate_vm(node,vmname)
 		try:
-			node.start_vm(vmname,console)
+			node.start_vm(vmname)
 		except Exception, e:
 			node.deactivate_lv(vmname)
 			raise e
@@ -168,6 +169,13 @@ class XenCluster:
 		if 'old_node' in locals():
 			old_node.disable_vm_autostart(vmname)
 			node.enable_vm_autostart(vmname)
+
+		# Attach to the console without forking
+		if console:
+			if node.is_local_node():
+				node.get_vm(vmname).attach_console()
+			else:
+				print "Warning : cannot attach console when using remote Xen-API."
 			
 	def migrate(self, vmname, src_hostname, dst_hostname):
 		"""Live migration of specified VM from src to dst.

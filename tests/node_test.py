@@ -199,14 +199,14 @@ class NodeTests(MockerTestCase):
 		vmname="test1.home.net"
 
 		xm = self.mocker.mock()
-		xm.server = None
-		bidon = xm.SERVER_LEGACY_XMLRPC
+		xm.server = ANY
+		bidon = xm.SERVER_XEN_API
 		xm.serverType=None
-		xm.xm_importcommand('create', [cxm.core.cfg['VMCONF_DIR'] + vmname])
+		xm.xm_importcommand('create', [cxm.core.cfg['VMCONF_DIR'] + vmname, '--skipdtd'])
 		self.mocker.replay()
 
 		cxm.node.main=xm
-		self.node.start_vm(vmname,False)
+		self.node.start_vm(vmname)
 	
 	def test_migrate_running(self):
 		vmname="test1.home.net"

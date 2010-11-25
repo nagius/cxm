@@ -159,7 +159,7 @@ class XenClusterTests(MockerTestCase):
 		self.mocker.result(False)
 		node.deactivate_lv(vmname)
 		node.activate_lv(vmname)
-		node.start_vm(vmname,False)
+		node.start_vm(vmname)
 		self.mocker.replay()
 
 		self.cluster.nodes={platform.node(): node}
@@ -189,7 +189,7 @@ class XenClusterTests(MockerTestCase):
 		n2_mocker.result(False)
 		node2.deactivate_lv(vmname)
 		node2.activate_lv(vmname)
-		node2.start_vm(vmname,False)
+		node2.start_vm(vmname)
 		node2.enable_vm_autostart(vmname)
 		n2_mocker.replay()
 
@@ -225,7 +225,7 @@ class XenClusterTests(MockerTestCase):
 		self.mocker.result(False)
 		node.deactivate_lv(vmname)
 		node.activate_lv(vmname)
-		node.start_vm(vmname,False)
+		node.start_vm(vmname)
 		self.mocker.throw(Exception)
 		node.deactivate_lv(vmname)
 		self.mocker.replay()
