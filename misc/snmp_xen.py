@@ -31,11 +31,11 @@ import platform, syslog, sys, time, errno
 # General stuff
 POOLING_INTERVAL=60			# Update timer, in second
 MAX_RETRY=10				# Number of successives retry in case of error
-OID_BASE=".1.3.6.1.3.53.8"
+OID_BASE=".1.3.6.1.3.53.3.54.1"
 
 # Configure cxm module
-cxm.core.DEBUG=False
-cxm.core.QUIET=True
+cxm.core.cfg['DEBUG']=False
+cxm.core.cfg['QUIET']=True
 
 # Globals vars
 pp=None
@@ -45,42 +45,77 @@ node=None
 """
  Map of snmp_xen MIB :
 
-	- 0:hostname
-		- 1:nr_cpu
-		- 2:nr_vm
-		- 3:nr_irq
-		- 4:ram 
-			+ 1:used ram
-			+ 2:free ram
-		- 5:disks
-			- #: 
-				+ 1:name
-				+ 2:read
-				+ 3:write
-		- 6:bridges
-			- #:
-				+ 1:name
-				+ 2:Rx
-				+ 3:Tx
-		- 7:vlans
-			- #:
-				+ 1:name
-				+ 2:Rx
-				+ 3:Tx
-		- 8:VMs
-			- #:
-				+ 1:name
-				+ 2:id
-				+ 3:%cpu
-				+ 4:nr_vcpu
-				+ 5:allocated ram
-				- 6:disk
-					+ 2:read
-					+ 3:write
-				- 7:net
-					- #:
-						+ 2:Rx
-						+ 3:Tx
+ +--svcXen(54)
+   |     |
+   |     +--XenStats(1)
+   |        |
+   |        +--XenStatsHost(1)
+   |           |
+   |           +-- -R-- String    XenStatsHostName(1)
+   |           |        Textual Convention: DisplayString
+   |           |        Size: 0..255
+   |           +-- -R-- Gauge     XenStatsHostCpu(2)
+   |           +-- -R-- Gauge     XenStatsHostVm(3)
+   |           +-- -R-- Gauge     XenStatsHostIrq(4)
+   |           |
+   |           +--XenStatsHostRam(5)
+   |           |  |
+   |           |  +-- -R-- Gauge     XenStatsHostRamUsed(1)
+   |           |  +-- -R-- Gauge     XenStatsHostRamFree(2)
+   |           |
+   |           +--XenStatsHostDisks(6)
+   |           |  |  Index: XenStatsHostDiskName
+   |           |  |
+   |           |  +-- -R-- String    XenStatsHostDiskName(1)
+   |           |  |        Textual Convention: DisplayString
+   |           |  |        Size: 0..255
+   |           |  +-- -R-- Counter   XenStatsHostDiskRead(2)
+   |           |  +-- -R-- Counter   XenStatsHostDiskWrite(3)
+   |           |
+   |           +--XenStatsHostBridges(7)
+   |           |  |  Index: XenStatsHostBridgeName
+   |           |  |
+   |           |  +-- -R-- String    XenStatsHostBridgeName(1)
+   |           |  |        Textual Convention: DisplayString
+   |           |  |        Size: 0..255
+   |           |  +-- -R-- Counter   XenStatsHostBridgeRx(2)
+   |           |  +-- -R-- Counter   XenStatsHostBridgeTx(3)
+   |           |
+   |           +--XenStatsHostVlans(8)
+   |           |  |  Index: XenStatsHostVlanName
+   |           |  |
+   |           |  +-- -R-- String    XenStatsHostVlanName(1)
+   |           |  |        Textual Convention: DisplayString
+   |           |  |        Size: 0..255
+   |           |  +-- -R-- Counter   XenStatsHostVlanRx(2)
+   |           |  +-- -R-- Counter   XenStatsHostVlanTx(3)
+   |           |
+   |           +--XenStatsHostVms(9)
+   |           |  |  Index: XenStatsHostVmName
+   |           |  |
+   |           |  +-- -R-- String    XenStatsHostVmName(1)
+   |           |  |        Textual Convention: DisplayString
+   |           |  |        Size: 0..255
+   |           |  +-- -R-- INTEGER   XenStatsHostVmId(2)
+   |           |  +-- -R-- Gauge     XenStatsHostVmCpuUsage(3)
+   |           |  +-- -R-- Gauge     XenStatsHostVmVcpu(4)
+   |           |  +-- -R-- Gauge     XenStatsHostVmAllocRam(5)
+   |           |  |
+   |           |  +--XenStatsHostVmDisk(6)
+   |           |     |
+   |           |     +-- -R-- Counter   XenStatsHostVmDiskRead(2)
+   |           |     +-- -R-- Counter   XenStatsHostVmDiskWrite(3)
+   |           |
+   |           +--XenStatsHostVmNet(10)
+   |              |  Index: XenStatsHostVmNetIfName, XenStatsHostVmName
+   |              |
+   |              +-- -R-- String    XenStatsHostVmNetIfName(1)
+   |              |        Textual Convention: DisplayString
+   |              |        Size: 0..255
+   |              +-- -R-- Counter   XenStatsHostVmNetRx(2)
+   |              +-- -R-- Counter   XenStatsHostVmNetTx(3)
+
+
 
 """
 
@@ -98,57 +133,56 @@ def update_data():
 	vms_stat=node.metrics.get_vms_record()
 
 	# Number of VM
-	pp.add_int('0.2',len(vms))
+	pp.add_gau('1.3',len(vms))
 
 	# Number of used IRQ
-	pp.add_int('0.3',node.metrics.get_used_irq())
+	pp.add_gau('1.4',node.metrics.get_used_irq())
 
 	# Ram infos
-	pp.add_int('0.4.1',ram['used'])
-	pp.add_int('0.4.2',ram['free'])
+	pp.add_gau('1.5.1',ram['used'])
+	pp.add_gau('1.5.2',ram['free'])
 
 	# Disk's IO
-	oid=0
 	for name in vgs_io.keys():
-		pp.add_str('0.5.'+str(oid)+'.1',name)
-		pp.add_cnt('0.5.'+str(oid)+'.2',vgs_io[name]['Read'])
-		pp.add_cnt('0.5.'+str(oid)+'.3',vgs_io[name]['Write'])
-		oid+=1
+		oid=pp.encode(name)
+		pp.add_str('1.6.'+oid+'.1',name)
+		pp.add_cnt('1.6.'+oid+'.2',vgs_io[name]['Read'])
+		pp.add_cnt('1.6.'+oid+'.3',vgs_io[name]['Write'])
 
 	# Network's IO
-	oid=0
 	for name in net_io['bridges'].keys():
-		pp.add_str('0.6.'+str(oid)+'.1',name)
-		pp.add_cnt('0.6.'+str(oid)+'.2',net_io['bridges'][name]['Rx'])
-		pp.add_cnt('0.6.'+str(oid)+'.3',net_io['bridges'][name]['Tx'])
-		oid+=1
+		oid=pp.encode(name)
+		pp.add_str('1.7.'+oid+'.1',name)
+		pp.add_cnt('1.7.'+oid+'.2',net_io['bridges'][name]['Rx'])
+		pp.add_cnt('1.7.'+oid+'.3',net_io['bridges'][name]['Tx'])
 
-	oid=0
 	for name in net_io['vlans'].keys():
-		pp.add_str('0.7.'+str(oid)+'.1',name)
-		pp.add_cnt('0.7.'+str(oid)+'.2',net_io['vlans'][name]['Rx'])
-		pp.add_cnt('0.7.'+str(oid)+'.3',net_io['vlans'][name]['Tx'])
-		oid+=1
+		oid=pp.encode(name)
+		pp.add_str('1.8.'+oid+'.1',name)
+		pp.add_cnt('1.8.'+oid+'.2',net_io['vlans'][name]['Rx'])
+		pp.add_cnt('1.8.'+oid+'.3',net_io['vlans'][name]['Tx'])
 
 	# For each VM
-	oid=1
 	for vm in vms:
-		pp.add_str('0.8.'+str(oid)+'.1',vm.name)
-		pp.add_int('0.8.'+str(oid)+'.2',vm.id)
-		pp.add_int('0.8.'+str(oid)+'.3',"%.1f" % round(vms_stat[vm.name]['cpu'],1))
-		pp.add_int('0.8.'+str(oid)+'.4',vm.get_vcpu())
-		pp.add_int('0.8.'+str(oid)+'.5',vm.get_ram())
-		pp.add_cnt('0.8.'+str(oid)+'.6.2',vms_stat[vm.name]['disk']['Read'])
-		pp.add_cnt('0.8.'+str(oid)+'.6.3',vms_stat[vm.name]['disk']['Write'])
+		oid=pp.encode(vm.name)
+		pp.add_str('1.9.'+oid+'.1',vm.name)
+		pp.add_int('1.9.'+oid+'.2',vm.id)
+		pp.add_gau('1.9.'+oid+'.3',"%.1f" % round(vms_stat[vm.name]['cpu'],1))
+		pp.add_gau('1.9.'+oid+'.4',vm.get_vcpu())
+		pp.add_gau('1.9.'+oid+'.5',vm.get_ram())
+		pp.add_cnt('1.9.'+oid+'.6.2',vms_stat[vm.name]['disk']['Read'])
+		pp.add_cnt('1.9.'+oid+'.6.3',vms_stat[vm.name]['disk']['Write'])
 		vifn=0
 		for vif in vms_stat[vm.name]['net']:
-			pp.add_cnt('0.8.'+str(oid)+'.7.'+str(vifn)+'.2',vif['Rx'])
-			pp.add_cnt('0.8.'+str(oid)+'.7.'+str(vifn)+'.3',vif['Tx'])
+			vifoid=pp.encode('eth'+str(vifn))
+			pp.add_str('1.10.'+vifoid+'.'+oid+'.1','eth'+str(vifn))
+			pp.add_cnt('1.10.'+vifoid+'.'+oid+'.2',vif['Rx'])
+			pp.add_cnt('1.10.'+vifoid+'.'+oid+'.3',vif['Tx'])
 			vifn+=1
-		oid+=1
 
 	# For the dom0
-	pp.add_int('0.8.0.3',"%.1f" % round(vms_stat['Domain-0']['cpu'],1))
+	oid=pp.encode("Domain-0")
+	pp.add_gau('1.9.'+oid+'.3',"%.1f" % round(vms_stat['Domain-0']['cpu'],1))
 
 
 
@@ -170,11 +204,12 @@ def main():
 			node=cxm.node.Node(platform.node())
 
 			# Set statics data
-			pp.add_str('0',node.get_hostname())
-			pp.add_int('0.1',int(node.metrics.get_host_nr_cpus()))
-			pp.add_str('0.8.0.1','Domain-0')
-			pp.add_int('0.8.0.2',0)
-			pp.add_int('0.8.0.4',2) # Always 2 VPCU for Dom0 (TODO: ask the Xen-API)
+			pp.add_str('1.1',node.get_hostname())
+			pp.add_gau('1.2',int(node.metrics.get_host_nr_cpus()))
+			oid=pp.encode("Domain-0")
+			pp.add_str('1.9.' + oid + '.1','Domain-0')
+			pp.add_int('1.9.' + oid + '.2',0)
+			pp.add_gau('1.9.' + oid + '.4',2) # Always 2 VPCU for Dom0 (TODO: ask the Xen-API)
 			
 			pp.start(update_data,POOLING_INTERVAL) # Should'nt return (except if updater thread has died)
 
