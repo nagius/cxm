@@ -276,11 +276,16 @@ class Node:
 		if core.cfg['USESSH']:
 			self.run("xm create " + args[0])
 		else:
-			args.append('--skipdtd') # Because file /usr/share/xen/create.dtd is missing
-
-			main.server=self.server
-			main.serverType=main.SERVER_XEN_API
+			# Use Legacy XMLRPC because Xen-API is sometimes buggy
+			main.server=self.get_legacy_server()
+			main.serverType=main.SERVER_LEGACY_XMLRPC
 			main.xm_importcommand("create" , args)
+
+			# Stupid bug : does'nt work with a bridge named xenbr2010 ...
+			#args.append('--skipdtd') # Because file /usr/share/xen/create.dtd is missing
+			#main.server=self.server
+			#main.serverType=main.SERVER_XEN_API
+			#main.xm_importcommand("create" , args)
 
 	def migrate(self, vmname, dest_node):
 		"""Live migration of specified VM to the given node.

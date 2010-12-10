@@ -200,9 +200,9 @@ class NodeTests(MockerTestCase):
 
 		xm = self.mocker.mock()
 		xm.server = ANY
-		bidon = xm.SERVER_XEN_API
+		bidon = xm.SERVER_LEGACY_XMLRPC
 		xm.serverType=None
-		xm.xm_importcommand('create', [cxm.core.cfg['VMCONF_DIR'] + vmname, '--skipdtd'])
+		xm.xm_importcommand('create', [cxm.core.cfg['VMCONF_DIR'] + vmname])
 		self.mocker.replay()
 
 		cxm.node.main=xm
