@@ -35,7 +35,7 @@ import os
 
 from master import MasterService
 
-UNIX_PORT="/var/run/cxmd.socket"
+UNIX_PORT="/var/run/cxmd.socket" # TODO a passer dans fichier
 
 class RemoteRPC(pb.Root):
 
@@ -56,6 +56,9 @@ class LocalRPC(pb.Root):
 	def remote_quit(self):
 		log.msg("Received local exit query. Exitting...")
 		return self._master.stopService()
+
+	def remote_getNodesList(self):
+		return self._master.getNodesList()
 
 class RPCService(Service):
 

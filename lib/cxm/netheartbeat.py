@@ -71,7 +71,6 @@ class UDPListener(DatagramProtocol):
     def datagramReceived(self, data, (host, port)):
 		try:
 			msg=json.loads(data)
-			raise Exception("test")
 		except Exception, e:
 			log.err("Error parsing message : %s" % (e))
 		else:

@@ -108,6 +108,9 @@ class MasterService(Service):
 
 	def getActiveHostname(self):
 		return self.master
+	
+	def getNodesList(self):
+		return self.status.keys()
 
 	# Messages handlers
 	def dispatchMessage(self, data, host):
