@@ -251,6 +251,11 @@ class MasterService(Service):
 
 		if self.master is None:
 			# New active master
+			if DNSCache.getInstance().name not in ALLOWED_NODES:
+				log.warn("I'm not allowed to create a new cluster. Exitting.")
+				self.stopService() 
+				return # Should be better with an exception, but dunno how to handle it with callLater...
+
 			print " I am the new master"
 			self.state=MasterService.ST_ACTIVE
 			self.master=DNSCache.getInstance().name
