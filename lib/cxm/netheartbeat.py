@@ -31,7 +31,7 @@ from twisted.internet.protocol import DatagramProtocol
 from twisted.internet import reactor, task, defer
 from twisted.internet.defer import Deferred
 import time, socket
-from twisted.python import log
+import logs as log
 
 from dnscache import DNSCache
 
@@ -93,7 +93,7 @@ class NetHeartbeat(object):
 
 	def _sendError(self, reason):
 		# TODO a gérer mieux que ca
-		log.msg("Socket write error: %s" % (reason))
+		log.err("Socket write error: %s" % (reason))
 
 	def stop(self):
 		self._call.stop()

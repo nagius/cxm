@@ -32,16 +32,15 @@ from twisted.internet import reactor, error
 from twisted.internet.defer import Deferred
 from twisted.internet import defer
 import time
-from twisted.python import log
 from twisted.spread import pb
 
 from dnscache import DNSCache
 from messages import *
+import logs as log
 from heartbeats import * 
 import core
 from node import Node
 
-# TODO revoir log twisted + log syslog (surcharge log?) (function log() err() debug() )
 # TODO A gérer : perte de connection xenapi / async ?
 # TODO système de reload de la conf sur sighup et localrpc reload
 
@@ -78,7 +77,7 @@ class MasterService(Service):
 
 	def stopService(self):
 		def exit(result):
-			log.msg("Stopping daemon...")
+			log.info("Stopping daemon...")
 			if not reactor._stopped:
 				reactor.stop()
 
@@ -123,8 +122,7 @@ class MasterService(Service):
 			msg=MessageHelper.get(data, host)
 			dispatcher[msg.type()](msg)
 		except MessageError, e:
-			print "Bad message from %s : %s , %s" % (host,data,e)
-			pprint(e)
+			log.err("Bad message from %s : %s , %s" % (host,data,e))
 		except IDontCareException:
 			pass # Discard useless messages
 
@@ -172,31 +170,31 @@ class MasterService(Service):
 	# Active master's stuff
 	def registerNode(self, name):
 		if name not in ALLOWED_NODES:
-			log.msg("Node %s not allowed to join this cluster. Refusing." % (name))
+			log.warn("Node %s not allowed to join this cluster. Refusing." % (name))
 			raise NodeRefusedError("Node "+name+" not allowed to join this cluster.")
 
 		if name in self.status:
-			log.msg("None %s is already joined ! Cannot re-join." % (name))
+			log.warn("None %s is already joined ! Cannot re-join." % (name))
 			raise NodeRefusedError("Node "+name+" already in cluster.")
 
 		try:
 			DNSCache.getInstance().add(name)  # Check if hostname is valid
 		except Exception, e:
-			log.msg("Node %s has an invalid name. Refusing." % (name))
+			log.warn("Node %s has an invalid name. Refusing." % (name))
 			raise NodeRefusedError(e)
 			
 		self.status[name]={}
-		log.msg("Node %s has joined the cluster." % (name))
+		log.info("Node %s has joined the cluster." % (name))
 
 	def unregisterNode(self, name):
 		if name not in self.status:
-			log.msg("Unknown node %s try to quit the cluster." % (name))
+			log.warn("Unknown node %s try to quit the cluster." % (name))
 			raise NodeRefusedError("Unknown node "+name)
 
 		# TODO suppression HB disk
 		del self.status[name]
 		DNSCache.getInstance().delete(name)
-		log.msg("Node %s has quit the cluster." % (name))
+		log.info("Node %s has quit the cluster." % (name))
 			
 
 	# Passive master's stuff
@@ -240,7 +238,7 @@ class MasterService(Service):
 
 		def joinAccepted(result):
 			self.state=MasterService.ST_PASSIVE
-			log.msg("Join successfull, I'm now part of cluster %s." % (CLUSTER_NAME))
+			log.info("Join successfull, I'm now part of cluster %s." % (CLUSTER_NAME))
 			startHeartbeats()
 			
 		def masterConnected(obj):

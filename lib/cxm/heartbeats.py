@@ -28,7 +28,7 @@
 from pprint import pprint
 
 from twisted.application.service import Service
-from twisted.python import log
+import logs as log
 from twisted.internet import defer
 from messages import *
 from netheartbeat import *
@@ -52,7 +52,7 @@ class SlaveHearbeatService(Service):
 	def stopService(self):
 		if self.running:
 			Service.stopService(self)
-			log.msg("Stopping slave heartbeat service...")
+			log.info("Stopping slave heartbeat service...")
 			return self._hb.stop()
 		else:
 			return defer.succeed(None)
@@ -76,7 +76,7 @@ class MasterHeartbeatService(Service):
 	def stopService(self):
 		if self.running:
 			Service.stopService(self)
-			log.msg("Stopping master heartbeat service...")
+			log.info("Stopping master heartbeat service...")
 			return self._hb.stop()
 		else:
 			return defer.succeed(None)

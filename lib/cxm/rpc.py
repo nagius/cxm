@@ -29,7 +29,7 @@ from pprint import pprint
 from twisted.application.service import Service
 from twisted.internet import reactor, error, defer
 #import time
-from twisted.python import log
+import logs as log
 from twisted.spread import pb
 import os
 
@@ -54,7 +54,7 @@ class LocalRPC(pb.Root):
 		self._master=master
 
 	def remote_quit(self):
-		log.msg("Received local exit query. Exitting...")
+		log.info("Received local exit query. Exitting...")
 		return self._master.stopService()
 
 	def remote_getNodesList(self):
@@ -82,7 +82,7 @@ class RPCService(Service):
 	def stopService(self):
 		if self.running:
 			Service.stopService(self)
-			log.msg("Stopping RPC service...")
+			log.info("Stopping RPC service...")
 
 			if self._master.state is MasterService.ST_ACTIVE:
 				d1=defer.maybeDeferred(self._remotePort.stopListening)
