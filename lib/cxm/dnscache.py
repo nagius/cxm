@@ -25,6 +25,7 @@
 
 
 import socket, struct, fcntl
+from twisted.internet import reactor, defer
 
 
 class DNSCache(object):
@@ -47,14 +48,17 @@ class DNSCache(object):
 
 		self.name=socket.getfqdn()
 		self.ip=socket.gethostbyname(self.name)
-		self._resolve[self.ip]=self.name
-		self._reverse[self.name]=self.ip
+		self._feedCache(self.ip, self.name)
 
-	def add(self, name): # TODO async
-		ip=socket.gethostbyname(name)
+	def _feedCache(self, ip, name):
 		self._resolve[ip]=name
-		self._reverse[name]=ip	
+		self._reverse[name]=ip
 
+	def add(self, name): 
+		d=reactor.resolve(name)
+		d.addCallback(self._feedCache, name)
+		return d
+			
 	def delete(self, name):
 		try:
 			del self._resolve[self._reverse[name]]
@@ -67,23 +71,21 @@ class DNSCache(object):
 		self._reverse.clear()
 		self.__init__()
 
-	def get_by_ip(self, ip): # TODO async
+	def get_by_ip(self, ip): 
+		""" Warning: this method is not asynchronous and return a string."""
 		try:
 			return self._resolve[ip]
-		except KeyError, e:
+		except KeyError:
+			# Cannot do async reverse DNS with twisted 8.xx
 			name=socket.gethostbyaddr(ip)[0]
-			self._resolve[ip]=name
-			self._reverse[name]=ip	
+			self._feedCache(ip, name)
 			return name
 
-	def get_by_name(self, name): # TODO async
+	def get_by_name(self, name): 
 		try:
-			return self._reverse[name]
-		except KeyError, e:
-			ip=socket.gethostbyname(name)
-			self._resolve[ip]=name
-			self._reverse[name]=ip	
-			return ip
+			return defer.succeed(self._reverse[name])
+		except KeyError:
+			return self.add(name)
 
 	def get_bcast(self):
 		if self.bcast is None:
@@ -97,7 +99,7 @@ class DNSCache(object):
 			except IOError:
 				self.bcast="255.255.255.255"
 		
-		return self.bcast
+		return defer.succeed(self.bcast)
 
 
 

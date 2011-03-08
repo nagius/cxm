@@ -169,6 +169,14 @@ class MasterService(Service):
 
 	# Active master's stuff
 	def registerNode(self, name):
+		def validHostname(result):
+			self.status[name]={}
+			log.info("Node %s has joined the cluster." % (name))
+			
+		def invalidHostname(reason):
+			log.warn("Node %s has an invalid name. Refusing." % (name))
+			raise NodeRefusedError(reason.getErrorMessage())
+
 		if name not in ALLOWED_NODES:
 			log.warn("Node %s not allowed to join this cluster. Refusing." % (name))
 			raise NodeRefusedError("Node "+name+" not allowed to join this cluster.")
@@ -177,14 +185,12 @@ class MasterService(Service):
 			log.warn("None %s is already joined ! Cannot re-join." % (name))
 			raise NodeRefusedError("Node "+name+" already in cluster.")
 
-		try:
-			DNSCache.getInstance().add(name)  # Check if hostname is valid
-		except Exception, e:
-			log.warn("Node %s has an invalid name. Refusing." % (name))
-			raise NodeRefusedError(e)
+		# Check if hostname is valid
+		d=DNSCache.getInstance().add(name)
+		d.addCallbacks(validHostname, invalidHostname)
+		
+		return d
 			
-		self.status[name]={}
-		log.info("Node %s has joined the cluster." % (name))
 
 	def unregisterNode(self, name):
 		if name not in self.status:

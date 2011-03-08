@@ -61,7 +61,7 @@ class LocalRPC(pb.Root):
 		return self._master.getNodesList()
 
 	def remote_getStatus(self):
-		status={}
+		status = dict()
 		status['state']=self._master.state
 		status['master']=self._master.master
 

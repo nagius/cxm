@@ -49,14 +49,19 @@ class UDPSender(DatagramProtocol):
 		self.dest = dest
 
 	def startProtocol(self):
+		def setIp(result):
+			self._ip=result
+			self.d_onStart.callback(self) 
+
 		if self.dest is None:
 			# Enable broadcast
 			self.transport.socket.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, True)
-			self._ip = DNSCache.getInstance().get_bcast()
+			d=DNSCache.getInstance().get_bcast()
 		else:
-			self._ip = DNSCache.getInstance().get_by_name(self.dest)
-
-		self.d_onStart.callback(self) 
+			d=DNSCache.getInstance().get_by_name(self.dest)
+		
+		d.addCallback(setIp)
+		d.addErrback(log.err)
 
 	def sendMessage(self):
 		data=json.dumps(self.c_buildMsg(), separators=(',',':'))
