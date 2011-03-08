@@ -51,4 +51,9 @@ class Agent(object):
 		d.addCallback(self._call, "getNodesList")
 		return d
 
+	def getStatus(self):
+		d = self._factory.getRootObject()
+		d.addCallback(self._call, "getStatus")
+		return d
+
 # vim: ts=4:sw=4:ai

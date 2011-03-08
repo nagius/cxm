@@ -60,6 +60,13 @@ class LocalRPC(pb.Root):
 	def remote_getNodesList(self):
 		return self._master.getNodesList()
 
+	def remote_getStatus(self):
+		status={}
+		status['state']=self._master.state
+		status['master']=self._master.master
+
+		return status
+
 class RPCService(Service):
 
 	def __init__(self, master):
