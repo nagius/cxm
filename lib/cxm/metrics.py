@@ -68,6 +68,8 @@ class Metrics:
 		"""
 		Return a dict with the computed CPU usage for all runing VMs.
 
+		The result is a percetage relative to one CPU (eg. 2 full-used CPU -> 200%)
+
 		Values are floats with 16 digit of precision (python standard's binary float)
 		If you want a string with less precision, you can use "%.1f" % round(xxx).
 		If you want a number with less precision, you can use the Decimal module.
@@ -106,7 +108,11 @@ class Metrics:
 		return cpu
 
 	def get_vms_disk_io(self,dom_recs=None):
-		"""Return a dict with disks'IO stats for all runing VMs (including Dom0)."""
+		"""
+		Return a dict with disks'IO stats for all runing VMs (including Dom0) since boot. 
+		
+		Unit: Requests
+		"""
 		if not dom_recs: dom_recs = self.server.xenapi.VM.get_all_records()
 
 		io=dict()
@@ -119,7 +125,7 @@ class Metrics:
 		return io
 
 	def get_vms_disk_io_rate(self,dom_recs=None):
-		"""Return a dict with disks'IO bandwith (ie. IO/s) for all runing VMs."""
+		"""Return a dict with disks'IO bandwith for all runing VMs. Unit: Requests/s"""
 		io_rate=dict()
 
 		# Timestamp used to compute per second rate
@@ -155,7 +161,7 @@ class Metrics:
 		return io_rate
 
 	def get_vms_net_io(self,dom_recs=None):
-		"""Return a dict with network IO stats for all runing VMs."""
+		"""Return a dict with network IO stats for all runing VMs. Unit: Bytes"""
 		if not dom_recs: dom_recs = self.server.xenapi.VM.get_all_records()
 
 		vif_metrics_recs = self.server.xenapi.VIF_metrics.get_all_records()
@@ -174,7 +180,7 @@ class Metrics:
 		return vifs_doms_metrics
 
 	def get_host_net_io(self):
-		"""Return a dict with network IO stats for the host."""
+		"""Return a dict with network IO stats for the host. Unit: Bytes"""
 		bridges=self.node.get_bridges()
 		vlans=self.node.get_vlans()
 		io= { 'bridges': dict(), 'vlans': dict() }
@@ -188,7 +194,7 @@ class Metrics:
 		return io
 
 	def get_host_pvs_io(self):
-		"""Return a dict with PVs'IO stats for the host."""
+		"""Return a dict with PVs'IO stats for the host. Unit: Requests"""
 		io=dict()
 
 		devices=[ dev.strip().lstrip("/dev/") for dev in self.node.run("pvs -o pv_name --noheadings").readlines() ]
@@ -215,7 +221,7 @@ class Metrics:
 		return io
 
 	def get_host_vgs_io(self):
-		"""Return a dict with VGs'IO stats for the host."""
+		"""Return a dict with VGs'IO stats for the host. Unit: Requests"""
 		io=dict()
 
 		pvs_io=self.get_host_pvs_io()
@@ -230,7 +236,14 @@ class Metrics:
 		return io
 
 	def get_vms_record(self):
-		"""Return a tree with CPU, disks'IO and network IO for all running VMs."""
+		"""
+		Return a tree with CPU, disks'IO and network IO for all running VMs.
+
+		Units: 
+			CPU: Percetage
+			Disk: Requests
+			Net: Bytes
+		"""
 		dom_recs = self.server.xenapi.VM.get_all_records()
 		if core.cfg['DEBUG']: print "DEBUG Xen-Api: ", dom_recs
 		
@@ -249,23 +262,23 @@ class Metrics:
 		return vms_record
 
 	def get_used_irq(self):
-		"""Return the number of used irq on this node."""
+		"""Return the number of used irq on this node. Unit: integer"""
 		return int(self.node.run('grep Dynamic /proc/interrupts | wc -l').read())
 
 	def get_free_ram(self):
-		"""Return the amount of free ram of this node."""
+		"""Return the amount of free ram of this node. Unit: MB"""
 		return self.get_ram_infos()['free']
 
 	def get_total_ram(self):
-		"""Return the amount of ram of this node (including Dom0 and Hypervisor)."""
+		"""Return the amount of ram of this node (including Dom0 and Hypervisor). Unit: MB"""
 		return self.get_ram_infos()['total']
 
 	def get_used_ram(self):
-		"""Return the amount of used ram (including Dom0 and Hypervisor) of this node."""
+		"""Return the amount of used ram (including Dom0 and Hypervisor) of this node. Unit: MB"""
 		return self.get_ram_infos()['used']
 
 	def get_ram_infos(self):
-		"""Return a dict with the free, used, and total ram of this node."""
+		"""Return a dict with the free, used, and total ram of this node. Units: MB"""
 		# TODO add a cache
 		if core.cfg['USESSH']:
 			vals=map(int, self.node.run('xm info | grep -E total_memory\|free_memory | cut -d: -f 2').read().strip().split())
@@ -281,7 +294,11 @@ class Metrics:
 			return { 'total': total, 'free':free, 'used':total-free }
 
 	def get_available_ram(self, vms=None):
-		"""Return the amount of really available ram (for VM usage, excluding Dom0 and Hypervisor) of this node."""
+		"""
+		Return the amount of really available ram (for VM usage, excluding Dom0 and Hypervisor) of this node. 
+		
+		Unit: MB
+		"""
 		if not vms: vms = self.node.get_vms() # Get all vm running on this node
 
 		# Compute amount of ram used by VMs
@@ -293,7 +310,7 @@ class Metrics:
 	def get_load(self):
 		"""Return the load of this node.
 
-		The load is in percentage and computed from free RAM and free IRQs.
+		The load is a percentage (0-100) and computed from free RAM and free IRQs.
 		"""
 		MAX_IRQ=1024 # Defined by RedHat patch (bz #442736) since 2.6.18
 
@@ -308,7 +325,7 @@ class Metrics:
 		return (irq_load<ram_load and ram_load or irq_load)
 
 	def get_lvs_size(self, lvs):
-		"""Return a dict containnig size (in kilobytes) of each specified LVs."""
+		"""Return a dict containnig size of each specified LVs. Unit: kB"""
 
 		if len(lvs)<=0:
 			return dict() # empty return if no LV given 

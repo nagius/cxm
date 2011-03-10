@@ -58,8 +58,8 @@ node=None
       |
       +--XenStatsHostRam(5)
       |  |
-      |  +-- -R-- Gauge     XenStatsHostRamUsed(1)
-      |  +-- -R-- Gauge     XenStatsHostRamFree(2)
+      |  +-- -R-- Gauge     XenStatsHostRamUsed(1)		(MB)
+      |  +-- -R-- Gauge     XenStatsHostRamFree(2)		(MB)
       |
       +--XenStatsHostDisks(6)
       |  |  Index: XenStatsHostDiskName
@@ -67,8 +67,8 @@ node=None
       |  +-- -R-- String    XenStatsHostDiskName(1)
       |  |        Textual Convention: DisplayString
       |  |        Size: 0..255
-      |  +-- -R-- Counter   XenStatsHostDiskRead(2)
-      |  +-- -R-- Counter   XenStatsHostDiskWrite(3)
+      |  +-- -R-- Counter   XenStatsHostDiskRead(2)		(Requests)
+      |  +-- -R-- Counter   XenStatsHostDiskWrite(3)	(Requests)
       |
       +--XenStatsHostBridges(7)
       |  |  Index: XenStatsHostBridgeName
@@ -76,8 +76,8 @@ node=None
       |  +-- -R-- String    XenStatsHostBridgeName(1)
       |  |        Textual Convention: DisplayString
       |  |        Size: 0..255
-      |  +-- -R-- Counter   XenStatsHostBridgeRx(2)
-      |  +-- -R-- Counter   XenStatsHostBridgeTx(3)
+      |  +-- -R-- Counter   XenStatsHostBridgeRx(2)		(Bytes)
+      |  +-- -R-- Counter   XenStatsHostBridgeTx(3)		(Bytes)
       |
       +--XenStatsHostVlans(8)
       |  |  Index: XenStatsHostVlanName
@@ -85,8 +85,8 @@ node=None
       |  +-- -R-- String    XenStatsHostVlanName(1)
       |  |        Textual Convention: DisplayString
       |  |        Size: 0..255
-      |  +-- -R-- Counter   XenStatsHostVlanRx(2)
-      |  +-- -R-- Counter   XenStatsHostVlanTx(3)
+      |  +-- -R-- Counter   XenStatsHostVlanRx(2)		(Bytes)
+      |  +-- -R-- Counter   XenStatsHostVlanTx(3)		(Bytes)
       |
       +--XenStatsHostVms(9)
       |  |  Index: XenStatsHostVmName
@@ -95,11 +95,11 @@ node=None
       |  |        Textual Convention: DisplayString
       |  |        Size: 0..255
       |  +-- -R-- INTEGER   XenStatsHostVmId(2)
-      |  +-- -R-- Gauge     XenStatsHostVmCpuUsage(3)
-      |  +-- -R-- Gauge     XenStatsHostVmVcpu(4)
-      |  +-- -R-- Gauge     XenStatsHostVmAllocRam(5)
-      |  +-- -R-- Counter   XenStatsHostVmDiskRead(6)
-      |  +-- -R-- Counter   XenStatsHostVmDiskWrite(7)
+      |  +-- -R-- Gauge     XenStatsHostVmCpuUsage(3)	(Percentage 0-100)
+      |  +-- -R-- Gauge     XenStatsHostVmVcpu(4)		(integer)
+      |  +-- -R-- Gauge     XenStatsHostVmAllocRam(5)	(MB)
+      |  +-- -R-- Counter   XenStatsHostVmDiskRead(6)	(Requests)
+      |  +-- -R-- Counter   XenStatsHostVmDiskWrite(7)	(Requests)
       |
       +--XenStatsHostVmNet(10)
          |  Index: XenStatsHostVmNetIfName, XenStatsHostVmName
@@ -107,8 +107,8 @@ node=None
          +-- -R-- String    XenStatsHostVmNetIfName(1)
          |        Textual Convention: DisplayString
          |        Size: 0..255
-         +-- -R-- Counter   XenStatsHostVmNetRx(2)
-         +-- -R-- Counter   XenStatsHostVmNetTx(3)
+         +-- -R-- Counter   XenStatsHostVmNetRx(2)		(Bytes)
+         +-- -R-- Counter   XenStatsHostVmNetTx(3)		(Bytes)
 
 """
 
