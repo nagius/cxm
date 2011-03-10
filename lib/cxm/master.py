@@ -57,13 +57,14 @@ class MasterService(Service):
 	ST_ACTIVE="active"
 	ST_PASSIVE="passive"
 	ST_JOINING= "joining"
+	ST_VOTING= "voting"	# During election stage
 	ST_ALONE="alone"
 
 	def __init__(self):
 		from rpc import RPCService # Here because of a cross-import conflict
-		self.state=MasterService.ST_ALONE
-		self.master=None		
-		self.status=dict()	# Hold the whole cluster status
+		self.state=MasterService.ST_ALONE	# Current status of this node
+		self.master=None					# Name of the active master
+		self.status=dict()					# Whole cluster status
 		self.localNode=Node(DNSCache.getInstance().name)
 		self.s_slaveHb=SlaveHearbeatService(self)
 		self.s_masterHb=MasterHeartbeatService(self.getStatus)
@@ -99,6 +100,8 @@ class MasterService(Service):
 			return defer.succeed(None)
 
 	# Properties accessors
+	###########################################################################
+
 	def getStatus(self):
 		return self.status
 	
@@ -112,6 +115,8 @@ class MasterService(Service):
 		return self.status.keys()
 
 	# Messages handlers
+	###########################################################################
+
 	def dispatchMessage(self, data, host):
 		dispatcher = {
 			"slavehb" : self.updateNodeStatus,
@@ -148,7 +153,7 @@ class MasterService(Service):
 
 		if self.master is None:
 			self.master=msg.node
-			print "New master at "+ self.master
+			log.info("Found new active master at %s." % (self.master))
 
 		# Active master's checks 
 		if self.state is MasterService.ST_ACTIVE:
@@ -168,6 +173,8 @@ class MasterService(Service):
 
 
 	# Active master's stuff
+	###########################################################################
+
 	def registerNode(self, name):
 		def validHostname(result):
 			self.status[name]={}
@@ -204,6 +211,8 @@ class MasterService(Service):
 			
 
 	# Passive master's stuff
+	###########################################################################
+
 	def leaveCluster(self):
 
 		def masterConnected(obj):
@@ -240,7 +249,7 @@ class MasterService(Service):
 		def joinRefused(reason):
 			reason.trap(NodeRefusedError)
 			log.err("Join to cluster %s failed : Master %s has refused me: %s" % (CLUSTER_NAME, self.master, reason.getErrorMessage()))
-			reactor.stop()
+			self.stopService()
 
 		def joinAccepted(result):
 			self.state=MasterService.ST_PASSIVE
@@ -258,11 +267,11 @@ class MasterService(Service):
 		if self.master is None:
 			# New active master
 			if DNSCache.getInstance().name not in ALLOWED_NODES:
-				log.warn("I'm not allowed to create a new cluster. Exitting.")
+				log.warn("I'm not allowed to create a new cluster. Exiting.")
 				self.stopService() 
 				return # Should be better with an exception, but dunno how to handle it with callLater...
 
-			print " I am the new master"
+			log.info("No active master found. I'm now the new master of %s." % (CLUSTER_NAME))
 			self.state=MasterService.ST_ACTIVE
 			self.master=DNSCache.getInstance().name
 			self.status[self.master]={}
@@ -271,7 +280,7 @@ class MasterService(Service):
 		else:
 			# Passive master
 			self.state=MasterService.ST_JOINING
-			print "joining cluster"
+			log.info("Trying to join cluster %s..." % (CLUSTER_NAME))
 
 			factory = pb.PBClientFactory()
 			rpcConnector = reactor.connectTCP(self.master, 8800, factory)

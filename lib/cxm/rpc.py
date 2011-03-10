@@ -28,7 +28,6 @@ from pprint import pprint
 
 from twisted.application.service import Service
 from twisted.internet import reactor, error, defer
-#import time
 import logs as log
 from twisted.spread import pb
 import os
@@ -54,7 +53,7 @@ class LocalRPC(pb.Root):
 		self._master=master
 
 	def remote_quit(self):
-		log.info("Received local exit query. Exitting...")
+		log.info("Received local quit query. Leaving cluster...")
 		return self._master.stopService()
 
 	def remote_getNodesList(self):
