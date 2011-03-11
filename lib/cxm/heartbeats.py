@@ -40,8 +40,7 @@ class SlaveHearbeatService(Service):
 		self._master=master
 
 	def forgeSlaveHeartbeat(self):
-		msg=MessageSlaveHB().forge(self._master.getLocalNode())
-		return msg.value()
+		return MessageSlaveHB().forge(self._master.getLocalNode())
 
 	def startService(self):
 		Service.startService(self)
@@ -64,8 +63,7 @@ class MasterHeartbeatService(Service):
 		self.c_getStatus=getStatus
 
 	def forgeMasterHeartbeat(self):
-		msg=MessageMasterHB().forge(self.c_getStatus())
-		return msg.value()
+		return MessageMasterHB().forge(self.c_getStatus())
 	
 	def startService(self):
 		Service.startService(self)

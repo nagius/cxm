@@ -43,9 +43,9 @@ CLUSTER_NAME="cltest" # TODO a passer en fichier
 PORT=6666
 
 class UDPSender(DatagramProtocol):
-	def __init__(self, onStart, buildMsg, dest=None):
-		self.d_onStart = onStart
-		self.c_buildMsg = buildMsg
+	def __init__(self, onStart, getMsg, dest=None):
+		self.d_onStart = onStart		# Deferred fired when protocol is up
+		self.c_getMsg = getMsg		# Callback called every sendMessage()
 		self.dest = dest
 
 	def startProtocol(self):
@@ -64,7 +64,7 @@ class UDPSender(DatagramProtocol):
 		d.addErrback(log.err)
 
 	def sendMessage(self):
-		data=json.dumps(self.c_buildMsg(), separators=(',',':'))
+		data=json.dumps(self.c_getMsg().value(), separators=(',',':'))
 
 		self.transport.write(data,(self._ip,PORT))
 		#       raise error.MessageLengthError("test")
@@ -82,14 +82,14 @@ class UDPListener(DatagramProtocol):
 			self.c_onReceive(msg,host)
 
 class NetHeartbeat(object):
-	def __init__(self, buildMsg, dest = None):
-		self.c_buildMsg = buildMsg
+	def __init__(self, getMsg, dest = None):
+		self.c_getMsg = getMsg
 		self.dest = dest
 
 	def start(self):
 		d = Deferred()
 		d.addCallback(self._run)
-		self._port = reactor.listenUDP(0, UDPSender(d, self.c_buildMsg, self.dest))
+		self._port = reactor.listenUDP(0, UDPSender(d, self.c_getMsg, self.dest))
 
 	def _run(self, result):
 		self._proto = result

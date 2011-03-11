@@ -90,9 +90,9 @@ class RPCService(Service):
 			Service.stopService(self)
 			log.info("Stopping RPC service...")
 
-			if self._master.state is MasterService.ST_ACTIVE:
+			try:
 				d1=defer.maybeDeferred(self._remotePort.stopListening)
-			else:
+			except AttributeError:
 				d1=defer.succeed(None)
 
 			d2=defer.maybeDeferred(self._localPort.stopListening)
