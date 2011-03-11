@@ -44,19 +44,19 @@ def info(message, **kw):
 
 def debug(message, **kw):
 	if core.cfg['DEBUG']:
-		log.msg("DEBUG: "+message, **kw)
+		log.msg("DEBUG: %s" % (message), **kw)
 		
 def warn(message, **kw):
-	log.msg("Warning: "+message, **kw)
-	syslog.syslog(syslog.LOG_WARNING, message)
+	log.msg("Warning: %s" % (message), **kw)
+	syslog.syslog(syslog.LOG_WARNING, str(message))
 
 def err(message, **kw):
-	log.err("Error: "+message, **kw)
-	syslog.syslog(syslog.LOG_ERR, message)
+	log.err("Error: %s" % (message), **kw)
+	syslog.syslog(syslog.LOG_ERR, str(message))
 
 def emerg(message, **kw):
-	log.err("CRITICAL ERROR: "+message, **kw)
-	syslog.syslog(syslog.LOG_EMERG, message)
+	log.err("CRITICAL ERROR: %s" % (message), **kw)
+	syslog.syslog(syslog.LOG_EMERG, str(message))
 
 
 
