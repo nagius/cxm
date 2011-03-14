@@ -91,6 +91,9 @@ class NetHeartbeat(object):
 		d.addCallback(self._run)
 		self._port = reactor.listenUDP(0, UDPSender(d, self.c_getMsg, self.dest))
 
+	def forcePulse(self):
+		self._proto.sendMessage()
+
 	def _run(self, result):
 		self._proto = result
 		self._call = task.LoopingCall(self._proto.sendMessage)

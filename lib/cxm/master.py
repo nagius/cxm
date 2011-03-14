@@ -40,14 +40,16 @@ import logs as log
 from heartbeats import * 
 import core
 from node import Node
+from rpc import RPCService, NodeRefusedError, RPCRefusedError
 
 # TODO A gérer : perte de connection xenapi / async ?
 # TODO système de reload de la conf sur sighup et localrpc reload
+# TODO vérifier fermeture PBClientFactory
 
 core.cfg['QUIET']=True
 
 CLUSTER_NAME="cltest" # TODO a passer en fichier
-ALLOWED_NODES=['xen0node01.virt.s1.p.fti.net','xen0node02.virt.s1.p.fti.net']
+ALLOWED_NODES=['xen0node01.virt.s1.p.fti.net','xen0node02.virt.s1.p.fti.net','xen0node03.virt.s1.p.fti.net','xen0node04.virt.s1.p.fti.net']
 PORT=6666
 
 
@@ -57,11 +59,13 @@ class MasterService(Service):
 	ST_ACTIVE="active"
 	ST_PASSIVE="passive"
 	ST_JOINING= "joining"
+	ST_LEAVING= "leaving"
 	ST_VOTING= "voting"	# During election stage
 	ST_ALONE="alone"
 
+	# TODO faire estate " status derreur ES_NORMAL, ES_SECURED, FAILED ?
+
 	def __init__(self):
-		from rpc import RPCService # Here because of a cross-import conflict
 		self.state=MasterService.ST_ALONE	# Current status of this node
 		self.master=None					# Name of the active master
 		self.status=dict()					# Whole cluster status
@@ -69,6 +73,10 @@ class MasterService(Service):
 		self.s_slaveHb=SlaveHearbeatService(self)
 		self.s_masterHb=MasterHeartbeatService(self.getStatus)
 		self.s_rpc=RPCService(self) 
+
+		# Election Stuff
+		self.ballotBox=None
+		self.currentElection=None
 
 	def startService(self):
 		Service.startService(self)
@@ -121,18 +129,20 @@ class MasterService(Service):
 		dispatcher = {
 			"slavehb" : self.updateNodeStatus,
 			"masterhb" : self.updateMasterStatus,
+			"voterequest" : self.voteForNewMaster,
+			"voteresponse" : self.recordVote,
 		}
 
 		try:
 			msg=MessageHelper.get(data, host)
 			dispatcher[msg.type()](msg)
-		except MessageError, e:
+		except (MessageError, KeyError), e:
 			log.err("Bad message from %s : %s , %s" % (host,data,e))
 		except IDontCareException:
 			pass # Discard useless messages
 
 	def updateNodeStatus(self, msg):
-		print "slave recu " + str(msg)
+#		print "slave recu " + str(msg)
 
 		if self.state is not MasterService.ST_ACTIVE:
 			print "Warning: received slave HB alors que pas master"
@@ -149,18 +159,20 @@ class MasterService(Service):
 
 	def updateMasterStatus(self, msg):
 
-		print "master recu " + str(msg)
+#		print "master recu " + str(msg)
 
 		if self.master is None:
 			self.master=msg.node
-			log.info("Found new active master at %s." % (self.master))
+			log.info("Found master at %s." % (self.master))
 
 		# Active master's checks 
 		if self.state is MasterService.ST_ACTIVE:
 			if self.master == msg.node:
 				return		# Discard our own master heartbeat
 			else:
-				print "erruer deux master !" # TODO
+				log.warn("Received another master's heartbeat ! Trying to recover from partition...")
+				self.triggerElection().addErrback(log.err) # TODO test collision vote request
+				return
 
 		# Passive master's checks
 		if self.master != msg.node:
@@ -169,7 +181,71 @@ class MasterService(Service):
 
 		# Keep a backup of the active master's status
 		self.status=msg.status
-		pprint(self.status)
+#		pprint(self.status)
+
+	def voteForNewMaster(self, msg):
+		def sendVote(result):
+			log.info("Sending our vote...")
+			result.sendMessage()
+			port.stopListening()
+
+		log.info("Vote request received from %s." % (msg.node))
+		self.currentElection=msg.election
+
+		# Discard vote request if we are leaving
+		if self.state is MasterService.ST_LEAVING:
+			log.info("Vote request ignored: we are leaving this cluster.")
+			return
+
+		# Stop heartbeating
+		self.s_slaveHb.stopService().addErrback(log.err)
+		if self.state is MasterService.ST_ACTIVE:
+			self.s_masterHb.stopService().addErrback(log.err)
+
+		# Prepare election
+		self.state=MasterService.ST_VOTING
+		self.ballotBox=dict()
+		reactor.callLater(1, self.countVotes) # Timout of election stage
+
+		# Send our vote
+		d = Deferred()
+		port = reactor.listenUDP(0, UDPSender(d, lambda: MessageVoteResponse().forge(self.currentElection)))
+		d.addCallback(sendVote)
+		d.addErrback(log.err)
+
+	def recordVote(self, msg):
+		if self.state is not MasterService.ST_VOTING:
+			log.warn("Vote received from %s but it's not election time !" % (msg.node))
+			return
+
+		if self.currentElection != msg.election:
+			log.warn("Vote received for another election from %s. Discarding." % (msg.node))
+			return
+
+		self.ballotBox[msg.ballot]=msg.node
+
+	def countVotes(self):
+		if self.state is not MasterService.ST_VOTING:
+			log.warn("Tally triggered but it's not election time !")
+			return
+
+		if type(self.ballotBox) is not dict or len(self.ballotBox) == 0:
+			log.emerg("No vote received ! Maybe network is down !")
+			# TODO passage en mode securise
+			return
+
+		self.currentElection=None
+		self.master=self.ballotBox[max(self.ballotBox.keys())]
+		log.info("New master is %s." % (self.master))
+		self.s_slaveHb.startService()
+
+		if self.master is DNSCache.getInstance().name:
+			log.info("I'm the new master.")
+			self.state=MasterService.ST_ACTIVE
+			self.s_masterHb.startService()
+		else:
+			self.state=MasterService.ST_PASSIVE
+			
 
 
 	# Active master's stuff
@@ -183,6 +259,10 @@ class MasterService(Service):
 		def invalidHostname(reason):
 			log.warn("Node %s has an invalid name. Refusing." % (name))
 			raise NodeRefusedError(reason.getErrorMessage())
+
+		if self.state is not MasterService.ST_ACTIVE:
+			log.warn("I'm not master. Cannot register %s." % (name))
+			raise RPCRefusedError("I'm not master.")
 
 		if name not in ALLOWED_NODES:
 			log.warn("Node %s not allowed to join this cluster. Refusing." % (name))
@@ -200,6 +280,10 @@ class MasterService(Service):
 			
 
 	def unregisterNode(self, name):
+		if self.state is not MasterService.ST_ACTIVE:
+			log.warn("I'm not master. Cannot unregister %s." % (name))
+			raise RPCRefusedError("I'm not master")
+
 		if name not in self.status:
 			log.warn("Unknown node %s try to quit the cluster." % (name))
 			raise NodeRefusedError("Unknown node "+name)
@@ -208,7 +292,18 @@ class MasterService(Service):
 		del self.status[name]
 		DNSCache.getInstance().delete(name)
 		log.info("Node %s has quit the cluster." % (name))
-			
+	
+
+	def triggerElection(self):
+		log.info("Asking a new election for cluster %s." % (CLUSTER_NAME))
+
+		d = Deferred()
+		port = reactor.listenUDP(0, UDPSender(d, lambda: MessageVoteRequest().forge()))
+		d.addCallback(lambda result: result.sendMessage())
+		d.addCallback(lambda _: port.stopListening())
+
+		return d
+
 
 	# Passive master's stuff
 	###########################################################################
@@ -220,21 +315,35 @@ class MasterService(Service):
 			d.addCallback(lambda _: rpcConnector.disconnect())
 			d.addErrback(log.err)
 			return d
-			
-
-		if self.state is MasterService.ST_ACTIVE:
-			# TODO gestion election new master
-			self.s_masterHb.stopService().addErrback(log.err)
-			return defer.succeed(None)
-		elif self.state is MasterService.ST_PASSIVE:
-			factory = pb.PBClientFactory()
-			rpcConnector = reactor.connectTCP(self.master, 8800, factory)
-			d = factory.getRootObject()
-			d.addCallback(masterConnected)
-			d.addErrback(log.err)
-			return d
 		
-		return defer.succeed(None)
+		previousState=self.state
+		self.state=MasterService.ST_LEAVING
+
+		if previousState is MasterService.ST_ACTIVE:
+			# Delete our own record
+			name=DNSCache().getInstance().name
+			del self.status[name]
+			log.info("Node %s has quit the cluster." % (name))
+			if len(self.status) <= 0:
+				log.warn("I'm the last node, shutting down cluster.")
+
+			d=self.triggerElection()
+
+			# Stop master hearbeat when vote request has been sent
+			d.addCallback(lambda _: self.s_masterHb.forcePulse())
+			d.addCallback(lambda _: self.s_masterHb.stopService())
+		elif previousState is MasterService.ST_PASSIVE:
+			rpcFactory = pb.PBClientFactory()
+			rpcConnector = reactor.connectTCP(self.master, 8800, rpcFactory)
+			d = rpcFactory.getRootObject()
+			d.addCallback(masterConnected)
+		elif previousState is MasterService.ST_VOTING:
+			log.err("Cannot quit: we are in election stage.")
+			d=defer.fail(Exception("Cannot quit during election stage"))
+		else: # ST_ALONE or ST_JOINING
+			d=defer.succeed(None)
+		
+		return d
 
 
 	def joinCluster(self):
@@ -248,7 +357,8 @@ class MasterService(Service):
 		
 		def joinRefused(reason):
 			reason.trap(NodeRefusedError)
-			log.err("Join to cluster %s failed : Master %s has refused me: %s" % (CLUSTER_NAME, self.master, reason.getErrorMessage()))
+			log.err("Join to cluster %s failed : Master %s has refused me: %s" % 
+				(CLUSTER_NAME, self.master, reason.getErrorMessage()))
 			self.stopService()
 
 		def joinAccepted(result):
@@ -271,7 +381,7 @@ class MasterService(Service):
 				self.stopService() 
 				return # Should be better with an exception, but dunno how to handle it with callLater...
 
-			log.info("No active master found. I'm now the new master of %s." % (CLUSTER_NAME))
+			log.info("No master found. I'm now the new master of %s." % (CLUSTER_NAME))
 			self.state=MasterService.ST_ACTIVE
 			self.master=DNSCache.getInstance().name
 			self.status[self.master]={}
@@ -291,10 +401,6 @@ class MasterService(Service):
 	# TODO 
 	def heartbeatsCheck(self):
 		pass
-
-
-class NodeRefusedError(pb.Error):
-	pass
 
 
 # vim: ts=4:sw=4:ai

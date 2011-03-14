@@ -56,4 +56,9 @@ class Agent(object):
 		d.addCallback(self._call, "getStatus")
 		return d
 
+	def forceElection(self):
+		d = self._factory.getRootObject()
+		d.addCallback(self._call, "forceElection")
+		return d
+
 # vim: ts=4:sw=4:ai

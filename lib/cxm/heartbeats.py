@@ -45,6 +45,7 @@ class SlaveHearbeatService(Service):
 	def startService(self):
 		Service.startService(self)
 
+		log.info("Starting slave heartbeat...")
 		self._hb = NetHeartbeat(self.forgeSlaveHeartbeat, self._master.getActiveHostname())
 		self._hb.start()
 	
@@ -55,6 +56,9 @@ class SlaveHearbeatService(Service):
 			return self._hb.stop()
 		else:
 			return defer.succeed(None)
+
+	def forcePulse(self):
+		self._hb.forcePulse()
 
 
 class MasterHeartbeatService(Service):
@@ -68,6 +72,7 @@ class MasterHeartbeatService(Service):
 	def startService(self):
 		Service.startService(self)
 
+		log.info("Starting master heartbeat...")
 		self._hb = NetHeartbeat(self.forgeMasterHeartbeat)
 		self._hb.start()
 
@@ -79,5 +84,7 @@ class MasterHeartbeatService(Service):
 		else:
 			return defer.succeed(None)
 
+	def forcePulse(self):
+		self._hb.forcePulse()
 
 # vim: ts=4:sw=4:ai

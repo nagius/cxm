@@ -32,7 +32,6 @@ import logs as log
 from twisted.spread import pb
 import os
 
-from master import MasterService
 
 UNIX_PORT="/var/run/cxmd.socket" # TODO a passer dans fichier
 
@@ -66,6 +65,9 @@ class LocalRPC(pb.Root):
 
 		return status
 
+	def remote_forceElection(self):
+		return self._master.triggerElection()
+
 class RPCService(Service):
 
 	def __init__(self, master):
@@ -80,27 +82,28 @@ class RPCService(Service):
 	def startService(self):
 		Service.startService(self)
 
+		log.info("Starting RPC service...")
 		self.cleanSocket(None)
 		self._localPort=reactor.listenUNIX(UNIX_PORT, pb.PBServerFactory(LocalRPC(self._master)))
-		if self._master.state is MasterService.ST_ACTIVE:	# Listen for remote RPC only when master is active
-			self._remotePort=reactor.listenTCP(8800, pb.PBServerFactory(RemoteRPC(self._master)))
+		self._remotePort=reactor.listenTCP(8800, pb.PBServerFactory(RemoteRPC(self._master)))
 
 	def stopService(self):
 		if self.running:
 			Service.stopService(self)
 			log.info("Stopping RPC service...")
 
-			try:
-				d1=defer.maybeDeferred(self._remotePort.stopListening)
-			except AttributeError:
-				d1=defer.succeed(None)
-
+			d1=defer.maybeDeferred(self._remotePort.stopListening)
 			d2=defer.maybeDeferred(self._localPort.stopListening)
 			d2.addBoth(self.cleanSocket)
 			return defer.DeferredList([d1, d2])
 		else:
 			return defer.succeed(None)
 
+class NodeRefusedError(pb.Error):
+    pass
+
+class RPCRefusedError(pb.Error):
+    pass
 
 
 # vim: ts=4:sw=4:ai

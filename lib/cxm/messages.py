@@ -25,13 +25,11 @@
 
 
 from pprint import pprint
-import time
+import time, random
 from dnscache import DNSCache
 
 # TODO a passer en cfg
 CLUSTER_NAME="cltest"
-
-
 
 
 class Message(object):
@@ -117,12 +115,64 @@ class MessageMasterHB(Message):
 	def __repr__(self):
 		return str("<MessageMasterHB from "+ self.node +" : "+str(self.status)+">")
 
+class MessageVoteRequest(Message):
+	
+	def __init__(self, host=None):
+		super(MessageVoteRequest,self).__init__(host)
+
+	def parse(self, data):
+		super(MessageVoteRequest,self).parse(data)
+		self.election=data['election']
+
+		return self
+		
+	def forge(self):
+		super(MessageVoteRequest,self).forge()
+
+		self.election=MessageHelper.rand()
+		return self
+
+	def value(self):
+		msg = {'election': self.election}
+		return super(MessageVoteRequest,self).value(msg)
+
+	def __repr__(self):
+		return str("<MessageVoteRequest from "+ self.node +">")
+
+class MessageVoteResponse(Message):
+	
+	def __init__(self, host=None):
+		super(MessageVoteResponse,self).__init__(host)
+
+	def parse(self, data):
+		super(MessageVoteResponse,self).parse(data)
+
+		self.election=int(data['election'])
+		self.ballot=int(data['ballot'])
+
+		return self
+		
+	def forge(self, election):
+		super(MessageVoteResponse,self).forge()
+
+		self.election=election
+		self.ballot=MessageHelper.rand()
+		return self
+
+	def value(self):
+		msg = {'ballot': self.ballot, 'election': self.election}
+		return super(MessageVoteResponse,self).value(msg)
+
+	def __repr__(self):
+		return str("<MessageVoteResponse from %s b=%s>" % (self.node,self.ballot))
 
 class MessageHelper(object):
 
 	map = {
 		"slavehb" : MessageSlaveHB,
 		"masterhb" : MessageMasterHB,
+		"voterequest" : MessageVoteRequest,
+		"voteresponse" : MessageVoteResponse,
 	}
 
 	@staticmethod
@@ -140,6 +190,15 @@ class MessageHelper(object):
 		else:
 			raise MessageError("bad type")
 
+	@staticmethod
+	def rand():
+		"""
+		Generate a random unique integer.
+		Warning, this integer is unique only if our are on a /24 (or above) network.
+		"""
+
+		ip=DNSCache.getInstance().ip.split(".")[3]
+		return random.randint(1,99)*1000+int(ip)
 
 class MessageError(Exception):
 	pass
