@@ -343,10 +343,11 @@ class MasterService(Service):
 		self.state=MasterService.ST_LEAVING
 
 		if previousState is MasterService.ST_ACTIVE:
-			# Delete our own record # TODO reappel unregisterNode
-			name=DNSCache().getInstance().name
-			del self.status[name]
-			log.info("Node %s has quit the cluster." % (name))
+			# Self-delete our own record (need to temporary switch back to active mode)
+			self.state=MasterService.ST_ACTIVE
+			self.unregisterNode(DNSCache.getInstance().name)
+			self.state=MasterService.ST_LEAVING
+
 			if len(self.status) <= 0:
 				log.warn("I'm the last node, shutting down cluster.")
 
