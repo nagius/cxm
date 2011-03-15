@@ -145,7 +145,7 @@ class MasterService(Service):
 			"voteresponse" : self.recordVote,
 		}
 
-		if self.state is MasterService.ST_PANIC:
+		if self.state == MasterService.ST_PANIC:
 			log.err("Panic mode engaged. Ignoring message from %s." % (host))
 			return
 
@@ -160,7 +160,7 @@ class MasterService(Service):
 	def updateNodeStatus(self, msg):
 #		print "slave recu " + str(msg)
 
-		if self.state is not MasterService.ST_ACTIVE:
+		if self.state != MasterService.ST_ACTIVE:
 			print "Warning: received slave HB alors que pas master"
 			return
 
@@ -182,7 +182,7 @@ class MasterService(Service):
 			log.info("Found master at %s." % (self.master))
 
 		# Active master's checks 
-		if self.state is MasterService.ST_ACTIVE:
+		if self.state == MasterService.ST_ACTIVE:
 			if self.master == msg.node:
 				return		# Discard our own master heartbeat
 			else:
@@ -209,13 +209,13 @@ class MasterService(Service):
 		self.currentElection=msg.election
 
 		# Discard vote request if we are leaving
-		if self.state is MasterService.ST_LEAVING:
+		if self.state == MasterService.ST_LEAVING:
 			log.info("Vote request ignored: we are leaving this cluster.")
 			return
 
 		# Stop heartbeating
 		self.s_slaveHb.stopService().addErrback(log.err)
-		if self.state is MasterService.ST_ACTIVE:
+		if self.state == MasterService.ST_ACTIVE:
 			self.s_masterHb.stopService().addErrback(log.err)
 
 		# Prepare election
@@ -230,7 +230,7 @@ class MasterService(Service):
 		d.addErrback(log.err)
 
 	def recordVote(self, msg):
-		if self.state is not MasterService.ST_VOTING:
+		if self.state != MasterService.ST_VOTING:
 			log.warn("Vote received from %s but it's not election time !" % (msg.node))
 			return
 
@@ -241,11 +241,11 @@ class MasterService(Service):
 		self.ballotBox[msg.ballot]=msg.node
 
 	def countVotes(self):
-		if self.state is not MasterService.ST_VOTING:
+		if self.state != MasterService.ST_VOTING:
 			log.warn("Tally triggered but it's not election time !")
 			return
 
-		if type(self.ballotBox) is not dict or len(self.ballotBox) == 0:
+		if type(self.ballotBox) != dict or len(self.ballotBox) == 0:
 			log.emerg("No vote received ! Maybe network is down !")
 			self.panic()
 			return
@@ -255,7 +255,7 @@ class MasterService(Service):
 		log.info("New master is %s." % (self.master))
 		self.s_slaveHb.startService()
 
-		if self.master is DNSCache.getInstance().name:
+		if self.master == DNSCache.getInstance().name:
 			log.info("I'm the new master.")
 			self.state=MasterService.ST_ACTIVE
 			self.s_masterHb.startService()
@@ -276,7 +276,7 @@ class MasterService(Service):
 			log.warn("Node %s has an invalid name. Refusing." % (name))
 			raise NodeRefusedError(reason.getErrorMessage())
 
-		if self.state is not MasterService.ST_ACTIVE:
+		if self.state != MasterService.ST_ACTIVE:
 			log.warn("I'm not master. Cannot register %s." % (name))
 			raise RPCRefusedError("I'm not master.")
 
@@ -302,7 +302,7 @@ class MasterService(Service):
 		log.info("Node %s has quit the cluster." % (name))
 
 	def unregisterNode(self, name):
-		if self.state is not MasterService.ST_ACTIVE:
+		if self.state != MasterService.ST_ACTIVE:
 			log.warn("I'm not master. Cannot unregister %s." % (name))
 			raise RPCRefusedError("I'm not master")
 
@@ -310,7 +310,7 @@ class MasterService(Service):
 			log.warn("Unknown node %s try to quit the cluster." % (name))
 			raise NodeRefusedError("Unknown node "+name)
 
-		if name is DNSCache.getInstance().name:
+		if name == DNSCache.getInstance().name:
 			log.warn("I'm the master. Cannot self unregister.")
 			raise NodeRefusedError("Cannot unregister master")
 
@@ -328,7 +328,7 @@ class MasterService(Service):
 		return d
 
 	def recoverFromPanic(self):
-		if self.state is not MasterService.ST_PANIC:
+		if self.state != MasterService.ST_PANIC:
 			log.warn("I'm not in panic. Cannot recover anything.")
 			raise RPCRefusedError("I'm not in panic")
 
@@ -351,7 +351,7 @@ class MasterService(Service):
 		previousState=self.state
 		self.state=MasterService.ST_LEAVING
 
-		if previousState is MasterService.ST_ACTIVE:
+		if previousState == MasterService.ST_ACTIVE:
 			# Self-delete our own record 
 			self._unregister(DNSCache.getInstance().name)
 
@@ -363,12 +363,12 @@ class MasterService(Service):
 			# Stop master hearbeat when vote request has been sent
 			d.addCallback(lambda _: self.s_masterHb.forcePulse())
 			d.addCallback(lambda _: self.s_masterHb.stopService())
-		elif previousState is MasterService.ST_PASSIVE:
+		elif previousState == MasterService.ST_PASSIVE:
 			rpcFactory = pb.PBClientFactory()
 			rpcConnector = reactor.connectTCP(self.master, 8800, rpcFactory)
 			d = rpcFactory.getRootObject()
 			d.addCallback(masterConnected)
-		elif previousState is MasterService.ST_VOTING:
+		elif previousState == MasterService.ST_VOTING:
 			log.err("Cannot quit: we are in election stage.")
 			d=defer.fail(Exception("Cannot quit during election stage"))
 		else: # ST_ALONE or ST_JOINING
@@ -382,7 +382,7 @@ class MasterService(Service):
 			self.s_slaveHb.startService()
 			self.s_rpc.startService()
 
-			if self.state is MasterService.ST_ACTIVE:
+			if self.state == MasterService.ST_ACTIVE:
 				reactor.callLater(1,self.s_masterHb.startService) 
 				# TODO service HB disk ici + init + check si utilisé
 		
