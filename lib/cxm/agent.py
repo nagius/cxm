@@ -65,5 +65,22 @@ class Agent(object):
 	def recover(self):
 		return self._call("recover")
 
+	def kill(self, name):
+		def connectMaster(result):
+			def masterConnected(obj):
+				d = obj.callRemote("unregister",name)
+				d.addCallback(lambda _: rpcConnector.disconnect())
+				return d
+
+			rpcFactory = pb.PBClientFactory()
+			rpcConnector = reactor.connectTCP(result['master'], 8800, rpcFactory)
+			d = rpcFactory.getRootObject()
+			d.addCallback(masterConnected)
+			return d
+
+		d=self.getStatus()
+		d.addCallback(connectMaster)
+
+		return d
 
 # vim: ts=4:sw=4:ai

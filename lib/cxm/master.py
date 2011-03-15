@@ -47,6 +47,8 @@ from rpc import RPCService, NodeRefusedError, RPCRefusedError
 # TODO vérifier fermeture PBClientFactory
 # TODO revoir cas quit pendant vote test state dans stopservice ?
 
+# TODO revoir quit pendnant panic + rpc panicTest
+
 core.cfg['QUIET']=True
 
 CLUSTER_NAME="cltest" # TODO a passer en fichier
@@ -126,7 +128,7 @@ class MasterService(Service):
 	def getLocalNode(self):
 		return self.localNode
 
-	def getActiveHostname(self):
+	def getActiveMaster(self):
 		return self.master
 	
 	def getNodesList(self):
@@ -293,6 +295,12 @@ class MasterService(Service):
 		return d
 			
 
+	def _unregister(self, name):
+		# TODO suppression HB disk
+		del self.status[name]
+		DNSCache.getInstance().delete(name)
+		log.info("Node %s has quit the cluster." % (name))
+
 	def unregisterNode(self, name):
 		if self.state is not MasterService.ST_ACTIVE:
 			log.warn("I'm not master. Cannot unregister %s." % (name))
@@ -302,10 +310,11 @@ class MasterService(Service):
 			log.warn("Unknown node %s try to quit the cluster." % (name))
 			raise NodeRefusedError("Unknown node "+name)
 
-		# TODO suppression HB disk
-		del self.status[name]
-		DNSCache.getInstance().delete(name)
-		log.info("Node %s has quit the cluster." % (name))
+		if name is DNSCache.getInstance().name:
+			log.warn("I'm the master. Cannot self unregister.")
+			raise NodeRefusedError("Cannot unregister master")
+
+		self._unregister(name)
 	
 
 	def triggerElection(self):
@@ -343,10 +352,8 @@ class MasterService(Service):
 		self.state=MasterService.ST_LEAVING
 
 		if previousState is MasterService.ST_ACTIVE:
-			# Self-delete our own record (need to temporary switch back to active mode)
-			self.state=MasterService.ST_ACTIVE
-			self.unregisterNode(DNSCache.getInstance().name)
-			self.state=MasterService.ST_LEAVING
+			# Self-delete our own record 
+			self._unregister(DNSCache.getInstance().name)
 
 			if len(self.status) <= 0:
 				log.warn("I'm the last node, shutting down cluster.")

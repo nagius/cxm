@@ -46,7 +46,7 @@ class SlaveHearbeatService(Service):
 		Service.startService(self)
 
 		log.info("Starting slave heartbeat...")
-		self._hb = NetHeartbeat(self.forgeSlaveHeartbeat, self._master.getActiveHostname())
+		self._hb = NetHeartbeat(self.forgeSlaveHeartbeat, self._master.getActiveMaster())
 		self._hb.start()
 	
 	def stopService(self):
