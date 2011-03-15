@@ -37,28 +37,29 @@ class Agent(object):
 	def __del__(self):
 		self._factory.getRootObject().addCallback(lambda _: self._rpcConnector.disconnect())
 
-	def _call(self, obj, action):
-		d = obj.callRemote(action)
-		return d
-		
-	def quit(self):
+	def _call(self, action):
+		def remoteCall(obj, action):
+			d = obj.callRemote(action)
+			return d
+
 		d = self._factory.getRootObject()
-		d.addCallback(self._call, "quit")
+		d.addCallback(remoteCall, action)
 		return d
+	
+
+	# External API for command line RPC
+	#############################################################
+
+	def quit(self):
+		return self._call("quit")
 
 	def getNodesList(self):
-		d = self._factory.getRootObject()
-		d.addCallback(self._call, "getNodesList")
-		return d
-
+		return self._call("getNodesList")
+		
 	def getStatus(self):
-		d = self._factory.getRootObject()
-		d.addCallback(self._call, "getStatus")
-		return d
+		return self._call("getStatus")
 
 	def forceElection(self):
-		d = self._factory.getRootObject()
-		d.addCallback(self._call, "forceElection")
-		return d
+		return self._call("forceElection")
 
 # vim: ts=4:sw=4:ai
