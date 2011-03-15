@@ -62,4 +62,8 @@ class Agent(object):
 	def forceElection(self):
 		return self._call("forceElection")
 
+	def recover(self):
+		return self._call("recover")
+
+
 # vim: ts=4:sw=4:ai

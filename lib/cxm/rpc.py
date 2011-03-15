@@ -68,6 +68,9 @@ class LocalRPC(pb.Root):
 	def remote_forceElection(self):
 		return self._master.triggerElection()
 
+	def remote_recover(self):
+		return self._master.recoverFromPanic()
+
 class RPCService(Service):
 
 	def __init__(self, master):

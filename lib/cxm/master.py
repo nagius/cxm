@@ -45,6 +45,7 @@ from rpc import RPCService, NodeRefusedError, RPCRefusedError
 # TODO A gérer : perte de connection xenapi / async ?
 # TODO système de reload de la conf sur sighup et localrpc reload
 # TODO vérifier fermeture PBClientFactory
+# TODO revoir cas quit pendant vote test state dans stopservice ?
 
 core.cfg['QUIET']=True
 
@@ -56,14 +57,13 @@ PORT=6666
 class MasterService(Service):
 
 	# Possible master states (for self.state)
-	ST_ACTIVE="active"
-	ST_PASSIVE="passive"
-	ST_JOINING= "joining"
-	ST_LEAVING= "leaving"
-	ST_VOTING= "voting"	# During election stage
-	ST_ALONE="alone"
-
-	# TODO faire estate " status derreur ES_NORMAL, ES_SECURED, FAILED ?
+	ST_ACTIVE  = "active"
+	ST_PASSIVE = "passive"  # Passive master, aka slave
+	ST_JOINING = "joining"
+	ST_LEAVING = "leaving"	
+	ST_VOTING  = "voting"	# During election stage
+	ST_ALONE   = "alone"	# Before joining
+	ST_PANIC   = "panic"	# "I don't do anything" mode, but still active master
 
 	def __init__(self):
 		self.state=MasterService.ST_ALONE	# Current status of this node
@@ -106,6 +106,16 @@ class MasterService(Service):
 			return d
 		else:
 			return defer.succeed(None)
+	
+	def panic(self):
+		# Engage panic mode
+		log.emerg("SYSTEM FAILURE: panic mode engaged.")
+		log.emerg("This is a critical error. You should bring your ass over here, right now.")
+		log.emerg("Please check logs and be sure of what you'r doing before re-engaging normal mode.")
+		self.state=MasterService.ST_PANIC
+
+		# TODO stop check heartbeat + stop LB
+
 
 	# Properties accessors
 	###########################################################################
@@ -132,6 +142,10 @@ class MasterService(Service):
 			"voterequest" : self.voteForNewMaster,
 			"voteresponse" : self.recordVote,
 		}
+
+		if self.state is MasterService.ST_PANIC:
+			log.err("Panic mode engaged. Ignoring message from %s." % (host))
+			return
 
 		try:
 			msg=MessageHelper.get(data, host)
@@ -176,7 +190,7 @@ class MasterService(Service):
 
 		# Passive master's checks
 		if self.master != msg.node:
-			log.err("Error: received master heartbeat from a wrong master %s !" % (msg.node))
+			log.err("Received master heartbeat from a wrong master %s !" % (msg.node))
 			return
 
 		# Keep a backup of the active master's status
@@ -231,7 +245,7 @@ class MasterService(Service):
 
 		if type(self.ballotBox) is not dict or len(self.ballotBox) == 0:
 			log.emerg("No vote received ! Maybe network is down !")
-			# TODO passage en mode securise
+			self.panic()
 			return
 
 		self.currentElection=None
@@ -304,6 +318,15 @@ class MasterService(Service):
 
 		return d
 
+	def recoverFromPanic(self):
+		if self.state is not MasterService.ST_PANIC:
+			log.warn("I'm not in panic. Cannot recover anything.")
+			raise RPCRefusedError("I'm not in panic")
+
+		# Back to active mode 
+		self.state=MasterService.ST_ACTIVE
+		self.triggerElection()
+
 
 	# Passive master's stuff
 	###########################################################################
@@ -320,7 +343,7 @@ class MasterService(Service):
 		self.state=MasterService.ST_LEAVING
 
 		if previousState is MasterService.ST_ACTIVE:
-			# Delete our own record
+			# Delete our own record # TODO reappel unregisterNode
 			name=DNSCache().getInstance().name
 			del self.status[name]
 			log.info("Node %s has quit the cluster." % (name))
