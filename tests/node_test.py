@@ -375,6 +375,13 @@ class NodeTests(MockerTestCase):
 	def test_run_error(self):
 		self.assertRaises(cxm.node.ClusterNodeError,self.node.run,"run failure")
 
+	def test_fence_ok(self):
+		cxm.core.cfg['FENCE_CMD'] = "fence_ok"
+		self.assertEqual(self.node.fence(),None)
+
+	def test_fence_error(self):
+		cxm.core.cfg['FENCE_CMD'] = "fence_fail"
+		self.assertRaises(cxm.node.FenceNodeError,self.node.fence)
 
 if __name__ == "__main__":
 	unittest.main()   

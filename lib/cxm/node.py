@@ -1,4 +1,3 @@
-#!/usr/bin/python
 #-*- coding:Utf-8 -*-
 
 # cxm - Clustered Xen Management API and tools
@@ -146,8 +145,7 @@ class Node:
 
 			if proc.wait() != 0:
 				msg=stderr.read()
-				if(len(msg)>0):
-					raise ClusterNodeError(self.hostname,ClusterNodeError.SHELL_ERROR,msg)
+				raise ClusterNodeError(self.hostname,ClusterNodeError.SHELL_ERROR,msg)
 		else:
 			if core.cfg['DEBUG'] : print "DEBUG SSH: "+ self.get_hostname() +" -> "+cmd
 			stdin, stdout, stderr = self.ssh.exec_command(cmd)
@@ -158,8 +156,7 @@ class Node:
 				stderr.channel.settimeout(3)
 				try:
 					msg=stderr.read()
-					if(len(msg)>0):
-						raise ClusterNodeError(self.hostname,ClusterNodeError.SSH_ERROR,msg)
+					raise ClusterNodeError(self.hostname,ClusterNodeError.SSH_ERROR,msg)
 				except socket.timeout:
 					raise ClusterNodeError(self.hostname,ClusterNodeError.SSH_ERROR,"Timeout reading stderr !")
 		return stdout
@@ -456,6 +453,24 @@ class Node:
 
 		return safe
 
+	def fence(self):
+		"""
+		Fence this node. 
+
+		You have to make a fencing script that will use iLo, IPMI or other such fencing device.
+		See FENCE_CMD in configuration file.
+
+		Raise a FenceNodeError if the fence fail.
+		"""
+		if self.is_local_node():
+			print " ** WARNING : node is self-fencing !"
+			print "\"Cherie ça va trancher.\""
+
+		try:
+			self.run(core.cfg['FENCE_CMD'] + " " + self.get_hostname())
+		except ClusterNodeError, e:
+			raise FenceNodeError(e.value)
+
 	# Define accessors 
 	legacy_server = property(get_legacy_server)
 	metrics = property(get_metrics)
@@ -495,8 +510,8 @@ class ClusterNodeError(Exception):
 		return "\nError on node " +self.nodename+ ": " + msg
 
 
-
-if __name__ == "__main__":
+class FenceNodeError(Exception):
+	"""This class is used to raise error when fencing fail."""
 	pass
 
 

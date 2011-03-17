@@ -67,7 +67,7 @@ VERSION="0.6.1"
 
 # Default configuration
 cfg = { 
-	'VMCONF_DIR' :"/etc/xen/vm/",
+	'VMCONF_DIR': "/etc/xen/vm/",
 	'PATH': "",
 	'NOREFRESH': False,
 	'DEBUG': False,
@@ -76,6 +76,7 @@ cfg = {
 	'LB_MAX_VM_PER_NODE': 20,
 	'LB_MAX_LAYER': 4,
 	'LB_MIN_GAIN': 5,
+	'FENCE_CMD': "cxm_fence",	# Take the node's name as first param
 	}
 
 

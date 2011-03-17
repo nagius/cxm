@@ -22,23 +22,10 @@
 #
 ###########################################################################
 
-# Mock : Simulate any command with a success or an error
+# Mock : Simulate a failed fence action
 
-case "$@" in
-	"success")
-		echo "OK"
-		#cat /dev/urandom | tr -dc '[:alnum:]' | head -c 70000
-		exit 0
-	;;
-
-	"failure")
-		echo "FAILURE" >&2
-		exit 2
-	;;
-	*)
-	echo "Error: bad params: $@" >&2
-	exit 1
-	;;
-esac
+echo "Fencing $1"
+echo "Fence failed ! " >&2
+exit 1
 
 

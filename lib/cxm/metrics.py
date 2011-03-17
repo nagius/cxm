@@ -118,9 +118,9 @@ class Metrics:
 		io=dict()
 		for dom_rec in dom_recs.values():
 			io_read=[ int(val) for val in \
-				self.node.run("cat /sys/bus/xen-backend/devices/vbd-" + dom_rec['domid'] + "-*/statistics/rd_req 2>/dev/null").readlines() ]
+				self.node.run("cat /sys/bus/xen-backend/devices/vbd-" + dom_rec['domid'] + "-*/statistics/rd_req 2>/dev/null || true").readlines() ]
 			io_write=[ int(val) for val in \
-				self.node.run("cat /sys/bus/xen-backend/devices/vbd-" + dom_rec['domid'] + "-*/statistics/wr_req 2>/dev/null").readlines() ]
+				self.node.run("cat /sys/bus/xen-backend/devices/vbd-" + dom_rec['domid'] + "-*/statistics/wr_req 2>/dev/null || true").readlines() ]
 			io[dom_rec['name_label']]={ 'Read': sum(io_read), 'Write': sum(io_write) }
 		return io
 
