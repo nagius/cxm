@@ -92,7 +92,10 @@ class NetHeartbeat(object):
 		self._port = reactor.listenUDP(0, UDPSender(d, self.c_getMsg, self.dest))
 
 	def forcePulse(self):
-		self._proto.sendMessage()
+		try:
+			self._proto.sendMessage()
+		except AttributeError:   # If _proto has not been started
+			pass	
 
 	def _run(self, result):
 		self._proto = result

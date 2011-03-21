@@ -41,6 +41,7 @@ from heartbeats import *
 import core
 from node import Node
 from rpc import RPCService, NodeRefusedError, RPCRefusedError
+from diskheartbeat import DiskHeartbeat
 
 # TODO A gérer : perte de connection xenapi / async ?
 # TODO système de reload de la conf sur sighup et localrpc reload
@@ -48,6 +49,10 @@ from rpc import RPCService, NodeRefusedError, RPCRefusedError
 # TODO revoir cas quit pendant vote test state dans stopservice ?
 
 # TODO revoir quit pendnant panic + rpc panicTest
+# TODO procedure de formattage
+# TODO add check disk nr_node
+# TODO fonction pour passage master/slave ?
+# TODO gestion erreur joinCluster
 
 core.cfg['QUIET']=True
 
@@ -72,6 +77,8 @@ class MasterService(Service):
 		self.master=None					# Name of the active master
 		self.status=dict()					# Whole cluster status
 		self.localNode=Node(DNSCache.getInstance().name)
+		self.disk=DiskHeartbeat()
+		self.l_check=task.LoopingCall(self.checkHeartbeats)
 		self.s_slaveHb=SlaveHearbeatService(self)
 		self.s_masterHb=MasterHeartbeatService(self.getStatus)
 		self.s_rpc=RPCService(self) 
@@ -270,6 +277,7 @@ class MasterService(Service):
 	def registerNode(self, name):
 		def validHostname(result):
 			self.status[name]={}
+			self.disk.make_slot(name)
 			log.info("Node %s has joined the cluster." % (name))
 			
 		def invalidHostname(reason):
@@ -296,10 +304,14 @@ class MasterService(Service):
 			
 
 	def _unregister(self, name):
-		# TODO suppression HB disk
 		del self.status[name]
+		try:
+			self.disk.erase_slot(name)
+		except DiskHeartbeatError, e:
+			log.warn("Cannot erase slot: %s. You may have to reformat hearbeat disk." % (e))
+
 		DNSCache.getInstance().delete(name)
-		log.info("Node %s has quit the cluster." % (name))
+		log.info("Node %s has been unregistered." % (name))
 
 	def unregisterNode(self, name):
 		if self.state != MasterService.ST_ACTIVE:
@@ -384,7 +396,7 @@ class MasterService(Service):
 
 			if self.state == MasterService.ST_ACTIVE:
 				reactor.callLater(1,self.s_masterHb.startService) 
-				# TODO service HB disk ici + init + check si utilisé
+				self.l_check.start(1).addErrback(log.err)
 		
 		def joinRefused(reason):
 			reason.trap(NodeRefusedError)
@@ -412,10 +424,16 @@ class MasterService(Service):
 				self.stopService() 
 				return # Should be better with an exception, but dunno how to handle it with callLater...
 
+			if DiskHeartbeat.is_in_use():
+				log.err("Heartbeat disk is in use but we are alone !")
+				self.stopService()
+				return
+
 			log.info("No master found. I'm now the new master of %s." % (CLUSTER_NAME))
 			self.state=MasterService.ST_ACTIVE
 			self.master=DNSCache.getInstance().name
 			self.status[self.master]={}
+			self.disk.make_slot(DNSCache.getInstance().name)
 			startHeartbeats()
 
 		else:
@@ -430,8 +448,9 @@ class MasterService(Service):
 			d.addErrback(log.err)
 
 	# TODO 
-	def heartbeatsCheck(self):
-		pass
+	def checkHeartbeats(self):
+		# TODO comparaison liste node ? cas partition a voir
+		pprint(self.disk.get_all_ts())
 
 
 # vim: ts=4:sw=4:ai

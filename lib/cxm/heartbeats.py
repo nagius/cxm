@@ -28,10 +28,12 @@
 from pprint import pprint
 
 from twisted.application.service import Service
+from twisted.internet import defer, task
+from dnscache import DNSCache
 import logs as log
-from twisted.internet import defer
 from messages import *
 from netheartbeat import *
+from diskheartbeat import *
 
 
 class SlaveHearbeatService(Service):
@@ -43,22 +45,31 @@ class SlaveHearbeatService(Service):
 		return MessageSlaveHB().forge(self._master.getLocalNode())
 
 	def startService(self):
+		def heartbeatFailed(reason):
+			log.err("Disk heartbeat failure: %s. Shutting down." % (reason.getErrorMessage()))
+			self._master.stopService()  # TODO voir cas perte baie disque + mode panic ? demande ejection ?
+
 		Service.startService(self)
 
-		log.info("Starting slave heartbeat...")
+		log.info("Starting slave heartbeats...")
 		self._hb = NetHeartbeat(self.forgeSlaveHeartbeat, self._master.getActiveMaster())
 		self._hb.start()
+		self._call = task.LoopingCall(self._master.disk.write_ts, DNSCache.getInstance().name)
+		self._call.start(1).addErrback(heartbeatFailed)
 	
 	def stopService(self):
 		if self.running:
 			Service.stopService(self)
-			log.info("Stopping slave heartbeat service...")
+			log.info("Stopping slave heartbeats...")
+			if self._call.running:
+				self._call.stop()
 			return self._hb.stop()
 		else:
 			return defer.succeed(None)
 
 	def forcePulse(self):
-		self._hb.forcePulse()
+		if self.running:
+			self._hb.forcePulse()
 
 
 class MasterHeartbeatService(Service):
@@ -85,6 +96,8 @@ class MasterHeartbeatService(Service):
 			return defer.succeed(None)
 
 	def forcePulse(self):
-		self._hb.forcePulse()
+		if self.running:
+			self._hb.forcePulse()
+
 
 # vim: ts=4:sw=4:ai
