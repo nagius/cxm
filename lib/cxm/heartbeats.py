@@ -46,8 +46,8 @@ class SlaveHearbeatService(Service):
 
 	def startService(self):
 		def heartbeatFailed(reason):
-			log.err("Disk heartbeat failure: %s. Shutting down." % (reason.getErrorMessage()))
-			self._master.stopService()  # TODO voir cas perte baie disque + mode panic ? demande ejection ?
+			log.err("Disk heartbeat failure: %s." % (reason.getErrorMessage()))
+			self.stopService()  # Stop slave heartbeat to tell master we have a problem
 
 		Service.startService(self)
 

@@ -52,7 +52,6 @@ from diskheartbeat import DiskHeartbeat
 # TODO procedure de formattage
 # TODO add check disk nr_node
 # TODO fonction pour passage master/slave ?
-# TODO gestion erreur joinCluster
 
 core.cfg['QUIET']=True
 
@@ -276,8 +275,12 @@ class MasterService(Service):
 
 	def registerNode(self, name):
 		def validHostname(result):
+			try:
+				self.disk.make_slot(name)
+			except DiskHeartbeatError, e:
+				raise NodeRefusedError("Disk heartbeat failure: %s" % (e))
+
 			self.status[name]={}
-			self.disk.make_slot(name)
 			log.info("Node %s has joined the cluster." % (name))
 			
 		def invalidHostname(reason):
@@ -290,11 +293,11 @@ class MasterService(Service):
 
 		if name not in ALLOWED_NODES:
 			log.warn("Node %s not allowed to join this cluster. Refusing." % (name))
-			raise NodeRefusedError("Node "+name+" not allowed to join this cluster.")
+			raise NodeRefusedError("Node not allowed to join this cluster.")
 
 		if name in self.status:
 			log.warn("None %s is already joined ! Cannot re-join." % (name))
-			raise NodeRefusedError("Node "+name+" already in cluster.")
+			raise NodeRefusedError("Node already in cluster.")
 
 		# Check if hostname is valid
 		d=DNSCache.getInstance().add(name)
@@ -395,7 +398,7 @@ class MasterService(Service):
 			self.s_rpc.startService()
 
 			if self.state == MasterService.ST_ACTIVE:
-				reactor.callLater(1,self.s_masterHb.startService) 
+				self.s_masterHb.startService() 
 				self.l_check.start(1).addErrback(log.err)
 		
 		def joinRefused(reason):
@@ -417,40 +420,44 @@ class MasterService(Service):
 			return d
 
 
-		if self.master is None:
-			# New active master
-			if DNSCache.getInstance().name not in ALLOWED_NODES:
-				log.warn("I'm not allowed to create a new cluster. Exiting.")
-				self.stopService() 
-				return # Should be better with an exception, but dunno how to handle it with callLater...
+		try:
+			if self.master is None:
+				# New active master
+				if DNSCache.getInstance().name not in ALLOWED_NODES:
+					log.warn("I'm not allowed to create a new cluster. Exiting.")
+					raise Exception("Cluster creation not allowed")
 
-			if DiskHeartbeat.is_in_use():
-				log.err("Heartbeat disk is in use but we are alone !")
-				self.stopService()
-				return
+				if DiskHeartbeat.is_in_use():
+					log.err("Heartbeat disk is in use but we are alone !")
+					raise Exception("Heartbeat disk already in use")
 
-			log.info("No master found. I'm now the new master of %s." % (CLUSTER_NAME))
-			self.state=MasterService.ST_ACTIVE
-			self.master=DNSCache.getInstance().name
-			self.status[self.master]={}
-			self.disk.make_slot(DNSCache.getInstance().name)
-			startHeartbeats()
+				log.info("No master found. I'm now the new master of %s." % (CLUSTER_NAME))
+				self.state=MasterService.ST_ACTIVE
+				self.master=DNSCache.getInstance().name
+				self.status[self.master]={}
+				self.disk.make_slot(DNSCache.getInstance().name)
+				startHeartbeats()
 
-		else:
-			# Passive master
-			self.state=MasterService.ST_JOINING
-			log.info("Trying to join cluster %s..." % (CLUSTER_NAME))
+			else:
+				# Passive master
+				self.state=MasterService.ST_JOINING
+				log.info("Trying to join cluster %s..." % (CLUSTER_NAME))
 
-			factory = pb.PBClientFactory()
-			rpcConnector = reactor.connectTCP(self.master, 8800, factory)
-			d = factory.getRootObject()
-			d.addCallback(masterConnected)
-			d.addErrback(log.err)
+				factory = pb.PBClientFactory()
+				rpcConnector = reactor.connectTCP(self.master, 8800, factory)
+				d = factory.getRootObject()
+				d.addCallback(masterConnected)
+				d.addErrback(log.err)
+		except Exception, e:
+			log.err("Startup failed: %s. Shutting down." % (e))
+			self.stopService()
+			
 
 	# TODO 
 	def checkHeartbeats(self):
 		# TODO comparaison liste node ? cas partition a voir
 		pprint(self.disk.get_all_ts())
+		# TODO cas perte baie disque locale
 
 
 # vim: ts=4:sw=4:ai
