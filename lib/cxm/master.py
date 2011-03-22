@@ -46,12 +46,11 @@ from diskheartbeat import DiskHeartbeat
 # TODO A gérer : perte de connection xenapi / async ?
 # TODO système de reload de la conf sur sighup et localrpc reload
 # TODO vérifier fermeture PBClientFactory
-# TODO revoir cas quit pendant vote test state dans stopservice ?
 
 # TODO revoir quit pendnant panic + rpc panicTest
-# TODO procedure de formattage
 # TODO add check disk nr_node
 # TODO fonction pour passage master/slave ?
+# TODO gérer cas partition + possibilité d'ajout de node pendant partition ?
 
 core.cfg['QUIET']=True
 
@@ -62,29 +61,35 @@ PORT=6666
 
 class MasterService(Service):
 
-	# Possible master states (for self.state)
-	ST_ACTIVE  = "active"
-	ST_PASSIVE = "passive"  # Passive master, aka slave
-	ST_JOINING = "joining"
-	ST_LEAVING = "leaving"	
-	ST_VOTING  = "voting"	# During election stage
-	ST_ALONE   = "alone"	# Before joining
-	ST_PANIC   = "panic"	# "I don't do anything" mode, but still active master
+	# Possible master roles (for self.role)
+	RL_ACTIVE  = "active"			# Active master, aka master
+	RL_PASSIVE = "passive"  		# Passive master, aka slave
+	RL_JOINING = "joining"			# When trying to connect to the cluster
+	RL_LEAVING = "leaving"			# When trying to leave the cluster
+	RL_VOTING  = "voting"			# During election stage
+	RL_ALONE   = "alone"			# Before joining
+
+	# Possible states, aka error mode (for self.state)
+	ST_NORMAL    = "normal" 		# Normal operations
+	ST_PARTITION = "partition"		# When a network failure separate cluster in two part
+	ST_PANIC     = "panic"			# "I don't do anything" mode
+
 
 	def __init__(self):
-		self.state=MasterService.ST_ALONE	# Current status of this node
-		self.master=None					# Name of the active master
-		self.status=dict()					# Whole cluster status
-		self.localNode=Node(DNSCache.getInstance().name)
-		self.disk=DiskHeartbeat()
-		self.l_check=task.LoopingCall(self.checkHeartbeats)
-		self.s_slaveHb=SlaveHearbeatService(self)
-		self.s_masterHb=MasterHeartbeatService(self.getStatus)
-		self.s_rpc=RPCService(self) 
+		self.role		= MasterService.RL_ALONE		# Current role of this node
+		self.state		= MasterService.ST_NORMAL		# Current cluster error status
+		self.master		= None							# Name of the active master
+		self.status		= dict()						# Whole cluster status
+		self.localNode	= Node(DNSCache.getInstance().name)
+		self.disk		= DiskHeartbeat()
+		self.l_check	= task.LoopingCall(self.checkHeartbeats)
+		self.s_slaveHb	= SlaveHearbeatService(self)
+		self.s_masterHb	= MasterHeartbeatService(self)
+		self.s_rpc		= RPCService(self) 
 
 		# Election Stuff
-		self.ballotBox=None
-		self.currentElection=None
+		self.ballotBox = None
+		self.currentElection = None
 
 	def startService(self):
 		Service.startService(self)
@@ -117,9 +122,13 @@ class MasterService(Service):
 	
 	def panic(self):
 		# Engage panic mode
-		log.emerg("SYSTEM FAILURE: panic mode engaged.")
+		if self.role != MasterService.RL_ACTIVE:
+			log.warn("I'm not master. Cannot engage panic mode.")
+			raise RPCRefusedError("Not master")
+
+		log.emerg("SYSTEM FAILURE: Panic mode engaged.")
 		log.emerg("This is a critical error. You should bring your ass over here, right now.")
-		log.emerg("Please check logs and be sure of what you'r doing before re-engaging normal mode.")
+		log.emerg("Please check logs and be sure of what you're doing before re-engaging normal mode.")
 		self.state=MasterService.ST_PANIC
 
 		# TODO stop check heartbeat + stop LB
@@ -131,6 +140,9 @@ class MasterService(Service):
 	def getStatus(self):
 		return self.status
 	
+	def getState(self):
+		return self.state
+	
 	def getLocalNode(self):
 		return self.localNode
 
@@ -139,6 +151,12 @@ class MasterService(Service):
 	
 	def getNodesList(self):
 		return self.status.keys()
+
+	def isActive(self):
+		return self.role == MasterService.RL_ACTIVE
+
+	def isInPanic(self):
+		return self.state == MasterService.ST_PANIC
 
 	# Messages handlers
 	###########################################################################
@@ -151,10 +169,6 @@ class MasterService(Service):
 			"voteresponse" : self.recordVote,
 		}
 
-		if self.state == MasterService.ST_PANIC:
-			log.err("Panic mode engaged. Ignoring message from %s." % (host))
-			return
-
 		try:
 			msg=MessageHelper.get(data, host)
 			dispatcher[msg.type()](msg)
@@ -166,7 +180,7 @@ class MasterService(Service):
 	def updateNodeStatus(self, msg):
 #		print "slave recu " + str(msg)
 
-		if self.state != MasterService.ST_ACTIVE:
+		if self.role != MasterService.RL_ACTIVE:
 			print "Warning: received slave HB alors que pas master"
 			return
 
@@ -188,12 +202,17 @@ class MasterService(Service):
 			log.info("Found master at %s." % (self.master))
 
 		# Active master's checks 
-		if self.state == MasterService.ST_ACTIVE:
+		if self.role == MasterService.RL_ACTIVE:
 			if self.master == msg.node:
 				return		# Discard our own master heartbeat
 			else:
 				log.warn("Received another master's heartbeat ! Trying to recover from partition...")
 				self.triggerElection().addErrback(log.err) # TODO test collision vote request
+
+				# Propagate panic mode from another master
+				if msg.state == MasterService.ST_PANIC:
+					log.warn("Concurrent master is in panic mode, so we should be too.")
+					self.panic()
 				return
 
 		# Passive master's checks
@@ -201,11 +220,18 @@ class MasterService(Service):
 			log.err("Received master heartbeat from a wrong master %s !" % (msg.node))
 			return
 
-		# Keep a backup of the active master's status
+		# Check error mode change to panic
+		if not self.isInPanic() and msg.state == MasterService.ST_PANIC:
+			log.emerg("SYSTEM FAILURE: Panic mode has been engaged by master.")
+
+		# Keep a backup of the active master's state and status
 		self.status=msg.status
+		self.state=msg.state
 #		pprint(self.status)
 
 	def voteForNewMaster(self, msg):
+		# Elections accepted even if in panic mode
+
 		def sendVote(result):
 			log.info("Sending our vote...")
 			result.sendMessage()
@@ -215,17 +241,17 @@ class MasterService(Service):
 		self.currentElection=msg.election
 
 		# Discard vote request if we are leaving
-		if self.state == MasterService.ST_LEAVING:
+		if self.role == MasterService.RL_LEAVING:
 			log.info("Vote request ignored: we are leaving this cluster.")
 			return
 
 		# Stop heartbeating
 		self.s_slaveHb.stopService().addErrback(log.err)
-		if self.state == MasterService.ST_ACTIVE:
+		if self.role == MasterService.RL_ACTIVE:
 			self.s_masterHb.stopService().addErrback(log.err)
 
 		# Prepare election
-		self.state=MasterService.ST_VOTING
+		self.role=MasterService.RL_VOTING
 		self.ballotBox=dict()
 		reactor.callLater(1, self.countVotes) # Timout of election stage
 
@@ -236,7 +262,7 @@ class MasterService(Service):
 		d.addErrback(log.err)
 
 	def recordVote(self, msg):
-		if self.state != MasterService.ST_VOTING:
+		if self.role != MasterService.RL_VOTING:
 			log.warn("Vote received from %s but it's not election time !" % (msg.node))
 			return
 
@@ -247,12 +273,12 @@ class MasterService(Service):
 		self.ballotBox[msg.ballot]=msg.node
 
 	def countVotes(self):
-		if self.state != MasterService.ST_VOTING:
+		if self.role != MasterService.RL_VOTING:
 			log.warn("Tally triggered but it's not election time !")
 			return
 
 		if type(self.ballotBox) != dict or len(self.ballotBox) == 0:
-			log.emerg("No vote received ! Maybe network is down !")
+			log.emerg("No vote received ! There is a critical network failure.")
 			self.panic()
 			return
 
@@ -263,10 +289,10 @@ class MasterService(Service):
 
 		if self.master == DNSCache.getInstance().name:
 			log.info("I'm the new master.")
-			self.state=MasterService.ST_ACTIVE
+			self.role=MasterService.RL_ACTIVE
 			self.s_masterHb.startService()
 		else:
-			self.state=MasterService.ST_PASSIVE
+			self.role=MasterService.RL_PASSIVE
 			
 
 
@@ -286,10 +312,14 @@ class MasterService(Service):
 		def invalidHostname(reason):
 			log.warn("Node %s has an invalid name. Refusing." % (name))
 			raise NodeRefusedError(reason.getErrorMessage())
+		
+		if self.isInPanic():
+			log.warn("I'm in panic. Cannot register %s." % (name))
+			raise RPCRefusedError("Panic mode engaged")
 
-		if self.state != MasterService.ST_ACTIVE:
+		if self.role != MasterService.RL_ACTIVE:
 			log.warn("I'm not master. Cannot register %s." % (name))
-			raise RPCRefusedError("I'm not master.")
+			raise RPCRefusedError("Not master")
 
 		if name not in ALLOWED_NODES:
 			log.warn("Node %s not allowed to join this cluster. Refusing." % (name))
@@ -297,7 +327,7 @@ class MasterService(Service):
 
 		if name in self.status:
 			log.warn("None %s is already joined ! Cannot re-join." % (name))
-			raise NodeRefusedError("Node already in cluster.")
+			raise NodeRefusedError("Node already in cluster")
 
 		# Check if hostname is valid
 		d=DNSCache.getInstance().add(name)
@@ -317,9 +347,11 @@ class MasterService(Service):
 		log.info("Node %s has been unregistered." % (name))
 
 	def unregisterNode(self, name):
-		if self.state != MasterService.ST_ACTIVE:
+		# Can unregister node even if in panic mode
+
+		if self.role != MasterService.RL_ACTIVE:
 			log.warn("I'm not master. Cannot unregister %s." % (name))
-			raise RPCRefusedError("I'm not master")
+			raise RPCRefusedError("Not master")
 
 		if name not in self.status:
 			log.warn("Unknown node %s try to quit the cluster." % (name))
@@ -343,12 +375,19 @@ class MasterService(Service):
 		return d
 
 	def recoverFromPanic(self):
-		if self.state != MasterService.ST_PANIC:
+		if not self.isInPanic():
 			log.warn("I'm not in panic. Cannot recover anything.")
-			raise RPCRefusedError("I'm not in panic")
+			raise RPCRefusedError("Not in panic")
 
-		# Back to active mode 
-		self.state=MasterService.ST_ACTIVE
+		# Only master can do recovery
+		if self.role != MasterService.RL_ACTIVE:
+			log.warn("I'm not master. Cannot revover from panic.")
+			raise RPCRefusedError("Not master")
+
+		# Back to normal mode 
+		log.info("Recovering from panic mode. Back to normals operations.")
+		self.state=MasterService.ST_NORMAL
+		self.s_masterHb.forcePulse()
 		self.triggerElection()
 
 
@@ -363,10 +402,10 @@ class MasterService(Service):
 			d.addErrback(log.err)
 			return d
 		
-		previousState=self.state
-		self.state=MasterService.ST_LEAVING
+		previousState=self.role
+		self.role=MasterService.RL_LEAVING
 
-		if previousState == MasterService.ST_ACTIVE:
+		if previousState == MasterService.RL_ACTIVE:
 			# Self-delete our own record 
 			self._unregister(DNSCache.getInstance().name)
 
@@ -378,15 +417,15 @@ class MasterService(Service):
 			# Stop master hearbeat when vote request has been sent
 			d.addCallback(lambda _: self.s_masterHb.forcePulse())
 			d.addCallback(lambda _: self.s_masterHb.stopService())
-		elif previousState == MasterService.ST_PASSIVE:
+		elif previousState == MasterService.RL_PASSIVE:
 			rpcFactory = pb.PBClientFactory()
 			rpcConnector = reactor.connectTCP(self.master, 8800, rpcFactory)
 			d = rpcFactory.getRootObject()
 			d.addCallback(masterConnected)
-		elif previousState == MasterService.ST_VOTING:
-			log.err("Cannot quit: we are in election stage.")
-			d=defer.fail(Exception("Cannot quit during election stage"))
-		else: # ST_ALONE or ST_JOINING
+		else: # RL_ALONE or RL_JOINING or RL_VOTING
+			if previousState == MasterService.RL_VOTING:
+				# Others nodes will re-trigger an election if we win this one
+				log.warn("Quitting cluster during election stage !")
 			d=defer.succeed(None)
 		
 		return d
@@ -397,18 +436,18 @@ class MasterService(Service):
 			self.s_slaveHb.startService()
 			self.s_rpc.startService()
 
-			if self.state == MasterService.ST_ACTIVE:
+			if self.role == MasterService.RL_ACTIVE:
 				self.s_masterHb.startService() 
-				self.l_check.start(1).addErrback(log.err)
+#				self.l_check.start(1).addErrback(log.err)
 		
 		def joinRefused(reason):
-			reason.trap(NodeRefusedError)
-			log.err("Join to cluster %s failed : Master %s has refused me: %s" % 
+			reason.trap(NodeRefusedError, RPCRefusedError)
+			log.err("Join to cluster %s failed: Master %s has refused me: %s" % 
 				(CLUSTER_NAME, self.master, reason.getErrorMessage()))
 			self.stopService()
 
 		def joinAccepted(result):
-			self.state=MasterService.ST_PASSIVE
+			self.role=MasterService.RL_PASSIVE
 			log.info("Join successfull, I'm now part of cluster %s." % (CLUSTER_NAME))
 			startHeartbeats()
 			
@@ -432,7 +471,7 @@ class MasterService(Service):
 					raise Exception("Heartbeat disk already in use")
 
 				log.info("No master found. I'm now the new master of %s." % (CLUSTER_NAME))
-				self.state=MasterService.ST_ACTIVE
+				self.role=MasterService.RL_ACTIVE
 				self.master=DNSCache.getInstance().name
 				self.status[self.master]={}
 				self.disk.make_slot(DNSCache.getInstance().name)
@@ -440,7 +479,7 @@ class MasterService(Service):
 
 			else:
 				# Passive master
-				self.state=MasterService.ST_JOINING
+				self.role=MasterService.RL_JOINING
 				log.info("Trying to join cluster %s..." % (CLUSTER_NAME))
 
 				factory = pb.PBClientFactory()
@@ -455,6 +494,9 @@ class MasterService(Service):
 
 	# TODO 
 	def checkHeartbeats(self):
+		# Master failover still possible even if in panic mode
+
+
 		# TODO comparaison liste node ? cas partition a voir
 		pprint(self.disk.get_all_ts())
 		# TODO cas perte baie disque locale

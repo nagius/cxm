@@ -80,9 +80,10 @@ class DiskHeartbeat(object):
 		self.f.seek(2*DiskHeartbeat.BS) 
 	
 	def _close(self):
-		self.f.flush()
-		os.fsync(self.f.fileno())
-		self.f.close()
+		if not self.f.closed:
+			self.f.flush()
+			os.fsync(self.f.fileno())
+			self.f.close()
 		
 	def _update_nr_node(self, step):
 		"""Update number of node"""

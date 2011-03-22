@@ -58,9 +58,10 @@ class LocalRPC(pb.Root):
 	def remote_getNodesList(self):
 		return self._master.getNodesList()
 
-	def remote_getStatus(self):
+	def remote_getState(self):
 		status = dict()
 		status['state']=self._master.state
+		status['role']=self._master.role
 		status['master']=self._master.master
 
 		return status
@@ -68,8 +69,13 @@ class LocalRPC(pb.Root):
 	def remote_forceElection(self):
 		return self._master.triggerElection()
 
+	# Only for testing purpose
+	def remote_forcePanic(self):
+		return self._master.panic()
+
 	def remote_recover(self):
 		return self._master.recoverFromPanic()
+
 
 class RPCService(Service):
 

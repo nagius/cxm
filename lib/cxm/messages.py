@@ -95,21 +95,27 @@ class MessageMasterHB(Message):
 	def parse(self, data):
 		super(MessageMasterHB,self).parse(data)
 		self.status=data['status']
+		self.state=data['state']
 
 		# Check variable type
 		if type(self.status) != dict:
 			raise MessageError("Status must be a dict")
 
+		from master import MasterService
+		if self.state not in [MasterService.ST_NORMAL, MasterService.ST_PANIC, MasterService.ST_PARTITION]:
+			raise MessageError("Wrong value for state")
+			
 		return self
 		
-	def forge(self, status):
+	def forge(self, status, state):
 		super(MessageMasterHB,self).forge()
 
 		self.status=status
+		self.state=state
 		return self
 
 	def value(self):
-		msg = {'status': self.status}
+		msg = {'status': self.status, 'state': self.state}
 		return super(MessageMasterHB,self).value(msg)
 
 	def __repr__(self):

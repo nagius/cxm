@@ -56,11 +56,14 @@ class Agent(object):
 	def getNodesList(self):
 		return self._call("getNodesList")
 		
-	def getStatus(self):
-		return self._call("getStatus")
+	def getState(self):
+		return self._call("getState")
 
 	def forceElection(self):
 		return self._call("forceElection")
+
+	def forcePanic(self):
+		return self._call("forcePanic")
 
 	def recover(self):
 		return self._call("recover")

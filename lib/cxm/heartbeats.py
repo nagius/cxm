@@ -74,11 +74,11 @@ class SlaveHearbeatService(Service):
 
 class MasterHeartbeatService(Service):
 
-	def __init__(self, getStatus):
-		self.c_getStatus=getStatus
+	def __init__(self, master):
+		self._master=master
 
 	def forgeMasterHeartbeat(self):
-		return MessageMasterHB().forge(self.c_getStatus())
+		return MessageMasterHB().forge(self._master.getStatus(), self._master.getState())
 	
 	def startService(self):
 		Service.startService(self)
