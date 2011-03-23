@@ -100,15 +100,8 @@ node=None
       |  +-- -R-- Gauge     XenStatsHostVmAllocRam(5)	(MB)
       |  +-- -R-- Counter   XenStatsHostVmDiskRead(6)	(Requests)
       |  +-- -R-- Counter   XenStatsHostVmDiskWrite(7)	(Requests)
-      |
-      +--XenStatsHostVmNet(10)
-         |  Index: XenStatsHostVmNetIfName, XenStatsHostVmName
-         |
-         +-- -R-- String    XenStatsHostVmNetIfName(1)
-         |        Textual Convention: DisplayString
-         |        Size: 0..255
-         +-- -R-- Counter   XenStatsHostVmNetRx(2)		(Bytes)
-         +-- -R-- Counter   XenStatsHostVmNetTx(3)		(Bytes)
+      |  +-- -R-- Counter   XenStatsHostVmNetRx(8)		(Bytes)
+      |  +-- -R-- Counter   XenStatsHostVmNetTx(9)		(Bytes)
 
 """
 
@@ -161,18 +154,13 @@ def update_data():
 		oid=pp.encode(vm.name)
 		pp.add_str('1.9.1.'+oid,vm.name)
 		pp.add_int('1.9.2.'+oid,vm.id)
-		pp.add_gau('1.9.3.'+oid,"%.1f" % round(vms_stat[vm.name]['cpu']/nr_cpu,1)) # CPU Percentage relative to the host capatity
+		pp.add_gau('1.9.3.'+oid,"%.1f" % round(vms_stat[vm.name]['cpu']/nr_cpu,1)) # CPU Percentage relative to the host capacity
 		pp.add_gau('1.9.4.'+oid,vm.get_vcpu())
 		pp.add_gau('1.9.5.'+oid,vm.get_ram())
 		pp.add_cnt('1.9.6.'+oid,vms_stat[vm.name]['disk']['Read'])
 		pp.add_cnt('1.9.7.'+oid,vms_stat[vm.name]['disk']['Write'])
-		vifn=0
-		for vif in vms_stat[vm.name]['net']:
-			vifoid=pp.encode('eth'+str(vifn))
-			pp.add_str('1.10.1.'+vifoid+'.'+oid,'eth'+str(vifn))
-			pp.add_cnt('1.10.2.'+vifoid+'.'+oid,vif['Rx'])
-			pp.add_cnt('1.10.3.'+vifoid+'.'+oid,vif['Tx'])
-			vifn+=1
+		pp.add_cnt('1.9.8.'+oid,sum([ vif['Rx'] for vif in vms_stat[vm.name]['net'] ]))
+		pp.add_cnt('1.9.9.'+oid,sum([ vif['Tx'] for vif in vms_stat[vm.name]['net'] ]))
 
 	# For the dom0
 	oid=pp.encode("Domain-0")
