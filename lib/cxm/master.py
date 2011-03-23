@@ -45,11 +45,8 @@ from diskheartbeat import DiskHeartbeat
 
 # TODO A gérer : perte de connection xenapi / async ?
 # TODO système de reload de la conf sur sighup et localrpc reload
-# TODO vérifier fermeture PBClientFactory
 
-# TODO revoir quit pendnant panic + rpc panicTest
 # TODO add check disk nr_node
-# TODO fonction pour passage master/slave ?
 # TODO gérer cas partition + possibilité d'ajout de node pendant partition ?
 
 core.cfg['QUIET']=True
@@ -110,10 +107,11 @@ class MasterService(Service):
 			self._messagePort.stopListening()
 			self.s_rpc.stopService().addErrback(log.err)
 
+			# Stop slave hearbeats
+			self.s_slaveHb.stopService().addErrback(log.err)
+
 			# Cleanly leave cluster
 			d = self.leaveCluster()
-			# And then stop slave hearbeat
-			d.addCallback(lambda _: self.s_slaveHb.stopService())
 			d.addCallback(exit)
 			d.addErrback(log.err)
 			return d
@@ -248,7 +246,7 @@ class MasterService(Service):
 		# Stop heartbeating
 		self.s_slaveHb.stopService().addErrback(log.err)
 		if self.role == MasterService.RL_ACTIVE:
-			self.s_masterHb.stopService().addErrback(log.err)
+			self._stopMaster()
 
 		# Prepare election
 		self.role=MasterService.RL_VOTING
@@ -290,7 +288,7 @@ class MasterService(Service):
 		if self.master == DNSCache.getInstance().name:
 			log.info("I'm the new master.")
 			self.role=MasterService.RL_ACTIVE
-			self.s_masterHb.startService()
+			self._startMaster()
 		else:
 			self.role=MasterService.RL_PASSIVE
 			
@@ -298,6 +296,25 @@ class MasterService(Service):
 
 	# Active master's stuff
 	###########################################################################
+
+	def _stopMaster(self):
+		self.s_masterHb.forcePulse() # Send a last hearbeat before stopping
+		self.s_masterHb.stopService().addErrback(log.err)
+		if self.l_check.running:
+			self.l_check.stop()
+		# TODO stop LB service
+
+	def _startMaster(self):
+		def checkHeartbeatsFailed(reason):
+			log.emerg("Heartbeats' checks failed: %s." % (reason.getErrorMessage()))
+			self.panic()
+
+		self.s_masterHb.startService()
+		d=self.l_check.start(1)
+		d.addErrback(checkHeartbeatsFailed)
+		d.addErrback(log.err)
+		# TODO start LB service
+
 
 	def registerNode(self, name):
 		def validHostname(result):
@@ -398,10 +415,10 @@ class MasterService(Service):
 
 		def masterConnected(obj):
 			d = obj.callRemote("unregister",DNSCache.getInstance().name)
-			d.addCallback(lambda _: rpcConnector.disconnect())
 			d.addErrback(log.err)
+			d.addBoth(lambda _: rpcConnector.disconnect())
 			return d
-		
+
 		previousState=self.role
 		self.role=MasterService.RL_LEAVING
 
@@ -415,8 +432,7 @@ class MasterService(Service):
 			d=self.triggerElection()
 
 			# Stop master hearbeat when vote request has been sent
-			d.addCallback(lambda _: self.s_masterHb.forcePulse())
-			d.addCallback(lambda _: self.s_masterHb.stopService())
+			d.addCallback(lambda _: self._stopMaster())
 		elif previousState == MasterService.RL_PASSIVE:
 			rpcFactory = pb.PBClientFactory()
 			rpcConnector = reactor.connectTCP(self.master, 8800, rpcFactory)
@@ -437,8 +453,7 @@ class MasterService(Service):
 			self.s_rpc.startService()
 
 			if self.role == MasterService.RL_ACTIVE:
-				self.s_masterHb.startService() 
-#				self.l_check.start(1).addErrback(log.err)
+				self._startMaster() 
 		
 		def joinRefused(reason):
 			reason.trap(NodeRefusedError, RPCRefusedError)
@@ -457,7 +472,6 @@ class MasterService(Service):
 			d.addErrback(log.err)
 			d.addBoth(lambda _: rpcConnector.disconnect())
 			return d
-
 
 		try:
 			if self.master is None:
@@ -500,6 +514,8 @@ class MasterService(Service):
 		# TODO comparaison liste node ? cas partition a voir
 		pprint(self.disk.get_all_ts())
 		# TODO cas perte baie disque locale
+		# TODO cas timestamps à 0
+		raise Exception("coucou")
 
 
 # vim: ts=4:sw=4:ai

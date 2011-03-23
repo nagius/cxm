@@ -200,7 +200,7 @@ class MessageHelper(object):
 	def rand():
 		"""
 		Generate a random unique integer.
-		Warning, this integer is unique only if our are on a /24 (or above) network.
+		Warning, this integer is unique only if you are on a /24 (or above) network.
 		"""
 
 		ip=DNSCache.getInstance().ip.split(".")[3]

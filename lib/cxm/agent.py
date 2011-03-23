@@ -35,7 +35,7 @@ class Agent(object):
 		self._rpcConnector = reactor.connectUNIX(UNIX_PORT, self._factory)
 
 	def __del__(self):
-		self._factory.getRootObject().addCallback(lambda _: self._rpcConnector.disconnect())
+		self._factory.getRootObject().addBoth(lambda _: self._rpcConnector.disconnect())
 
 	def _call(self, action):
 		def remoteCall(obj, action):
@@ -81,7 +81,7 @@ class Agent(object):
 			d.addCallback(masterConnected)
 			return d
 
-		d=self.getStatus()
+		d=self.getState()
 		d.addCallback(connectMaster)
 
 		return d

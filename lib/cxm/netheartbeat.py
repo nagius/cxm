@@ -103,11 +103,12 @@ class NetHeartbeat(object):
 		self._call.start(1).addErrback(self._sendError)
 
 	def _sendError(self, reason):
-		# TODO a gérer mieux que ca
+		# TODO a gérer mieux que ca, cas perte xenapi + compteur restart ?
 		log.err("Socket write error: %s" % (reason))
 
 	def stop(self):
-		self._call.stop()
+		if self._call.running:
+			self._call.stop()
 		return defer.maybeDeferred(self._port.stopListening)
 
 
