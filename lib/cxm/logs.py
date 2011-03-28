@@ -32,11 +32,11 @@ import syslog, os
 # TODO a passer sur fichier
 LOG_PATH="/var/log/cxm/" 
 
-def init():
+def init(name):
 	if not os.path.isdir(LOG_PATH):
 		os.mkdir(LOG_PATH)
-	syslog.openlog("cxmd", syslog.LOG_PID, syslog.LOG_DAEMON)
-	log.startLogging(DailyLogFile("cxmd.log", LOG_PATH), setStdout=False)
+	syslog.openlog(name, syslog.LOG_PID, syslog.LOG_DAEMON)
+	log.startLogging(DailyLogFile(name+".log", LOG_PATH), setStdout=False)
 
 
 def info(message, **kw):
