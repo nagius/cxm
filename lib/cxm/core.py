@@ -105,6 +105,9 @@ def load_cfg():
 		print "Configuration file error: %s" % e
 		sys.exit(3)
 
+	if not cfg['VMCONF_DIR'].endswith("/"):
+		cfg['VMCONF_DIR']+="/"
+
 if __name__ == "__main__":
 	pass
 
