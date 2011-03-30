@@ -58,6 +58,9 @@ class LocalRPC(pb.Root):
 	def remote_getNodesList(self):
 		return self._master.getNodesList()
 
+	def remote_ping(self):
+		return defer.succeed("PONG") 
+
 	def remote_getState(self):
 		status = dict()
 		status['state']=self._master.state

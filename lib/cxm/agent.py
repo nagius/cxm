@@ -56,6 +56,9 @@ class Agent(object):
 	def getNodesList(self):
 		return self._call("getNodesList")
 		
+	def ping(self):
+		return self._call("ping")
+		
 	def getState(self):
 		return self._call("getState")
 
