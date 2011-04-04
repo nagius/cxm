@@ -93,11 +93,6 @@ class XenCluster:
 		else:
 			return create_nodes(nodeslist)
 
-	def __del__(self):
-		"""Close connections on exit."""
-		for node in self.get_nodes():
-			node.__del__()
-
 	def get_nodes(self):
 		"""Fetch the current actives nodes.
 
