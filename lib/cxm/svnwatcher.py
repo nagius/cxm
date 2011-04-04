@@ -23,24 +23,26 @@
 #
 ###########################################################################
 
-from twisted.internet import protocol, reactor
+from twisted.internet import protocol, reactor, threads
 from twisted.application.service import Service
 from twisted.internet.base import DelayedCall
 
 from copy import deepcopy
 import platform
 
+from agent import Agent
+from xencluster import XenCluster
 import node, core
 import logs as log
 
 class InotifyPP(protocol.ProcessProtocol):
 	
-	def __init__(self, localNode, nodes=None):
+	def __init__(self, node, agent=None):
 		self.toAdd=list()
 		self.toDel=list()
 		self._call=None
-		self.node=localNode
-		self.nodes=nodes
+		self.node=node
+		self.agent=agent
 
 	def connectionMade(self):
 		log.info("Inotify started.")
@@ -78,8 +80,23 @@ class InotifyPP(protocol.ProcessProtocol):
 			reactor.stop()
 		
 	def doUpdate(self):
-		self.node.run("svn update "+ core.cfg['VMCONF_DIR'])
+		def doClusterUpdate(result):
+			for node in result.get_nodes():
+				d=threads.deferToThread(node.run, "svn update "+ core.cfg['VMCONF_DIR'])
+				d.addErrback(log.err)
 
+		def getCluster(result):
+			d=XenCluster.getDeferInstance(result)
+			d.addCallback(doClusterUpdate)
+			d.addErrback(log.err)
+
+		if self.agent:
+			d=self.agent.getNodesList()
+			d.addCallback(getCluster)
+			d.addErrback(log.err)
+		else:
+			self.node.run("svn update "+ core.cfg['VMCONF_DIR'])
+			
 	def processEnded(self, reason):
 		log.warn("Inotify has died: %s" % (reason.value))
 		try:
@@ -91,19 +108,28 @@ class InotifyPP(protocol.ProcessProtocol):
 class SvnwatcherService(Service):
 
 	def __init__(self):
-		pass
+		self.node=node.Node(platform.node()) # Local node, always connected
+		self.agent=Agent()		# Factory will be stopped if cxmd does'nt respond
 
 	def startService(self):
-		Service.startService(self)
+		def standalone(reason):
+			log.info("Starting in standalone mode.")
+			self.agent=None
+			
+		def cluster(result):
+			log.info("Starting in cluster mode.")
 
-		self.node=node.Node(platform.node())
+		Service.startService(self)
 
 		msg=self.node.run("svn status "+core.cfg['VMCONF_DIR'] +" 2>&1").read()
 		if len(msg)>0:
 			log.err("Your repo is not clean. Please check it : %s" % (msg))
 			raise Exception("SVN repo not clean")
 
-		reactor.callWhenRunning(self.spawnInotify)
+		d=self.agent.ping()
+		d.addCallbacks(cluster, standalone)
+		d.addBoth(lambda _: self.spawnInotify())
+		d.addErrback(log.err)
 	
 	def stopService(self):
 		if self.running:
@@ -120,8 +146,9 @@ class SvnwatcherService(Service):
 				pass
 
 	def spawnInotify(self):
+		# We use this ugly way because Pyinotify and Twisted's INotify require Python 2.6
 		argv=["inotifywait", "-e", "create", "-e", "modify", "-e", "delete", "-m", core.cfg['VMCONF_DIR'], "--exclude", "/\.|~$|[0-9]+$"]
-		pp = InotifyPP(self.node)
+		pp = InotifyPP(self.node, self.agent)
 		self._process=reactor.spawnProcess(pp, argv[0], argv, {})
 
 

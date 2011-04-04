@@ -27,7 +27,7 @@
 from twisted.application import service
 import signal
 from cxm.svnwatcher import SvnwatcherService
-import cxm.logs
+import cxm.logs, cxm.core
 
 # Define the name of this daemon
 name="svnwatcherd"
@@ -37,6 +37,7 @@ svnwatcher=SvnwatcherService()
 application = service.Application(name)
 svnwatcher.setServiceParent(application)
 
+cxm.core.cfg['QUIET']=True
 # Start logger subsystem
 cxm.logs.init(name)
 
