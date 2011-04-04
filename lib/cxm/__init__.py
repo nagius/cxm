@@ -27,7 +27,7 @@
 
 import core
 
-# Autoload the global configuratino file when importing this package
+# Autoload the global configuration file when importing this package
 core.load_cfg() 
 
 # vim: ts=4:sw=4:ai

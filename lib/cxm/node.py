@@ -464,7 +464,7 @@ class Node:
 		"""
 		if self.is_local_node():
 			print " ** WARNING : node is self-fencing !"
-			print "\"Cherie ça va trancher.\""
+			print "\"Chérie ça va trancher.\""
 
 		try:
 			self.run(core.cfg['FENCE_CMD'] + " " + self.get_hostname())

@@ -56,6 +56,7 @@ class LocalRPC(pb.Root):
 		return self._master.stopService()
 
 	def remote_getNodesList(self):
+		"""Return the list of actives nodes'hostname."""
 		return self._master.getNodesList()
 
 	def remote_ping(self):

@@ -32,7 +32,7 @@ class NodeTests(MockerTestCase):
 		cxm.core.cfg['PATH'] = "tests/stubs/bin/"
 		cxm.core.cfg['VMCONF_DIR'] = "tests/stubs/cfg/"
 		cxm.core.cfg['QUIET']=True
-		#cxm.core.cfg['DEBUG']=True
+		cxm.core.cfg['DEBUG']=False
 
 		# Mock xen session object
 		xs_mock = Mocker()
