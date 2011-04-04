@@ -32,14 +32,8 @@ class CoreTests(unittest.TestCase):
 	def setUp(self):
 		cxm.core.cfg['PATH'] = "tests/stubs/bin/"
 
-	def test_get_nodes_list(self):
-		values = ['xen0node01.home.net','xen0node02.home.net','xen0node03.home.net']
-
-		result=cxm.core.get_nodes_list()
-		self.assertEqual(result, values)
-
 	def test_api_version(self):
-		version = "0.6.1"
+		version = "0.7.0"
 
 		result=cxm.core.get_api_version()
 		self.assertEqual(result, version)

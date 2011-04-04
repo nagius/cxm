@@ -29,33 +29,69 @@
 
 import os, platform, time
 from sets import Set
+from twisted.internet import threads, defer
 
 import core, node, vm, loadbalancer
 from node import ClusterNodeError
+from agent import Agent
 
 class XenCluster:
 
 	"""This class is used to perform action on the xen cluster."""
 
-	# Actives Nodes
-	nodes = dict()
+	def __init__(self, nodes):
+		"""This should be private. Use getDeferInstance() instead."""
 
-	def __init__(self, nodeslist=None):
-		"""Instanciate a XenCluster object and associated Nodes.
+		assert type(nodes) == dict, "Param 'nodes' should be a dict."
+		self.nodes=nodes
+		
+	@staticmethod
+	def getDeferInstance(nodeslist=None):
+		"""Instantiate a XenCluster object and associated Nodes.
 
-		This constructor open SSH and XenAPI connections to all actives nodes.
+		This function open SSH and XenAPI connections to all actives nodes.
 		It take a (string) list of node's hostname as optionnal argument, if not given, 
-		the list is fetched by get_nodes_list().
+		the list will fetched from cxm'master.
 
-		If a node is not online, this will fail with an uncatched exception from paramiko or XenAPI.
+		Return a deferred that will be fired when all nodes are ready.
+		If a node is not online, the deferred will fail.
 		"""
+
 		if not core.cfg['QUIET']: print "Loading cluster..."
+		nodes=dict()
+
+		def instantiate(results):
+			for result in results:
+				if not result[0]:
+					raise Exception("Can't connect to %s: %s" % (nodeslist[results.index(result)], 
+						result[1].getErrorMessage()))
+			return XenCluster(nodes)
+
+		def add_node(result, hostname):
+			nodes[hostname]=result
+
+		def create_nodes(result):
+			ds=list()
+			for hostname in result:
+				d=threads.deferToThread(lambda x: node.Node(x), hostname)
+				d.addCallback(add_node, hostname)
+				ds.append(d)
+
+			dl=defer.DeferredList(ds, consumeErrors=1)
+			dl.addCallback(instantiate)
+			return dl
+			
+		def failed(reason):
+			raise Exception("Can't connect to local master: %s" % reason.getErrorMessage())
 
 		if not nodeslist:
-			nodeslist=core.get_nodes_list()
-
-		for hostname in nodeslist:
-			self.nodes[hostname]=node.Node(hostname)
+			agent=Agent()
+			d=agent.getNodesList()
+			d.addCallback(create_nodes)
+			d.addErrback(failed)
+			return d
+		else:
+			return create_nodes(nodeslist)
 
 	def __del__(self):
 		"""Close connections on exit."""
@@ -110,7 +146,6 @@ class XenCluster:
 				enabled.append(node)
 
 		return enabled
-
 
 	def activate_vm(self,selected_node,vmname):
 		"""Activate all the LVM logicals volumes of the specified VM exclusively on the selected node.

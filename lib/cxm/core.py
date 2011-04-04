@@ -29,6 +29,7 @@
 # TODO snapshot
 # TODO Add a cache to metrics.get_ram_infos() ?
 # Formaliser documentation des fonctions
+# Modifier gestion exception avec héritage
 
 
 """
@@ -57,13 +58,14 @@ to change the behavior of this package :
  - LB_MAX_VM_PER_NODE (int) : Maximum number of VM on each node (used by loadbalancer). 
  - LB_MAX_LAYER (int) : Maximum number of migration allowed for the loadbalancer.
  - LB_MIN_GAIN (int) : % minimun gain of selected solution by the loadbalancer.
+ - FENCE_CMD (string) : Script in charge of node fencing. Should take node's name as first parametrer.
 
 """
 
 import os, sys
 
 
-VERSION="0.6.1"
+VERSION="0.7.0"
 
 # Default configuration
 cfg = { 
@@ -79,19 +81,6 @@ cfg = {
 	'FENCE_CMD': "cxm_fence",	# Take the node's name as first param
 	}
 
-
-#@staticmethod
-def get_nodes_list():
-	"""Return the list of actives nodes' hostname used to instanciate the cluster."""
-	for line in os.popen(cfg['PATH'] + "mounted.ocfs2 -f"):
-		if "ocfs2" in line:
-			nodes=line.replace(","," ").split()
-			del nodes[0:2]  # Purge unwanted text
-			return nodes
-
-#@staticmethod 
-#def get_nodes_list(): # bouchon pour test
-#   return ['xen0node03.virt.s1.p.fti.net','xen0node01.virt.s1.p.fti.net','xen0node02.virt.s1.p.fti.net']
 
 def get_api_version():
 	"""Return the version number of this API."""

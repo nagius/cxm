@@ -33,7 +33,6 @@ class XenClusterTests(MockerTestCase):
 		cxm.core.cfg['PATH'] = "tests/stubs/bin/"
 		cxm.core.cfg['VMCONF_DIR'] = "tests/stubs/cfg/"
 		cxm.core.cfg['QUIET']=True
-	#	cxm.core.cfg['DEBUG']=True
 
 		# Dummy mocker
 		dummy_mock = Mocker()
@@ -50,7 +49,8 @@ class XenClusterTests(MockerTestCase):
 		cxm.xencluster.node=node
 
 		# Run test
-		self.cluster=cxm.xencluster.XenCluster([platform.node()])
+		name=platform.node()
+		self.cluster=cxm.xencluster.XenCluster({name: node.Node(name)})
 
 		node_mock.verify()
 		node_mock.restore()

@@ -34,9 +34,6 @@ class Agent(object):
 		self._factory = pb.PBClientFactory()
 		self._rpcConnector = reactor.connectUNIX(UNIX_PORT, self._factory)
 
-	def __del__(self):
-		self._factory.getRootObject().addBoth(lambda _: self._rpcConnector.disconnect())
-
 	def _call(self, action):
 		def remoteCall(obj, action):
 			d = obj.callRemote(action)
