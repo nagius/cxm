@@ -68,6 +68,7 @@ class InotifyPP(protocol.ProcessProtocol):
 		toDel=deepcopy(self.toDel)
 		self.toDel=list()
 
+		log.info("Committing for "+", ".join(toAdd)+", ".join(toDel))
 		try:
 			if len(toAdd) > 0:
 				self.node.run("svn add " + " ".join(map(lambda x: core.cfg['VMCONF_DIR']+x, toAdd)))

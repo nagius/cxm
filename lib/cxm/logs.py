@@ -25,19 +25,11 @@
 
 
 from twisted.python import log
-from twisted.python.logfile import DailyLogFile
 import core
-import syslog, os
-
-# TODO a passer sur fichier
-LOG_PATH="/var/log/cxm/" 
+import syslog
 
 def init(name):
-	if not os.path.isdir(LOG_PATH):
-		os.mkdir(LOG_PATH)
 	syslog.openlog(name, syslog.LOG_PID, syslog.LOG_DAEMON)
-	log.startLogging(DailyLogFile(name+".log", LOG_PATH), setStdout=False)
-
 
 def info(message, **kw):
 	log.msg(message, **kw)
@@ -57,7 +49,5 @@ def err(message, **kw):
 def emerg(message, **kw):
 	log.err("CRITICAL ERROR: %s" % (message), **kw)
 	syslog.syslog(syslog.LOG_EMERG, str(message))
-
-
 
 # vim: ts=4:sw=4:ai

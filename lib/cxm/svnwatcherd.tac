@@ -31,13 +31,13 @@ import cxm.logs, cxm.core
 
 # Define the name of this daemon
 name="svnwatcherd"
+cxm.core.cfg['QUIET']=True
 
 # Get the service
 svnwatcher=SvnwatcherService()
 application = service.Application(name)
 svnwatcher.setServiceParent(application)
 
-cxm.core.cfg['QUIET']=True
 # Start logger subsystem
 cxm.logs.init(name)
 
