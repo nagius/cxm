@@ -1,0 +1,82 @@
+#!/bin/bash
+#
+# Init file for SVNWatcher daemon
+#
+# chkconfig: 345 98 00
+# description: SVNWatcher daemon
+#
+
+# source function library
+. /etc/rc.d/init.d/functions
+
+prog="svnwatcherd"
+RETVAL=0
+
+PID_FILE=/var/run/${prog}.pid
+TAC_FILE=$(python -c "import cxm, os; print os.path.dirname(cxm.__file__)")/${prog}.tac
+LOG_DIR=/var/log/cxm/
+SVN_REPO="/etc/xen/vm"
+
+# check for required files
+if [ ! -x /usr/bin/twistd ]; then
+	echo -n "$0: /usr/bin/twistd not found !"
+	failure
+	echo
+	exit 1
+fi
+
+# set up run directory if necessary
+[ ! -d "${LOG_DIR}" ] && mkdir -p "${LOG_DIR}"
+
+
+case "$1" in
+	start)
+		echo -n "Starting $prog"
+
+		if [ -n "$(svn status $SVN_REPO)" ]; then
+			echo 
+			echo "Svn repository $SVN_REPO is not clean."
+			failure
+			echo
+			exit 2
+		fi		
+
+		/usr/bin/twistd -y $TAC_FILE --pidfile=$PID_FILE --logfile=$LOG_DIR/$prog.log
+		RETVAL=$?
+		[ "$RETVAL" = 0 ] && success || failure
+		[ "$RETVAL" = 0 ] && touch /var/lock/subsys/$prog
+		echo
+		;;
+
+	stop)
+		echo -n "Stopping $prog"
+		if [ -e "$PID_FILE" ]; then
+			kill `cat $PID_FILE`
+			success
+		else
+			echo -n " : pidfile not found !"
+			failure
+		fi
+		echo
+		RETVAL=$?
+		[ "$RETVAL" = 0 ] && rm -f /var/lock/subsys/$prog
+		;;
+
+	restart)
+		"${0}" stop
+		"${0}" start
+		;;
+
+    status)
+        status -p $PID_FILE $prog
+        RETVAL=$?
+        ;;
+
+    *)
+        echo $"Usage: $0 {start|stop|restart|status}"
+        RETVAL=1
+esac
+
+exit $RETVAL
+
+# EOF
