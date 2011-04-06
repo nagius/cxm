@@ -419,10 +419,10 @@ class MasterService(Service):
 			d.addBoth(lambda _: rpcConnector.disconnect())
 			return d
 
-		previousState=self.role
+		previousRole=self.role
 		self.role=MasterService.RL_LEAVING
 
-		if previousState == MasterService.RL_ACTIVE:
+		if previousRole == MasterService.RL_ACTIVE:
 			# Self-delete our own record 
 			self._unregister(DNSCache.getInstance().name)
 
@@ -433,13 +433,13 @@ class MasterService(Service):
 
 			# Stop master hearbeat when vote request has been sent
 			d.addCallback(lambda _: self._stopMaster())
-		elif previousState == MasterService.RL_PASSIVE:
+		elif previousRole == MasterService.RL_PASSIVE:
 			rpcFactory = pb.PBClientFactory()
 			rpcConnector = reactor.connectTCP(self.master, 8800, rpcFactory)
 			d = rpcFactory.getRootObject()
 			d.addCallback(masterConnected)
 		else: # RL_ALONE or RL_JOINING or RL_VOTING
-			if previousState == MasterService.RL_VOTING:
+			if previousRole == MasterService.RL_VOTING:
 				# Others nodes will re-trigger an election if we win this one
 				log.warn("Quitting cluster during election stage !")
 			d=defer.succeed(None)
@@ -509,13 +509,13 @@ class MasterService(Service):
 	# TODO 
 	def checkHeartbeats(self):
 		# Master failover still possible even if in panic mode
+		pass
 
 
 		# TODO comparaison liste node ? cas partition a voir
-		pprint(self.disk.get_all_ts())
+#		pprint(self.disk.get_all_ts())
 		# TODO cas perte baie disque locale
 		# TODO cas timestamps à 0
-		raise Exception("coucou")
 
 
 # vim: ts=4:sw=4:ai
