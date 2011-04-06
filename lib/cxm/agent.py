@@ -43,6 +43,8 @@ class Agent(object):
 		d.addCallback(remoteCall, action)
 		return d
 	
+	def disconnect(self):
+		self._rpcConnector.disconnect()
 
 	# External API for command line RPC
 	#############################################################
@@ -62,9 +64,6 @@ class Agent(object):
 	def forceElection(self):
 		return self._call("forceElection")
 
-	def forcePanic(self):
-		return self._call("forcePanic")
-
 	def recover(self):
 		return self._call("recover")
 
@@ -72,6 +71,24 @@ class Agent(object):
 		def connectMaster(result):
 			def masterConnected(obj):
 				d = obj.callRemote("unregister",name)
+				d.addCallback(lambda _: rpcConnector.disconnect())
+				return d
+
+			rpcFactory = pb.PBClientFactory()
+			rpcConnector = reactor.connectTCP(result['master'], 8800, rpcFactory)
+			d = rpcFactory.getRootObject()
+			d.addCallback(masterConnected)
+			return d
+
+		d=self.getState()
+		d.addCallback(connectMaster)
+
+		return d
+
+	def panic(self):
+		def connectMaster(result):
+			def masterConnected(obj):
+				d = obj.callRemote("panic")
 				d.addCallback(lambda _: rpcConnector.disconnect())
 				return d
 

@@ -46,6 +46,9 @@ class RemoteRPC(pb.Root):
 	def remote_unregister(self, name):
 		return self._master.unregisterNode(name)
 
+	def remote_panic(self):
+		return self._master.panic()
+
 class LocalRPC(pb.Root):
 
 	def __init__(self, master):
@@ -72,10 +75,6 @@ class LocalRPC(pb.Root):
 
 	def remote_forceElection(self):
 		return self._master.triggerElection()
-
-	# Only for testing purpose
-	def remote_forcePanic(self):
-		return self._master.panic()
 
 	def remote_recover(self):
 		return self._master.recoverFromPanic()
