@@ -34,6 +34,7 @@ import socket, zlib
 import logs as log
 
 from dnscache import DNSCache
+from agent import Agent
 
 CLUSTER_NAME="cltest" # TODO a passer en fichier
 PORT=6666
@@ -86,16 +87,20 @@ class UDPListener(DatagramProtocol):
 
 			msg=json.loads(data)
 		except Exception, e:
-			log.err("Error parsing message: %s" % (e))
+			log.warn("Error parsing message: %s" % (e))
 		else:
 			self.c_onReceive(msg,host)
 
 class NetHeartbeat(object):
+
+	MAX_RETRY = 1  # Maximum number of retry before panic mode
+
 	def __init__(self, getMsg, dest = None):
 		self.c_getMsg = getMsg
 		self.dest = dest
 
 	def start(self):
+		self.retry=0
 		d = Deferred()
 		d.addCallback(self._run)
 		self._port = reactor.listenUDP(0, UDPSender(d, self.c_getMsg, self.dest))
@@ -112,8 +117,19 @@ class NetHeartbeat(object):
 		self._call.start(1).addErrback(self._sendError)
 
 	def _sendError(self, reason):
-		# TODO a gérer mieux que ca, cas perte xenapi + compteur restart ?
-		log.err("Socket write error: %s" % (reason))
+		# Log all stacktrace to view the origin of this error
+		log.err("Netheartbeat failure: %s" % (reason))
+		if self.retry >= self.MAX_RETRY:
+			log.emerg("Too many retry. Asking master to engage panic mode.")
+			# Engage panic mode
+			agent=Agent()
+			d=agent.panic()
+			d.addErrback(log.err)
+			d.addBoth(lambda x: agent.disconnect())
+		else:
+			log.warn("Restarting network heartbeat within a second...")
+			self.retry+=1
+			reactor.callLater(1, self._run, self._proto)
 
 	def stop(self):
 		if self._call.running:
