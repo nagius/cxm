@@ -30,17 +30,16 @@ import simplejson as json
 from twisted.internet.protocol import DatagramProtocol
 from twisted.internet import reactor, task, defer
 from twisted.internet.defer import Deferred
-import time, socket
+import socket, zlib
 import logs as log
 
 from dnscache import DNSCache
 
-
-
-# TODO: gérer corruption messages
-
 CLUSTER_NAME="cltest" # TODO a passer en fichier
 PORT=6666
+
+# Not in configuration file because need to be consistent over all nodes
+USE_ZLIB=True
 
 class UDPSender(DatagramProtocol):
 	def __init__(self, onStart, getMsg, dest=None):
@@ -66,8 +65,12 @@ class UDPSender(DatagramProtocol):
 	def sendMessage(self):
 		data=json.dumps(self.c_getMsg().value(), separators=(',',':'))
 
+		if USE_ZLIB:
+			crc=zlib.adler32(data)
+			zip=zlib.compress(data)
+			data=str(crc)+","+zip
+
 		self.transport.write(data,(self._ip,PORT))
-		#       raise error.MessageLengthError("test")
 
 class UDPListener(DatagramProtocol):
     def __init__(self, onReceive):
@@ -75,9 +78,15 @@ class UDPListener(DatagramProtocol):
 
     def datagramReceived(self, data, (host, port)):
 		try:
+			if USE_ZLIB:
+				(crc,zip)=data.split(',',1)
+				data=zlib.decompress(zip)
+				if int(crc) != zlib.adler32(data):
+					raise Exception("Data from %s is corrupted." % (host))
+
 			msg=json.loads(data)
 		except Exception, e:
-			log.err("Error parsing message : %s" % (e))
+			log.err("Error parsing message: %s" % (e))
 		else:
 			self.c_onReceive(msg,host)
 
