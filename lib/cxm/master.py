@@ -354,7 +354,11 @@ class MasterService(Service):
 			
 
 	def _unregister(self, name):
-		del self.status[name]
+		try:
+			del self.status[name]
+		except:
+			pass
+
 		try:
 			self.disk.erase_slot(name)
 		except DiskHeartbeatError, e:
@@ -428,8 +432,10 @@ class MasterService(Service):
 
 			if len(self.status) <= 0:
 				log.warn("I'm the last node, shutting down cluster.")
-
-			d=self.triggerElection()
+				d=defer.succeed(None)
+			else:
+				# New election only if there is at least one node
+				d=self.triggerElection()
 
 			# Stop master hearbeat when vote request has been sent
 			d.addCallback(lambda _: self._stopMaster())
