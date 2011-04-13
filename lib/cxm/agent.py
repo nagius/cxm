@@ -27,6 +27,7 @@ from twisted.spread import pb
 from twisted.internet import reactor
 
 UNIX_PORT="/var/run/cxmd.socket" # TODO a passer dans fichier
+TCP_PORT=8800
 
 class Agent(object):
 
@@ -34,13 +35,31 @@ class Agent(object):
 		self._factory = pb.PBClientFactory()
 		self._rpcConnector = reactor.connectUNIX(UNIX_PORT, self._factory)
 
-	def _call(self, action):
+	def _call(self, action, *args, **kw):
 		def remoteCall(obj, action):
-			d = obj.callRemote(action)
+			d = obj.callRemote(action, *args, *kw)
 			return d
 
 		d = self._factory.getRootObject()
 		d.addCallback(remoteCall, action)
+		return d
+
+	def _callMaster(self, action, *args, **kw):
+		def connectMaster(result):
+			def masterConnected(obj):
+				d = obj.callRemote(action, *args, **kw)
+				d.addCallback(lambda _: rpcConnector.disconnect())
+				return d
+
+			rpcFactory = pb.PBClientFactory()
+			rpcConnector = reactor.connectTCP(result['master'], TCP_PORT, rpcFactory)
+			d = rpcFactory.getRootObject()
+			d.addCallback(masterConnected)
+			return d
+
+		d=self.getState()
+		d.addCallback(connectMaster)
+
 		return d
 	
 	def disconnect(self):
@@ -68,39 +87,9 @@ class Agent(object):
 		return self._call("recover")
 
 	def kill(self, name):
-		def connectMaster(result):
-			def masterConnected(obj):
-				d = obj.callRemote("unregister",name)
-				d.addCallback(lambda _: rpcConnector.disconnect())
-				return d
-
-			rpcFactory = pb.PBClientFactory()
-			rpcConnector = reactor.connectTCP(result['master'], 8800, rpcFactory)
-			d = rpcFactory.getRootObject()
-			d.addCallback(masterConnected)
-			return d
-
-		d=self.getState()
-		d.addCallback(connectMaster)
-
-		return d
+		return self._callMaster("unregister",name)
 
 	def panic(self):
-		def connectMaster(result):
-			def masterConnected(obj):
-				d = obj.callRemote("panic")
-				d.addCallback(lambda _: rpcConnector.disconnect())
-				return d
-
-			rpcFactory = pb.PBClientFactory()
-			rpcConnector = reactor.connectTCP(result['master'], 8800, rpcFactory)
-			d = rpcFactory.getRootObject()
-			d.addCallback(masterConnected)
-			return d
-
-		d=self.getState()
-		d.addCallback(connectMaster)
-
-		return d
+		return self._callMaster("panic")
 
 # vim: ts=4:sw=4:ai
