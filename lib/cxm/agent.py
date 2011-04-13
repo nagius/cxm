@@ -37,7 +37,7 @@ class Agent(object):
 
 	def _call(self, action, *args, **kw):
 		def remoteCall(obj, action):
-			d = obj.callRemote(action, *args, *kw)
+			d = obj.callRemote(action, *args, **kw)
 			return d
 
 		d = self._factory.getRootObject()
