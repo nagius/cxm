@@ -358,6 +358,8 @@ class Node:
 		if core.cfg['USESSH']:
 			for line in self.run("xm list | awk '{print $1,$2,$3,$4;}' | tail -n +3").readlines():
 				(name, id, ram, vcpu)=line.strip().split()
+				if name.startswith("migrating-"):
+					continue
 				vms.append(VM(name, id, ram, vcpu))
 		else:
 			dom_recs = self.server.xenapi.VM.get_all_records()
@@ -365,10 +367,14 @@ class Node:
 			if core.cfg['DEBUG']: print "DEBUG Xen-Api: ", dom_recs
 
 			for dom_rec in dom_recs.values():
-				if dom_rec['name_label'] != "Domain-0":
-					vm=VM(dom_rec['name_label'],dom_rec['domid'])
-					vm.metrics=dom_metrics_recs[dom_rec['metrics']]
-					vms.append(vm)
+				if dom_rec['name_label'] == "Domain-0":
+					continue # Discard Dom0
+				if dom_rec['name_label'].startswith("migrating-"):
+					continue # Discard migration temporary vm
+
+				vm=VM(dom_rec['name_label'],dom_rec['domid'])
+				vm.metrics=dom_metrics_recs[dom_rec['metrics']]
+				vms.append(vm)
 
 		return vms
 
