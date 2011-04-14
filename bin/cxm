@@ -29,7 +29,7 @@
 import cxm.cli
 
 if __name__ == "__main__":
-    cxm.cli.main()
+    cxm.cli.run()
 
 # vim: ts=4:sw=4:ai
 
