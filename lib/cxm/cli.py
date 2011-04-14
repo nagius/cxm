@@ -36,7 +36,7 @@ This module is the command line interface of cxm.
 import sys, os
 from xen.xm.opts import wrap
 from optparse import OptionParser
-from twisted.internet import reactor
+from twisted.internet import reactor, threads, defer
 import core, xencluster, node
 from agent import Agent
 
@@ -185,11 +185,25 @@ def cxm_deactivate(cluster, options, vm):
 
 def cxm_infos(cluster, options):
 	"""Print the status of the cluster."""
-	print '%-40s %3s  %3s  %8s  %4s' % ("Node name","VM", "IRQ","Free-RAM","Load")
-	for node in cluster.get_nodes():
+	def fail(reason):
+		if options.debug:
+			reason.printTraceback()
+		else:
+			print >>sys.stderr, "Error:", reason.getErrorMessage()
+
+	def print_node_metrics(node):
 		metrics=node.get_metrics()
 		print '%-40s %3d  %3d  %8d  %3d%%' % (node.get_hostname(),node.get_vm_started(),
 			metrics.get_used_irq(),metrics.get_free_ram(),metrics.get_load())
+
+	print '%-40s %3s  %3s  %8s  %4s' % ("Node name","VM", "IRQ","Free-RAM","Load")
+	ds=list()
+	for node in cluster.get_nodes():
+		d=threads.deferToThread(print_node_metrics, node)
+		d.addErrback(fail)
+		ds.append(d)
+
+	return defer.DeferredList(ds)
 
 def cxm_search(cluster, options, vm):
 	"""Search the specified vm on the cluster."""
@@ -440,12 +454,12 @@ def run():
 		reactor.stop()
 
 	def run_cmd(result):
-		cmd(result, options, *args[1::])
-		reactor.stop()
+		return cmd(result, options, *args[1::])
 
 	def getCluster(result):
 		d=xencluster.XenCluster.getDeferInstance(result)
 		d.addCallback(run_cmd)
+		d.addCallback(lambda _: reactor.stop())
 		d.addErrback(fail)
 
 	if cmd:
