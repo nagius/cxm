@@ -385,7 +385,7 @@ def get_help(cmd=None):
 			return wrapped_help(cmd)
 		except KeyError:
 			print >>sys.stderr, "Unknown subcommand:", cmd
-			sys.exit(3)
+			return ""
 	else:
 		help = 'cxm full list of subcommands:\n\n'
 
@@ -450,13 +450,18 @@ def run():
 		if reason.check(TypeError):
 			print "Usage :"
 			print get_help(args[0])
+			# TODO exit code 3 
 
 		reactor.stop()
 
 	def run_cmd(result):
-		return cmd(result, options, *args[1::])
+		# result is a cluster instance
+		d=defer.maybeDeferred(cmd, result, options, *args[1::])
+		d.addCallback(lambda _: result.disconnect())
+		return d
 
 	def getCluster(result):
+		# result is the list of nodes
 		d=xencluster.XenCluster.getDeferInstance(result)
 		d.addCallback(run_cmd)
 		d.addCallback(lambda _: reactor.stop())

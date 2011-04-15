@@ -72,6 +72,20 @@ class Node:
 		# Prepare metrics
 		self.__metrics=None
 
+	def disconnect(self):
+		"""Close all connections."""
+		# Close SSH
+		try:
+			self.ssh.close()
+		except:
+			pass
+
+		# Close Xen-API
+		try:
+			self.server.xenapi.session.logout()
+		except:
+			pass
+
 	def get_legacy_server(self):
 		"""Return the legacy API socket."""
 		if self.__legacy_server is None:
