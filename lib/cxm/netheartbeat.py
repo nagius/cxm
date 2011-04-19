@@ -35,9 +35,8 @@ import logs as log
 
 from dnscache import DNSCache
 from agent import Agent
+import core
 
-CLUSTER_NAME="cltest" # TODO a passer en fichier
-PORT=6666
 
 # Not in configuration file because need to be consistent over all nodes
 USE_ZLIB=True
@@ -71,7 +70,7 @@ class UDPSender(DatagramProtocol):
 			zip=zlib.compress(data)
 			data=str(crc)+","+zip
 
-		self.transport.write(data,(self._ip,PORT))
+		self.transport.write(data,(self._ip,core.cfg['UDP_PORT']))
 
 class UDPListener(DatagramProtocol):
     def __init__(self, onReceive):

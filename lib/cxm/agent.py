@@ -25,15 +25,13 @@
 
 from twisted.spread import pb
 from twisted.internet import reactor
-
-UNIX_PORT="/var/run/cxmd.socket" # TODO a passer dans fichier
-TCP_PORT=8800
+import core
 
 class Agent(object):
 
 	def __init__(self):
 		self._factory = pb.PBClientFactory()
-		self._rpcConnector = reactor.connectUNIX(UNIX_PORT, self._factory)
+		self._rpcConnector = reactor.connectUNIX(core.cfg['UNIX_PORT'], self._factory)
 
 	def _call(self, action, *args, **kw):
 		def remoteCall(obj, action):
@@ -52,7 +50,7 @@ class Agent(object):
 				return d
 
 			rpcFactory = pb.PBClientFactory()
-			rpcConnector = reactor.connectTCP(result['master'], TCP_PORT, rpcFactory)
+			rpcConnector = reactor.connectTCP(result['master'], core.cfg['TCP_PORT'], rpcFactory)
 			d = rpcFactory.getRootObject()
 			d.addCallback(masterConnected)
 			return d

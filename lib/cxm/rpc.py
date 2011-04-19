@@ -24,16 +24,13 @@
 ###########################################################################
 
 
-from pprint import pprint
-
 from twisted.application.service import Service
 from twisted.internet import reactor, error, defer
 import logs as log
 from twisted.spread import pb
 import os
+import core
 
-
-UNIX_PORT="/var/run/cxmd.socket" # TODO a passer dans fichier
 
 class RemoteRPC(pb.Root):
 
@@ -87,7 +84,7 @@ class RPCService(Service):
 
 	def cleanSocket(self, result):
 		try:
-			os.remove(UNIX_PORT)
+			os.remove(core.cfg['UNIX_PORT'])
 		except OSError:
 			pass
 
@@ -96,7 +93,7 @@ class RPCService(Service):
 
 		log.info("Starting RPC service...")
 		self.cleanSocket(None)
-		self._localPort=reactor.listenUNIX(UNIX_PORT, pb.PBServerFactory(LocalRPC(self._master)))
+		self._localPort=reactor.listenUNIX(core.cfg['UNIX_PORT'], pb.PBServerFactory(LocalRPC(self._master)))
 		self._remotePort=reactor.listenTCP(8800, pb.PBServerFactory(RemoteRPC(self._master)))
 
 	def stopService(self):

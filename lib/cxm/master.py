@@ -48,12 +48,7 @@ from diskheartbeat import DiskHeartbeat
 
 # TODO add check disk nr_node
 # TODO gérer cas partition + possibilité d'ajout de node pendant partition ?
-
-core.cfg['QUIET']=True
-
-CLUSTER_NAME="cltest" # TODO a passer en fichier
-ALLOWED_NODES=['xen0node01.virt.s1.p.fti.net','xen0node02.virt.s1.p.fti.net','xen0node03.virt.s1.p.fti.net','xen0node04.virt.s1.p.fti.net']
-PORT=6666
+# TODO mode debug
 
 
 class MasterService(Service):
@@ -91,7 +86,7 @@ class MasterService(Service):
 	def startService(self):
 		Service.startService(self)
 
-		self._messagePort=reactor.listenUDP(PORT, UDPListener(self.dispatchMessage))
+		self._messagePort=reactor.listenUDP(core.cfg['UDP_PORT'], UDPListener(self.dispatchMessage))
 		reactor.callLater(2, self.joinCluster)
 
 	def stopService(self):
@@ -338,7 +333,7 @@ class MasterService(Service):
 			log.warn("I'm not master. Cannot register %s." % (name))
 			raise RPCRefusedError("Not master")
 
-		if name not in ALLOWED_NODES:
+		if name not in core.cfg['ALLOWED_NODES']:
 			log.warn("Node %s not allowed to join this cluster. Refusing." % (name))
 			raise NodeRefusedError("Node not allowed to join this cluster.")
 
@@ -386,7 +381,7 @@ class MasterService(Service):
 	
 
 	def triggerElection(self):
-		log.info("Asking a new election for cluster %s." % (CLUSTER_NAME))
+		log.info("Asking a new election for cluster %s." % (core.cfg['CLUSTER_NAME']))
 
 		d = Deferred()
 		port = reactor.listenUDP(0, UDPSender(d, lambda: MessageVoteRequest().forge()))
@@ -464,12 +459,12 @@ class MasterService(Service):
 		def joinRefused(reason):
 			reason.trap(NodeRefusedError, RPCRefusedError)
 			log.err("Join to cluster %s failed: Master %s has refused me: %s" % 
-				(CLUSTER_NAME, self.master, reason.getErrorMessage()))
+				(core.cfg['CLUSTER_NAME'], self.master, reason.getErrorMessage()))
 			self.stopService()
 
 		def joinAccepted(result):
 			self.role=MasterService.RL_PASSIVE
-			log.info("Join successfull, I'm now part of cluster %s." % (CLUSTER_NAME))
+			log.info("Join successfull, I'm now part of cluster %s." % (core.cfg['CLUSTER_NAME']))
 			startHeartbeats()
 			
 		def masterConnected(obj):
@@ -482,7 +477,7 @@ class MasterService(Service):
 		try:
 			if self.master is None:
 				# New active master
-				if DNSCache.getInstance().name not in ALLOWED_NODES:
+				if DNSCache.getInstance().name not in core.cfg['ALLOWED_NODES']:
 					log.warn("I'm not allowed to create a new cluster. Exiting.")
 					raise Exception("Cluster creation not allowed")
 
@@ -490,7 +485,7 @@ class MasterService(Service):
 					log.err("Heartbeat disk is in use but we are alone !")
 					raise Exception("Heartbeat disk already in use")
 
-				log.info("No master found. I'm now the new master of %s." % (CLUSTER_NAME))
+				log.info("No master found. I'm now the new master of %s." % (core.cfg['CLUSTER_NAME']))
 				self.role=MasterService.RL_ACTIVE
 				self.master=DNSCache.getInstance().name
 				self.status[self.master]={}
@@ -500,7 +495,7 @@ class MasterService(Service):
 			else:
 				# Passive master
 				self.role=MasterService.RL_JOINING
-				log.info("Trying to join cluster %s..." % (CLUSTER_NAME))
+				log.info("Trying to join cluster %s..." % (core.cfg['CLUSTER_NAME']))
 
 				factory = pb.PBClientFactory()
 				rpcConnector = reactor.connectTCP(self.master, 8800, factory)

@@ -27,9 +27,7 @@
 from pprint import pprint
 import time, random
 from dnscache import DNSCache
-
-# TODO a passer en cfg
-CLUSTER_NAME="cltest"
+import core
 
 
 class Message(object):
@@ -49,11 +47,11 @@ class Message(object):
 		self.cluster=data['cluster']
 
 		# Discard message from others clusters 
-		if self.cluster != CLUSTER_NAME:
+		if self.cluster != core.cfg['CLUSTER_NAME']:
 			raise IDontCareException("Message from other cluster %s ignored." % (self.cluster))
 
 	def forge(self):
-		self.cluster=CLUSTER_NAME
+		self.cluster=core.cfg['CLUSTER_NAME']
 
 	def value(self, data):
 		data['cluster']=self.cluster

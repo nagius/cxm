@@ -24,10 +24,7 @@
 ###########################################################################
 
 import sys, time, os
-
-
-# TODO A passer dans fichier de conf
-HB_DISK="/dev/XEN-NBD/testhb"
+import core
 
 
 class DiskHeartbeat(object):
@@ -43,7 +40,7 @@ class DiskHeartbeat(object):
 
 	@staticmethod
 	def format():
-		f=open(HB_DISK, "wb",0) # No buffer
+		f=open(core.cfg['HB_DISK'], "wb",0) # No buffer
 
 		try:
 			# Erase each slot
@@ -70,10 +67,10 @@ class DiskHeartbeat(object):
 		return nr_node != 0
 	
 	def _open(self):
-		self.f=open(HB_DISK, "r+b",0) # No buffer
+		self.f=open(core.cfg['HB_DISK'], "r+b",0) # No buffer
 		if self.f.read(DiskHeartbeat.BS).strip("\x00") != DiskHeartbeat.MAGIC:
 			self.f.close()
-			raise DiskHeartbeatError("%s is not and CXM Heartbeat disk !" % (HB_DISK))
+			raise DiskHeartbeatError("%s is not and CXM Heartbeat disk !" % (core.cfg['HB_DISK']))
 
 	def _rewind(self):
 		"""Rewind to the start of the table, just after header."""

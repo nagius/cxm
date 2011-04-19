@@ -40,25 +40,18 @@ Main classes are :
   - Node : object used to manipulate a cluster's node
   - VM : object used to access VM properties and configuration
   - Metrics : object used to get node's metrics
+  - Agent : object used to call daemon's RPC
 
 Some method could raise ClusterError and ClusterNodeError exceptions.
+Other classes are for internal purpose.
 
 This package require Xen's modules xen/xm for XenAPI access 
 and paramiko module for SSH links.
 
 Some globals variables are avalaibles in the configuration file "/etc/xen/cxm.conf" 
-to change the behavior of this package :
-
- - DEBUG (bool) : Print additionnals informations about internals datas.
- - QUIET (bool) : Just print essentials outpouts (usefull for batch parsing).
- - USESSH (bool) : Don't use the XenAPI, send (mostly) all command via SSH.
- - NOREFRESH (bool) : Don't refresh LVM metadatas (DANGEROUS).
- - VMCONF_DIR (string) : Path to find the VM's configurations files.
- - PATH (string) : Default path to find extern binaries (Only usefull for testing).
- - LB_MAX_VM_PER_NODE (int) : Maximum number of VM on each node (used by loadbalancer). 
- - LB_MAX_LAYER (int) : Maximum number of migration allowed for the loadbalancer.
- - LB_MIN_GAIN (int) : % minimun gain of selected solution by the loadbalancer.
- - FENCE_CMD (string) : Script in charge of node fencing. Should take node's name as first parametrer.
+to change the behavior of this package. Only 'CLUSTER_NAME' and 'HB_DISK' are 
+mandatory in order to start cxmd daemon. See example file 'cxm.conf' for more
+informations.
 
 """
 
@@ -70,7 +63,7 @@ VERSION="0.7.0"
 # Default configuration
 cfg = { 
 	'VMCONF_DIR': "/etc/xen/vm/",
-	'PATH': "",
+	'PATH': "",					# Only usefull for testing
 	'NOREFRESH': False,
 	'DEBUG': False,
 	'QUIET': False,
@@ -79,6 +72,12 @@ cfg = {
 	'LB_MAX_LAYER': 4,
 	'LB_MIN_GAIN': 5,
 	'FENCE_CMD': "cxm_fence",	# Take the node's name as first param
+	'CLUSTER_NAME': None,		# (string) Mandatory for cxmd
+	'ALLOWED_NODES': [],
+	'UDP_PORT': 1255,
+	'TCP_PORT': 1255,
+	'UNIX_PORT': "/var/run/cxmd.socket",
+	'HB_DISK': None,			# (string) Mandatory for cxmd
 	}
 
 

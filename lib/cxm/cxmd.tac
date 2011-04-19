@@ -33,6 +33,10 @@ import cxm.logs, cxm.core
 name="cxmd"
 cxm.core.cfg['QUIET']=True
 
+# Check mandatory configuration variables
+assert type(cxm.core.cfg['HB_DISK']) is str, "Bad parameter HB_DISK, check config."
+assert type(cxm.core.cfg['CLUSTER_NAME']) is str, "Bad parameter CLUSTER_NAME, check config."
+
 # Get the service
 master=MasterService()
 application = service.Application(name)
