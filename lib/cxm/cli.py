@@ -452,9 +452,10 @@ def run():
 			print get_help(args[0])
 			# TODO exit code 3 
 
-		reactor.stop()
+		if not reactor._stopped:
+			reactor.stop()
 
-	def run_cmd(result):
+	def runCmd(result):
 		# result is a cluster instance
 		d=defer.maybeDeferred(cmd, result, options, *args[1::])
 		d.addCallback(lambda _: result.disconnect())
@@ -463,12 +464,39 @@ def run():
 	def getCluster(result):
 		# result is the list of nodes
 		d=xencluster.XenCluster.getDeferInstance(result)
-		d.addCallback(run_cmd)
+		d.addCallback(runCmd)
 		d.addCallback(lambda _: reactor.stop())
 		d.addErrback(fail)
 
+	def checkState(result):
+		if result['state']=="panic":
+			print """
+                ** 
+              ******
+             ***  ***
+            ***    ***        
+           ***  **  ***                   WARNING    
+          ***   **   *** 
+         ***    **    ***          **********************
+        ***     **     ***         * PANIC MODE ENGAGED *
+       ***      **      ***        **********************
+      ***                ***   
+     ***        **        ***
+    ***         **         ***          Be careful !
+   ***                      ***
+    **************************  
+      **********************
+		  """
+
 	if cmd:
 		agent=Agent()
+
+		# Get cluster state
+		d=agent.getState()
+		d.addCallback(checkState)
+		d.addErrback(fail)
+
+		# Get nodes list to instantiate cluster
 		d=agent.getNodesList()
 		d.addCallback(getCluster)
 		d.addErrback(fail)
