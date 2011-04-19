@@ -26,8 +26,6 @@
 
 
 # TODO exit code
-# TODO multithread
-# TODO warning panic mode
 
 """
 This module is the command line interface of cxm.
@@ -191,7 +189,7 @@ def cxm_infos(cluster, options):
 		else:
 			print >>sys.stderr, "Error:", reason.getErrorMessage()
 
-	def print_node_metrics(node):
+	def printNodeMetrics(node):
 		metrics=node.get_metrics()
 		print '%-40s %3d  %3d  %8d  %3d%%' % (node.get_hostname(),node.get_vm_started(),
 			metrics.get_used_irq(),metrics.get_free_ram(),metrics.get_load())
@@ -199,7 +197,7 @@ def cxm_infos(cluster, options):
 	print '%-40s %3s  %3s  %8s  %4s' % ("Node name","VM", "IRQ","Free-RAM","Load")
 	ds=list()
 	for node in cluster.get_nodes():
-		d=threads.deferToThread(print_node_metrics, node)
+		d=threads.deferToThread(printNodeMetrics, node)
 		d.addErrback(fail)
 		ds.append(d)
 
@@ -229,18 +227,40 @@ def cxm_search(cluster, options, vm):
 		
 def cxm_list(cluster, options):
 	"""List started VM on all nodes."""
+
+	def getList(node):
+		msg = "\nOn %s :\n" % (node.get_hostname())
+		if not core.cfg['QUIET']: 
+			msg += "-----" + "-" * len(node.get_hostname()) + '\n'
+			msg += '\n    %-40s %4s  %5s  %6s\n' % ("Name","Mem", "VCPUs","State")
+		for vm in sorted(node.get_vms(),key=lambda x: x.name):
+			msg += '    %-40s %4d  %5d  %6s\n' % (vm.name, vm.ram, vm.vcpu, vm.state)
+
+		return msg
+
+	def printList(results):
+		for success, result in results:
+			if success:
+				print result
+			else:
+				if options.debug:
+					result.printTraceback()
+				else:
+					print >>sys.stderr, "Error:", result.getErrorMessage()
+				
 	if options.node:
 		nodes=[cluster.get_node(options.node)]
 	else:
 		nodes=cluster.get_nodes()
-	
+
+	ds=list()
 	for node in nodes:
-		print "\nOn", node.get_hostname(), ":"
-		if not core.cfg['QUIET']: 
-			print "-----" + "-" * len(node.get_hostname())
-			print '\n    %-40s %4s  %5s  %6s' % ("Name","Mem", "VCPUs","State")
-		for vm in sorted(node.get_vms(),key=lambda x: x.name):
-			print '    %-40s %4d  %5d  %6s' % (vm.name, vm.ram, vm.vcpu, vm.state)
+		d=threads.deferToThread(getList, node)
+		ds.append(d)
+
+	dl=defer.DeferredList(ds, consumeErrors=1)
+	dl.addCallback(printList)
+	return dl
 		
 def cxm_check(cluster, options):
 	"""Run a cluster-wide sanity check."""
