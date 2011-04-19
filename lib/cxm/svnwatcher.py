@@ -28,7 +28,7 @@ from twisted.application.service import Service
 from twisted.internet.base import DelayedCall
 
 from copy import deepcopy
-import platform
+import socket
 
 from agent import Agent
 from xencluster import XenCluster
@@ -109,7 +109,7 @@ class InotifyPP(protocol.ProcessProtocol):
 class SvnwatcherService(Service):
 
 	def __init__(self):
-		self.node=node.Node(platform.node()) # Local node, always connected
+		self.node=node.Node(socket.gethostname()) # Local node, always connected
 		self.agent=Agent()		# Factory will be stopped if cxmd does'nt respond
 
 	def startService(self):

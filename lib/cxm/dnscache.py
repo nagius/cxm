@@ -46,7 +46,7 @@ class DNSCache(object):
 		self._reverse = dict()	# hostname -> IP
 		self.bcast = None
 
-		self.name=socket.getfqdn()
+		self.name=socket.gethostname()
 		self.ip=socket.gethostbyname(self.name)
 		self._feedCache(self.ip, self.name)
 

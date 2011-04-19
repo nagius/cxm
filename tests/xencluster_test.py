@@ -23,7 +23,7 @@
 ###########################################################################
 
 import cxm.core, cxm.xencluster
-import unittest, os, platform
+import unittest, os, socket
 from mocker import *
 
 class XenClusterTests(MockerTestCase):
@@ -42,14 +42,14 @@ class XenClusterTests(MockerTestCase):
 		# Mock node class
 		node_mock = Mocker()
 		node = node_mock.mock()
-		node.Node(platform.node())
+		node.Node(socket.gethostname())
 		node_mock.result(dummy)
 		node_mock.replay()
 
 		cxm.xencluster.node=node
 
 		# Run test
-		name=platform.node()
+		name=socket.gethostname()
 		self.cluster=cxm.xencluster.XenCluster({name: node.Node(name)})
 
 		node_mock.verify()
@@ -61,7 +61,7 @@ class XenClusterTests(MockerTestCase):
 		n.__del__()
 		n_mock.replay()
 
-		self.cluster.nodes={platform.node(): n}
+		self.cluster.nodes={socket.gethostname(): n}
 
 	def test_xencluster(self):
 		self.assertNotEqual(self.cluster, None)
@@ -70,7 +70,7 @@ class XenClusterTests(MockerTestCase):
 		self.assertEqual(len(self.cluster.get_nodes()),1)
 
 	def test_get_node__ok(self):
-		self.assertNotEqual(self.cluster.get_node(platform.node()),None)
+		self.assertNotEqual(self.cluster.get_node(socket.gethostname()),None)
 
 	def test_get_node__ko(self):
 		self.assertRaises(cxm.xencluster.ClusterError,self.cluster.get_node,"non-exist")
@@ -78,14 +78,14 @@ class XenClusterTests(MockerTestCase):
 	def test_get_local_node(self):
 		node = self.mocker.mock()
 		node.get_hostname()
-		self.mocker.result(platform.node())
+		self.mocker.result(socket.gethostname())
 		self.mocker.replay()
-		self.cluster.nodes={platform.node(): node}
+		self.cluster.nodes={socket.gethostname(): node}
 
-		self.assertEqual(self.cluster.get_local_node().get_hostname(),platform.node())
+		self.assertEqual(self.cluster.get_local_node().get_hostname(),socket.gethostname())
 
 	def test_is_in_cluster(self):
-		self.assertEqual(self.cluster.is_in_cluster(platform.node()), True)
+		self.assertEqual(self.cluster.is_in_cluster(socket.gethostname()), True)
 		
 	def test_search_vm_started(self):
 		vmname="test1.home.net"
@@ -94,7 +94,7 @@ class XenClusterTests(MockerTestCase):
 		node.is_vm_started(vmname)
 		self.mocker.result(True)
 		self.mocker.replay()
-		self.cluster.nodes={platform.node(): node}
+		self.cluster.nodes={socket.gethostname(): node}
 
 		result=self.cluster.search_vm_started(vmname)
 		self.assertEqual(len(result), 1)
@@ -106,7 +106,7 @@ class XenClusterTests(MockerTestCase):
 		node.is_vm_autostart_enabled(vmname)
 		self.mocker.result(True)
 		self.mocker.replay()
-		self.cluster.nodes={platform.node(): node}
+		self.cluster.nodes={socket.gethostname(): node}
 
 		result=self.cluster.search_vm_autostart(vmname)
 		self.assertEqual(len(result), 1)
@@ -143,9 +143,9 @@ class XenClusterTests(MockerTestCase):
 		node.is_vm_started(vmname)
 		self.mocker.result(True)
 		node.get_hostname()
-		self.mocker.result(platform.node())
+		self.mocker.result(socket.gethostname())
 		self.mocker.replay()
-		self.cluster.nodes={platform.node(): node}
+		self.cluster.nodes={socket.gethostname(): node}
 	
 		self.assertRaises(cxm.xencluster.ClusterNodeError,self.cluster.activate_vm,node,vmname)
 
@@ -162,7 +162,7 @@ class XenClusterTests(MockerTestCase):
 		node.start_vm(vmname)
 		self.mocker.replay()
 
-		self.cluster.nodes={platform.node(): node}
+		self.cluster.nodes={socket.gethostname(): node}
 		
 		self.cluster.start_vm(node, vmname, False)
 
@@ -208,10 +208,10 @@ class XenClusterTests(MockerTestCase):
 		self.mocker.result(64)
 		self.mocker.count(1,None)
 		node.get_hostname()
-		self.mocker.result(platform.node())
+		self.mocker.result(socket.gethostname())
 		self.mocker.replay()
 
-		self.cluster.nodes={platform.node(): node}
+		self.cluster.nodes={socket.gethostname(): node}
 		
 		self.assertRaises(cxm.xencluster.ClusterNodeError,self.cluster.start_vm,node, vmname, False)
 
@@ -230,7 +230,7 @@ class XenClusterTests(MockerTestCase):
 		node.deactivate_lv(vmname)
 		self.mocker.replay()
 
-		self.cluster.nodes={platform.node(): node}
+		self.cluster.nodes={socket.gethostname(): node}
 		
 		self.assertRaises(Exception,self.cluster.start_vm,node, vmname, False)
 

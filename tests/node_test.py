@@ -23,7 +23,7 @@
 ###########################################################################
 
 import cxm.core, cxm.node, cxm.metrics
-import unittest, os, platform
+import unittest, os, socket
 from mocker import *
 
 class NodeTests(MockerTestCase):
@@ -59,7 +59,7 @@ class NodeTests(MockerTestCase):
 		cxm.node.ServerProxy=proxy
 
 		# Run test
-		self.node=cxm.node.Node(platform.node())
+		self.node=cxm.node.Node(socket.gethostname())
 
 		xenapi_mock.verify()
 		xenapi_mock.restore()
@@ -121,7 +121,7 @@ class NodeTests(MockerTestCase):
 		self.assertEqual(self.node.is_vm_autostart_enabled("nonexist"), False)
 		
 	def test_get_hostname(self):
-		self.assertEqual(self.node.get_hostname(), platform.node())
+		self.assertEqual(self.node.get_hostname(), socket.gethostname())
 
 	def test_get_vm_started(self):
 		vm_records= ['00000000-0000-0000-0000-000000000000',
@@ -214,7 +214,7 @@ class NodeTests(MockerTestCase):
 		xs = self.mocker.mock()
 		xs.xenapi.VM.get_by_name_label(vmname)
 		self.mocker.result(['39cb706a-eae1-b5cd-2ed0-fbbd7cbb8ee8'])
-		xs.xenapi.VM.migrate('39cb706a-eae1-b5cd-2ed0-fbbd7cbb8ee8', platform.node(), True, {'node': -1, 'ssl': None, 'port': 0})
+		xs.xenapi.VM.migrate('39cb706a-eae1-b5cd-2ed0-fbbd7cbb8ee8', socket.gethostname(), True, {'node': -1, 'ssl': None, 'port': 0})
 		self.mocker.replay()
 		self.node.server=xs
 		

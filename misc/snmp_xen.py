@@ -26,7 +26,7 @@
 
 import snmp_passpersist as snmp
 import cxm.node, cxm.core
-import platform, syslog, sys, time, errno
+import socket, syslog, sys, time, errno
 
 # General stuff
 POOLING_INTERVAL=60			# Update timer, in second
@@ -183,7 +183,7 @@ def main():
 
 			# Load helpers
 			pp=snmp.PassPersist(OID_BASE)
-			node=cxm.node.Node(platform.node())
+			node=cxm.node.Node(socket.gethostname())
 
 			# Set statics data
 			pp.add_str('1.1.0',node.get_hostname())

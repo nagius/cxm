@@ -24,7 +24,7 @@
 
 
 import cxm.core, cxm.node, cxm.metrics
-import unittest, os, platform
+import unittest, os, socket
 from mocker import *
 
 
@@ -88,7 +88,7 @@ class MetricsTests(MockerTestCase):
 
 
 		# Run test
-		self.node=cxm.node.Node(platform.node())
+		self.node=cxm.node.Node(socket.gethostname())
 		self.metrics=cxm.metrics.Metrics(self.node)
 
 		xenapi_mock.verify()

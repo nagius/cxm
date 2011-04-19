@@ -27,7 +27,7 @@
 
 """This module hold the XenCluster class."""
 
-import os, platform, time
+import os, socket, time
 from sets import Set
 from twisted.internet import threads, defer
 
@@ -117,7 +117,7 @@ class XenCluster:
 
 	def get_local_node(self):
 		"""Return the Node object of the local node."""
-		return self.nodes[platform.node()]
+		return self.nodes[socket.gethostname()]
 
 	def is_in_cluster(self, hostname):
 		"""Return True if the specified hostname is a node of the cluser."""

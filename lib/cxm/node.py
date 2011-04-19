@@ -25,7 +25,7 @@
 
 """This module hold the Node class."""
 
-import platform, paramiko, re, time, popen2, socket, StringIO, sys
+import paramiko, re, time, popen2, socket, StringIO, sys
 from xen.xm import XenAPI
 from xen.xm import main
 from xen.util.xmlrpcclient import ServerProxy
@@ -163,7 +163,7 @@ class Node:
 
 	def is_local_node(self):
 		"""Return True if this node is the local node."""
-		return platform.node()==self.hostname
+		return socket.gethostname()==self.hostname
 		
 	def is_vm_started(self, vmname):
 		"""Return True if the specified vm is started on this node."""
