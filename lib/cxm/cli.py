@@ -25,8 +25,6 @@
 ###########################################################################
 
 
-# TODO exit code
-
 """
 This module is the command line interface of cxm.
 """
@@ -54,13 +52,13 @@ def select_node_by_vm(cluster, vm, options):
 			print "** ERROR : Multiples instances found on :"
 			print "**  ->  " + ", ".join([n.get_hostname() for n in nodes])
 			print "** You may try --force-node, but your VM is probably already dead..."
-			return 2
+			raise SystemExit(2)
 
 		try:
 			node=nodes[0]
 		except IndexError:
 			print "VM",vm,"not found."
-			return 2
+			raise SystemExit(2)
 	
 	return node
 
@@ -76,7 +74,7 @@ def cxm_create(cluster, options, vm):
 	if(len(nodes)>0):
 		print "** Nothing to do :"
 		print "** " + vm + " is running on "+", ".join([n.get_hostname() for n in nodes])
-		return 2
+		raise SystemExit(2)
 
 	if options.node:
 		node=cluster.get_node(options.node)
@@ -86,7 +84,7 @@ def cxm_create(cluster, options, vm):
 			print "** Warning: duplicates autostart links found on :"
 			print "**  ->  " + ", ".join([n.get_hostname() for n in nodes])
 			print "** Don't know where to start the VM (correct the links or use --force-node)."
-			return 2
+			raise SystemExit(2)
 
 		try:
 			node=nodes[0]
@@ -150,6 +148,7 @@ def cxm_console(cluster, options, vm):
 	else:
 		print "** ERROR: Cannot attach console on a remote host !"
 		print "** You should try on", node.get_hostname()
+		raise SystemExit(2)
 
 def cxm_activate(cluster, options, vm):	# Exclusive activation
 	"""Activate the logicals volumes of the specified VM.
@@ -266,7 +265,7 @@ def cxm_check(cluster, options):
 	"""Run a cluster-wide sanity check."""
 	if not cluster.check():
 		print " -> Errors has been found. You should correct it."
-		return 1
+		raise SystemExit(2)
 
 def cxm_init(cluster, options):
 	"""Initialize the cluster at startup."""
@@ -436,7 +435,6 @@ def cxm_lookup_cmd(cmd):
 
 def run():
 	"""Run cxm command line interface."""
-	exit_code=0
 
 	# Parse command line
 	parser=get_parser()
@@ -461,17 +459,23 @@ def run():
 	cmd = cxm_lookup_cmd(args[0])
 
 	def fail(reason):
-		if options.debug:
-			reason.printTraceback()
+		# Handle exit code
+		if reason.check(SystemExit):
+			rc=int(reason.getErrorMessage())
 		else:
-			print >>sys.stderr, "Error:", reason.getErrorMessage()
+			rc=1
+			if options.debug:
+				reason.printTraceback()
+			else:
+				print >>sys.stderr, "Error:", reason.getErrorMessage()
 	
 		# Check argument length according to subcommand
 		if reason.check(TypeError):
 			print "Usage :"
-			print get_help(args[0])
-			# TODO exit code 3 
+			print get_help(args[0]),
+			rc=3 
 
+		reactor.addSystemEventTrigger('after', 'shutdown', os._exit, rc)
 		if not reactor._stopped:
 			reactor.stop()
 
@@ -520,6 +524,7 @@ def run():
 		d=agent.getNodesList()
 		d.addCallback(getCluster)
 		d.addErrback(fail)
+
 		reactor.run()
 	else:
 		syntax_error('Subcommand %s not found!' % args[0])
