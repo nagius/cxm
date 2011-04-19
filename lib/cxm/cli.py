@@ -241,7 +241,7 @@ def cxm_list(cluster, options):
 	def printList(results):
 		for success, result in results:
 			if success:
-				print result
+				print result, # No carriage return
 			else:
 				if options.debug:
 					result.printTraceback()
