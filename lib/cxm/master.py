@@ -436,7 +436,7 @@ class MasterService(Service):
 			d.addCallback(lambda _: self._stopMaster())
 		elif previousRole == MasterService.RL_PASSIVE:
 			rpcFactory = pb.PBClientFactory()
-			rpcConnector = reactor.connectTCP(self.master, 8800, rpcFactory)
+			rpcConnector = reactor.connectTCP(self.master, core.cfg['TCP_PORT'], rpcFactory)
 			d = rpcFactory.getRootObject()
 			d.addCallback(masterConnected)
 		else: # RL_ALONE or RL_JOINING or RL_VOTING
@@ -498,7 +498,7 @@ class MasterService(Service):
 				log.info("Trying to join cluster %s..." % (core.cfg['CLUSTER_NAME']))
 
 				factory = pb.PBClientFactory()
-				rpcConnector = reactor.connectTCP(self.master, 8800, factory)
+				rpcConnector = reactor.connectTCP(self.master, core.cfg['TCP_PORT'], factory)
 				d = factory.getRootObject()
 				d.addCallback(masterConnected)
 				d.addErrback(log.err)

@@ -94,7 +94,7 @@ class RPCService(Service):
 		log.info("Starting RPC service...")
 		self.cleanSocket(None)
 		self._localPort=reactor.listenUNIX(core.cfg['UNIX_PORT'], pb.PBServerFactory(LocalRPC(self._master)))
-		self._remotePort=reactor.listenTCP(8800, pb.PBServerFactory(RemoteRPC(self._master)))
+		self._remotePort=reactor.listenTCP(core.cfg['TCP_PORT'], pb.PBServerFactory(RemoteRPC(self._master)))
 
 	def stopService(self):
 		if self.running:
