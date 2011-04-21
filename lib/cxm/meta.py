@@ -51,18 +51,28 @@ classifiers = [
 
 def parser2pod(parser):
 	"""Generate POD options list from an instance of OptionParser."""
+	def get_pod_from_options(options):
+		item="=over\n\n"
+		for option in options:
+			item += "=item "
+			opts=list()
+			opts.extend(option._short_opts)
+			opts.extend(option._long_opts)
+			item += ", ".join([ "B<"+opt+">" for opt in opts ])
+			if option.metavar:
+				item += " I<"+option.metavar+">"
+
+			item += "\n\n"+option.help+"\n\n"
+
+		item += "=back\n\n"
+		return item
+
 	pod=""
-	for option in parser.option_list:
-		pod += "=item "
-		opts=list()
-		opts.extend(option._short_opts)
-		opts.extend(option._long_opts)
-		pod += ", ".join([ "B<"+opt+">" for opt in opts ])
-		if option.metavar:
-			pod += " I<"+option.metavar+">"
-
-		pod += "\n\n"+option.help+"\n\n"
-
+	pod += get_pod_from_options(parser.option_list)
+	for group in parser.option_groups:
+		pod += "B<"+group.title+">\n\n"
+		pod += get_pod_from_options(group.option_list)
+		
 	return pod
 
 # vim: ts=4:sw=4:ai

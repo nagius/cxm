@@ -1,2 +1,3 @@
 *.pyc
 doc/cxm.1
+doc/cxmd_ctl.8

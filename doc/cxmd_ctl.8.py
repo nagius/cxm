@@ -24,15 +24,15 @@
 
 import os.path, subprocess, sys
 sys.path += ["lib", "../lib"]
-from cxm import meta, cli
+from cxm import meta, clid
 
-name="cxm"
-mansect="1"
+name="cxmd_ctl"
+mansect="8"
 
 input = """
 =head1 NAME
 
-""" + name + """ - Clustered Xen Management tool
+""" + name + """ - Clustered Xen Management's daemon controller tool
 
 
 =head1 VERSION
@@ -42,7 +42,7 @@ This is the manual page of """+name+" version "+meta.version+"""
 
 =head1 SYNOPSIS
 
-"""+name+""" F<subcommand> [args] [options]
+"""+name+""" options
 
 
 =head1 OPTIONS
@@ -50,37 +50,15 @@ This is the manual page of """+name+" version "+meta.version+"""
 """
 
 # Generate options list from parser
-input += meta.parser2pod(cli.get_parser())
+input += meta.parser2pod(clid.get_parser())
 	
 input += """
+
 
 =head1 DESCRIPTION
 
-The B<"""+name+"""> command line tool is used to manage Xen guest domains, aka. virtuals machines, on a cluster of Xen nodes.
-This program can be used to create, shutdown, or migrate domains. It can also be used to list current domains, and do cluster maintenance.
-
-As we are on a cluster, these commands can be run from any node of the cluster, and mostly do operations on all nodes.
-
-The basic structure of every """+name+""" command is similar to L<xm(1)>.
-
-
-=head1 SUBCOMMANDS
-
-The following subcommands manipulate domains or whole cluster.  Most commands take domain-fqdn as the first parameter.
-
-=over
-
-"""
-
-# Generate subcommands' help from cli's help
-for subcommand in cli.SUBCOMMAND_HELP.keys():
-	args=cli.SUBCOMMAND_HELP[subcommand][0]
-	input += "=item " + subcommand + " " + args.replace('<','F<') + "\n\n"
-	input += "\n".join(cli.SUBCOMMAND_HELP[subcommand][1::]) +"\n\n"
-	
-input += """
-
-=back
+The B<"""+name+"""> command line tool is used to control cxm's daemon.
+See L<cxmd(8)> for more informations.
 
 
 =head1 CONFIGURATION
@@ -91,7 +69,7 @@ See L<cxm.conf(5)> for more informations.
 
 =head1 SEE ALSO
 
-L<xm(1)> L<cxm.conf(5)> L<cxmd(8)> L<cxmd_ctl(8)>
+L<cxm(1)> L<cxm.conf(5)> L<cxmd(8)> 
 
 
 =head1 AUTHORS
