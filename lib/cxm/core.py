@@ -1,4 +1,3 @@
-#!/usr/bin/python
 #-*- coding:Utf-8 -*-
 
 # cxm - Clustered Xen Management API and tools
@@ -56,9 +55,7 @@ informations.
 """
 
 import os, sys
-
-
-VERSION="0.7.0"
+import meta
 
 # Default configuration
 cfg = { 
@@ -83,7 +80,7 @@ cfg = {
 
 def get_api_version():
 	"""Return the version number of this API."""
-	return VERSION
+	return meta.version
 
 def load_cfg():
 	"""Load the global configuration file into the cfg dict."""
@@ -95,8 +92,5 @@ def load_cfg():
 
 	if not cfg['VMCONF_DIR'].endswith("/"):
 		cfg['VMCONF_DIR']+="/"
-
-if __name__ == "__main__":
-	pass
 
 # vim: ts=4:sw=4:ai

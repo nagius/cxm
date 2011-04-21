@@ -175,7 +175,7 @@ commands = {
 def get_parser():
 	"""Parse command line options and return an OptionParser object """
 
-	parser = OptionParser(version="%prog "+core.VERSION)
+	parser = OptionParser(version="%prog "+core.get_api_version())
 	parser.add_option("-p", "--ping",
 						action="store_true", dest="ping", default=False,
 						help="Ping local daemon.")

@@ -1,14 +1,15 @@
 #!/usr/bin/env python
 
 from setuptools import setup, find_packages
+from cxm import meta
 
-setup(name='cxm',
-	version='0.5.1',
-	license='GPLv3',
-	description='Clustered Xen Management API and tools',
-	author='Nicolas Agius',
-	url='http://github.com/nagius/cxm',
-	author_email='nagius@astek.fr',
+setup(name=meta.name,
+	version=meta.version,
+	license=meta.license,
+	description=meta.description,
+	author=meta.authors,
+	url=meta.url,
+	author_email=meta.authors_email,
 	package_dir={'': 'lib'},
 	packages=find_packages('lib'),
 	test_suite='nose.collector',

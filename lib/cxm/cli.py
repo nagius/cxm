@@ -302,7 +302,7 @@ def cxm_loadbalance(cluster, options):
 def get_parser():
 	"""Parse command line options and return an OptionParser object """
 
-	parser = OptionParser(version="%prog "+core.VERSION)
+	parser = OptionParser(version="%prog "+core.get_api_version())
 	parser.add_option("-d", "--debug",
 					  action="store_true", dest="debug", default=core.cfg['DEBUG'],
 					  help="Enable debug mode")
