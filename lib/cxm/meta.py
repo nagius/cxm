@@ -28,12 +28,12 @@
 
 name = "cxm"
 version = "0.7.0"
+update_date = "April 2011"
 license = "GPL"
-authors = "Nicolas Agius"
-authors_email = "nagius@astek.fr"
+authors = [("Nicolas Agius","nagius@astek.fr")]
 url = "https://github.com/nagius/cxm"
-manbook = "Xen Tools"
 description = "Clustered Xen Management API and tools"
+manbook = description
 
 long_description = """ """
 
@@ -48,5 +48,21 @@ classifiers = [
     "Topic :: System :: Systems Administration",
 ]
 
+
+def parser2pod(parser):
+	"""Generate POD options list from an instance of OptionParser."""
+	pod=""
+	for option in parser.option_list:
+		pod += "=item "
+		opts=list()
+		opts.extend(option._short_opts)
+		opts.extend(option._long_opts)
+		pod += ", ".join([ "B<"+opt+">" for opt in opts ])
+		if option.metavar:
+			pod += " I<"+option.metavar+">"
+
+		pod += "\n\n"+option.help+"\n\n"
+
+	return pod
 
 # vim: ts=4:sw=4:ai

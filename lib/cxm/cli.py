@@ -368,7 +368,7 @@ SUBCOMMAND_HELP = {
 		'Live migrate the virtual machine.',
 		'If --force-node is not given, the vm will be search on the cluster.'),
 	'loadbalance'	: ('', 
-		'Run the loadbalancer to equilibrate loade.'),
+		'Run the loadbalancer to equilibrate load.'),
 	'search'		: ('<fqdn>', 
 		'Search the cluster for the VM.',
 		'’auto’ symlinks founds are also reported.'),
