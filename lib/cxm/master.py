@@ -393,7 +393,7 @@ class MasterService(Service):
 	def recoverFromPanic(self):
 		if not self.isInPanic():
 			log.warn("I'm not in panic. Cannot recover anything.")
-			raise RPCRefusedError("Not in panic")
+			raise RPCRefusedError("Not in panic mode")
 
 		# Only master can do recovery
 		if self.role != MasterService.RL_ACTIVE:

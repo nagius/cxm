@@ -53,7 +53,8 @@ class LocalRPC(pb.Root):
 
 	def remote_quit(self):
 		log.info("Received local quit query. Leaving cluster...")
-		return self._master.stopService()
+		reactor.callLater(0, self._master.stopService)
+		return defer.succeed(None)
 
 	def remote_getNodesList(self):
 		"""Return the list of actives nodes'hostname."""
