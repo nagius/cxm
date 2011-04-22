@@ -31,10 +31,24 @@ class VMTests(unittest.TestCase):
 		cxm.core.cfg['VMCONF_DIR'] = "tests/stubs/cfg/"
 
 	def test_get_lvs(self):
-		lvs = ['/dev/vgrack/root-test1.home.net', '/dev/LVM_XEN/usr-test1.home.net', '/dev/vgrack/WOO-test1.home.net']
+		lvs = ['/dev/LVM_XEN/usr-test1.home.net', '/dev/vgrack/WOO-test1.home.net', '/dev/vgrack/root-test1.home.net']
 
 		vm=cxm.vm.VM("test1.home.net")
 		result=vm.get_lvs()
+		self.assertEqual(result, lvs)
+
+	def test_get_device(self):
+		lvs ="/dev/xvda2" 
+
+		vm=cxm.vm.VM("test1.home.net")
+		result=vm.get_device('/dev/LVM_XEN/usr-test1.home.net')
+		self.assertEqual(result, lvs)
+		
+	def test_get_devnum(self):
+		lvs = 51714
+
+		vm=cxm.vm.VM("test1.home.net")
+		result=vm.get_devnum('/dev/LVM_XEN/usr-test1.home.net')
 		self.assertEqual(result, lvs)
 
 	def test_get_ram_via_metrics(self):

@@ -29,10 +29,14 @@
 
 import re
 import core
+from xen.util.blkif import blkdev_name_to_number
 
 class VM:
 
 	"""This class is used to access VM properties and configuration."""
+
+	# Tis is static because it the same for all VM
+	diskre = re.compile('^phy:([^,]+),([^,]+),.+')
 
 	def __init__(self,vmname, id=-1, ram=None, vcpu=None):
 		"""Instanciate a VM object, with the optional ram and vcpu metrics."""
@@ -42,24 +46,40 @@ class VM:
 		self.__vcpu=vcpu
 		self.config=dict()
 		self.metrics=None
+		self.devices=dict()
 
 		execfile("%s/%s" % (core.cfg['VMCONF_DIR'],vmname) ,dict(),self.config)
 		if core.cfg['DEBUG']: print "DEBUG config",vmname,"=",self.config
+
+		# Get devices from config file
+		for disk in self.config['disk']:
+			try:
+				self.devices[self.diskre.search(disk).group(1)]=self.diskre.search(disk).group(2)
+			except:
+				if not core.cfg['QUIET']:
+					print "Warning: Bad disk input for %s: %s" % (self.name, disk)
 		
 	def __repr__(self):
 		return "<VM Instance: "+ self.name +">"
 
 	def get_lvs(self):
 		"""Return the list of logicals volumes used by the vm."""
-		lvs=list()
-		for disk in self.config['disk']:
-			regex = re.compile('^phy:([^,]+).*')
-			try:
-				lvs.append(regex.search(disk).group(1))
-			except:
-				pass
+		return self.devices.keys()
 
-		return lvs
+	def get_device(self, lv):
+		"""
+		Return the device name of the specified LV, from the VM's point of view.
+		Raise a KeyError if the given LV is invalid.
+		"""
+		return self.devices[lv]
+
+	def get_devnum(self, lv):
+		"""
+		Return the device number internaly used by xen for the specified LV.
+		(This is usefull for xm block-detach ...)
+		Raise a KeyError if the given LV is invalid.
+		"""
+		return blkdev_name_to_number(self.devices[lv])[1]
 
 	def get_ram(self):
 		"""Return the amount of ram allocated to the vm."""
@@ -111,11 +131,5 @@ class VM:
 	ram = property(get_ram, set_ram)
 	vcpu = property(get_vcpu, set_vcpu)
 	state = property(get_state)
-
-
-
-
-if __name__ == "__main__":
-	pass
 
 # vim: ts=4:sw=4:ai

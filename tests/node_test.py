@@ -139,7 +139,7 @@ class NodeTests(MockerTestCase):
 		
 	def test_get_vgs(self):
 		val=['LVM_XEN', 'vgrack']
-		lvs = ['/dev/vgrack/root-test1.home.net', '/dev/LVM_XEN/usr-test1.home.net', '/dev/vgrack/WOO-test1.home.net']
+		lvs = ['/dev/LVM_XEN/usr-test1.home.net', '/dev/vgrack/WOO-test1.home.net', '/dev/vgrack/root-test1.home.net']
 
 		vgs=self.node.get_vgs(lvs)
 		self.assertEqual(vgs, val)

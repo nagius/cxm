@@ -29,16 +29,16 @@ case "$@" in
 	exit 0
 	;;
 
-	"-aln /dev/vgrack/root-test1.home.net /dev/LVM_XEN/usr-test1.home.net /dev/vgrack/WOO-test1.home.net")
+	"-aln /dev/LVM_XEN/usr-test1.home.net /dev/vgrack/WOO-test1.home.net /dev/vgrack/root-test1.home.net")
 	exit 0
 	;;
 
-	"-aly /dev/vgrack/root-test1.home.net /dev/LVM_XEN/usr-test1.home.net /dev/vgrack/WOO-test1.home.net")
+	"-aly /dev/LVM_XEN/usr-test1.home.net /dev/vgrack/WOO-test1.home.net /dev/vgrack/root-test1.home.net")
 	exit 0
 	;;
 
 	*)
-	echo "Error: bad params: <$@>" >&2
+	echo "Error: bad params: $@" >&2
 	exit 1
 	;;
 esac
