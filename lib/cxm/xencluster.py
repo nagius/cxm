@@ -164,6 +164,28 @@ class XenCluster:
 		dl.addCallback(appendValues)
 		return dl
 
+	def get_vm_started(self):
+		"""Return the number of vm started in the cluster."""
+
+		def computeNumber(results):
+			nb=0
+			for success, result in results:
+				if success:
+					nb += result
+				else:
+					raise result
+			
+			return nb
+
+		ds=list()
+		for node in self.get_nodes():
+			d=threads.deferToThread(lambda x: x.get_vm_started(), node)
+			ds.append(d)
+
+		dl=defer.DeferredList(ds, consumeErrors=True)
+		dl.addCallback(computeNumber)
+		return dl
+
 	def is_in_cluster(self, hostname):
 		"""Return True if the specified hostname is a node of the cluser."""
 		return hostname in self.nodes
