@@ -188,19 +188,46 @@ def cxm_infos(cluster, options):
 		else:
 			print >>sys.stderr, "Error:", reason.getErrorMessage()
 
+	def printTotals(results):
+		for success, result in results:
+			if not success:
+				raise result
+
+		vm=results[0][1]
+		ram=sum(results[1][1]['free'])
+		load=results[2][1]
+		print '=' * 65
+		print '%-40s %3d    -  %8d  %3d%%' % ('Total :', vm, ram, load)
+
+	def getTotals(result):
+		d1=cluster.get_vm_started()
+		d2=cluster.get_ram_details()
+		d3=cluster.get_load()
+
+		dl=defer.DeferredList([d1,d2,d3])
+		dl.addCallback(printTotals)
+		return dl
+
 	def printNodeMetrics(node):
 		metrics=node.get_metrics()
 		print '%-40s %3d  %3d  %8d  %3d%%' % (node.get_hostname(),node.get_vm_started(),
 			metrics.get_used_irq(),metrics.get_free_ram(),metrics.get_load())
 
-	print '%-40s %3s  %3s  %8s  %4s' % ("Node name","VM", "IRQ","Free-RAM","Load")
+	if not core.cfg['QUIET']:
+		print '\n%-40s %3s  %3s  %8s  %4s' % ("Node name","VM", "IRQ","Free-RAM","Load")
+		print '=' * 65
+
 	ds=list()
 	for node in cluster.get_nodes():
 		d=threads.deferToThread(printNodeMetrics, node)
 		d.addErrback(fail)
 		ds.append(d)
 
-	return defer.DeferredList(ds)
+	dl=defer.DeferredList(ds)
+	if not core.cfg['QUIET']:
+		dl.addCallback(getTotals)
+
+	return dl
 
 def cxm_search(cluster, options, vm):
 	"""Search the specified vm on the cluster."""
@@ -257,7 +284,7 @@ def cxm_list(cluster, options):
 		d=threads.deferToThread(getList, node)
 		ds.append(d)
 
-	dl=defer.DeferredList(ds, consumeErrors=1)
+	dl=defer.DeferredList(ds, consumeErrors=True)
 	dl.addCallback(printList)
 	return dl
 		
