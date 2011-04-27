@@ -126,22 +126,34 @@ class XenCluster:
 		If load is higher than 100%, cluster is overloaded and cannot do failover.
 		"""
 
+		def computeLoad(result):
+			# The load is computed without the bigger node
+			# and so take in account a failure of one node.
+			return (sum(result['used'])*100)/(sum(result['total'])-max(result['total']))
+
+		d=self.get_ram_details()
+		d.addCallback(computeLoad)
+		return d
+
+	def get_ram_details(self):
+		"""Return a dict of list with the free, used, and total ram of the cluster. Units: MB"""
+
 		def getValues(node):
 			return node.get_metrics().get_ram_infos()
 
-		def computeLoad(results):
+		def appendValues(results):
 			used=list()
+			free=list()
 			total=list()
 			for success, result in results:
 				if success:
 					used.append(result['used'])
+					free.append(result['free'])
 					total.append(result['total'])
 				else:
 					raise result
 			
-			# The load is computed without the bigger node
-			# and so take in account a failure of one node.
-			return (sum(used)*100)/(sum(total)-max(total))
+			return { 'total': total, 'free':free, 'used':used }
 
 		ds=list()
 		for node in self.get_nodes():
@@ -149,7 +161,7 @@ class XenCluster:
 			ds.append(d)
 
 		dl=defer.DeferredList(ds, consumeErrors=True)
-		dl.addCallback(computeLoad)
+		dl.addCallback(appendValues)
 		return dl
 
 	def is_in_cluster(self, hostname):
