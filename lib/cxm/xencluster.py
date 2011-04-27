@@ -119,6 +119,39 @@ class XenCluster:
 		"""Return the Node object of the local node."""
 		return self.nodes[socket.gethostname()]
 
+	def get_load(self):
+		"""
+		Return the global load of the cluster, in percentage.
+		This load is computed using ram capacities.
+		If load is higher than 100%, cluster is overloaded and cannot do failover.
+		"""
+
+		def getValues(node):
+			return node.get_metrics().get_ram_infos()
+
+		def computeLoad(results):
+			used=list()
+			total=list()
+			for success, result in results:
+				if success:
+					used.append(result['used'])
+					total.append(result['total'])
+				else:
+					raise result
+			
+			# The load is computed without the bigger node
+			# and so take in account a failure of one node.
+			return (sum(used)*100)/(sum(total)-max(total))
+
+		ds=list()
+		for node in self.get_nodes():
+			d=threads.deferToThread(getValues, node)
+			ds.append(d)
+
+		dl=defer.DeferredList(ds, consumeErrors=True)
+		dl.addCallback(computeLoad)
+		return dl
+
 	def is_in_cluster(self, hostname):
 		"""Return True if the specified hostname is a node of the cluser."""
 		return hostname in self.nodes
