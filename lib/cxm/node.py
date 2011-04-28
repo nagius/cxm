@@ -60,10 +60,10 @@ class Node:
 		if self.is_local_node():
 			# Use unix socket on localhost
 			self.server = XenAPI.Session("httpu:///var/run/xend/xen-api.sock")
-			if core.cfg['DEBUG']: print "DEBUG Xen-Api: using unix socket."
+			core.debug("[API]","Using unix socket.")
 		else:
 			self.server = XenAPI.Session("http://"+hostname+":9363")
-			if core.cfg['DEBUG']: print "DEBUG Xen-Api: using tcp socket."
+			core.debug("[API]","Using tcp socket.")
 		self.server.login_with_password("root", "")
 
 		# Prepare connection with legacy API
@@ -91,10 +91,10 @@ class Node:
 		if self.__legacy_server is None:
 			if self.is_local_node():
 				self.__legacy_server=ServerProxy("httpu:///var/run/xend/xmlrpc.sock")
-				if core.cfg['DEBUG']: print "DEBUG Legacy Api: using unix socket."
+				core.debug("[Legacy-API]","Using unix socket.")
 			else:
 				self.__legacy_server=ServerProxy("http://"+self.hostname+":8006")
-				if core.cfg['DEBUG']: print "DEBUG Legacy Api: using tcp socket."
+				core.debug("[Legacy-API]","Using tcp socket.")
 		return self.__legacy_server
 
 	def get_metrics(self):
@@ -129,7 +129,7 @@ class Node:
 			cmd=core.cfg['PATH'] + "/" + cmd
 
 		if(self.is_local_node() and not core.cfg['USESSH']):
-			if core.cfg['DEBUG'] : print "DEBUG SHELL: "+ self.get_hostname() +" -> "+cmd
+			core.debug("[SHL]", self.hostname, "->", cmd)
 
 			# Create buffers
 			stdout=StringIO.StringIO()
@@ -147,7 +147,7 @@ class Node:
 				msg=stderr.read()
 				raise ClusterNodeError(self.hostname,ClusterNodeError.SHELL_ERROR,msg)
 		else:
-			if core.cfg['DEBUG'] : print "DEBUG SSH: "+ self.get_hostname() +" -> "+cmd
+			core.debug("[SSH]", self.hostname, "->", cmd)
 			stdin, stdout, stderr = self.ssh.exec_command(cmd)
 			# Lock bug workaround : Check exit status before trying to read stderr
 			# Because sometimes, when stdout is big (maybe >65k ?), strderr.read() hand on
@@ -174,7 +174,7 @@ class Node:
 			return False
 		else:
 			vm=self.server.xenapi.VM.get_by_name_label(vmname)
-			if core.cfg['DEBUG']: print "DEBUG Xen-Api: ", vm
+			core.debug("[API]", self.hostname, "vm=", vm)
 			return len(vm)>0	
 
 	def is_vm_autostart_enabled(self, vmname):
@@ -214,8 +214,9 @@ class Node:
 		if core.cfg['USESSH']:
 			return int(self.run('xenstore-list /local/domain | wc -l').read())-1 # don't count Dom0
 		else:
-			if core.cfg['DEBUG']: print "DEBUG Xen-Api: ", self.server.xenapi.VM.get_all()
-			return len(self.server.xenapi.VM.get_all())-1
+			doms = self.server.xenapi.VM.get_all()
+			core.debug("[API]", self.hostname, "doms=", doms)
+			return len(doms)-1
 
 	def get_vgs(self,lvs):
 		"""Return the list of volumes groups associated with the given logicals volumes."""
@@ -378,7 +379,8 @@ class Node:
 		else:
 			dom_recs = self.server.xenapi.VM.get_all_records()
 			dom_metrics_recs = self.server.xenapi.VM_metrics.get_all_records()
-			if core.cfg['DEBUG']: print "DEBUG Xen-Api: ", dom_recs
+			core.debug("[API]", self.hostname, "dom_recs=", dom_recs)
+			core.debug("[API]", self.hostname, "dom_metrics_recs=", dom_metrics_recs)
 
 			for dom_rec in dom_recs.values():
 				if dom_rec['name_label'] == "Domain-0":
@@ -412,11 +414,11 @@ class Node:
 
 		# Compute the intersection of the two lists (active and used LVs)
 		active_and_used_lvs = list(Set(active_lvs) & Set(used_lvs))
-		if core.cfg['DEBUG']: print "DEBUG active_and_used_lvs =", active_and_used_lvs
+		core.debug("[NODE]", self.hostname, "active_and_used_lvs=", active_and_used_lvs)
 
 		# Get all LVs of running VM
 		running_lvs = [ lv for vm in self.get_vms() for lv in vm.get_lvs() ]
-		if core.cfg['DEBUG']: print "DEBUG running_lvs =", running_lvs
+		core.debug("[NODE]", self.hostname, "running_lvs=", running_lvs)
 
 		# Compute activated LVs without running vm
 		lvs_without_vm = list(Set(active_and_used_lvs) - Set(running_lvs))
@@ -439,11 +441,11 @@ class Node:
 
 		# Get all autostart links on the node
 		links = [ link.strip() for link in self.run("ls /etc/xen/auto/").readlines() ]
-		if core.cfg['DEBUG']: print "DEBUG links =", links
+		core.debug("[NODE]", self.hostname, "links=", links)
 
 		# Get all running VM
 		running_vms = [ vm.name for vm in self.get_vms() ]
-		if core.cfg['DEBUG']: print "DEBUG running_vms =", running_vms
+		core.debug("[NODE]", self.hostname, "running_vms=", running_vms)
 
 		# Compute running vm without autostart link
 		link_without_vm = list(Set(links) - Set(running_vms))

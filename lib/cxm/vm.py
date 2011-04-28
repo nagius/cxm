@@ -49,7 +49,7 @@ class VM:
 		self.devices=dict()
 
 		execfile("%s/%s" % (core.cfg['VMCONF_DIR'],vmname) ,dict(),self.config)
-		if core.cfg['DEBUG']: print "DEBUG config",vmname,"=",self.config
+		core.debug("[VM]", vmname, self.config)
 
 		# Get devices from config file
 		for disk in self.config['disk']:

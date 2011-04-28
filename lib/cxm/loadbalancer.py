@@ -89,10 +89,9 @@ class LoadBalancer:
 		# Finalize initialisation
 		self.root.compute_score(self.vm_metrics)
 
-		if core.cfg['DEBUG']: 
-			print "DEBUG [LB]: vm_metrics=",vm_metrics
-			print "DEBUG [LB]: node_metrics=",node_metrics
-			print "DEBUG [LB]: current_state=",self.root
+		core.debug(" [LB]", "vm_metrics=", vm_metrics)
+		core.debug(" [LB]", "node_metrics=", node_metrics)
+		core.debug(" [LB]", "current_state=", self.root)
 
 
 	def create_layer(self, root, layer):
@@ -156,12 +155,12 @@ class LoadBalancer:
 
 			# Compare initial solution to the best solution of this layer
 			if best_solution.score < self.root.score:
-				if core.cfg['DEBUG']: print "DEBUG [LB]: Found %s" % best_solution
+				core.debug(" [LB]", "Found", best_solution)
 
 				# Compute the gain (in percetage) of this solution
 				gain = ((self.root.score-best_solution.score)*100)/self.root.score
 				if gain >= core.cfg['LB_MIN_GAIN']:
-					if core.cfg['DEBUG']: print "DEBUG [LB]: Pickup this one, migration plan: %s" % best_solution.path
+					core.debug(" [LB]", "Pickup this one, migration plan:", best_solution.path)
 					return best_solution
 			
 			layer+=1 # No better solution found in this layer, going a step further.
