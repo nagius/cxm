@@ -27,7 +27,7 @@
 
 import time
 from xen.xm import main
-import node, core
+import node, core, datacache
 
 class Metrics:
 
@@ -37,6 +37,7 @@ class Metrics:
 		"""Instanciate new metrics associated with the given node."""
 		self.node=node
 		self.server=node.server
+		self._cache=datacache.DataCache()
 
 		# Initialize cpu_cache
 		self.cpu_cache={'timestamp': time.time()}
@@ -261,9 +262,16 @@ class Metrics:
 
 		return vms_record
 
-	def get_used_irq(self):
-		"""Return the number of used irq on this node. Unit: integer"""
-		return int(self.node.run('grep Dynamic /proc/interrupts | wc -l').read())
+	def get_used_irq(self, nocache=False):
+		"""
+		Return the number of used irq on this node. Unit: integer
+		Result will be cached for 5 seconds, unless 'nocache' is True.
+		"""
+
+		def _get_used_irq():
+			return int(self.node.run('grep Dynamic /proc/interrupts | wc -l').read())
+
+		return self._cache.cache(5, nocache, _get_used_irq)
 
 	def get_free_ram(self):
 		"""Return the amount of free ram of this node. Unit: MB"""
@@ -293,13 +301,13 @@ class Metrics:
 
 			return { 'total': total, 'free':free, 'used':total-free }
 
-	def get_available_ram(self, vms=None):
+	def get_available_ram(self):
 		"""
 		Return the amount of really available ram (for VM usage, excluding Dom0 and Hypervisor) of this node. 
 		
 		Unit: MB
 		"""
-		if not vms: vms = self.node.get_vms() # Get all vm running on this node
+		vms = self.node.get_vms() # Get all vm running on this node
 
 		# Compute amount of ram used by VMs
 		used_ram = sum(map(lambda x: x.get_ram(), vms))
