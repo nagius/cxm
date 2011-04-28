@@ -212,14 +212,31 @@ class Node:
 			vlans.append(line.split()[0])
 		return vlans
 
-	def get_vm_started(self):
-		"""Return the number of started vm on this node."""
-		if core.cfg['USESSH']:
-			return int(self.run('xenstore-list /local/domain | wc -l').read())-1 # don't count Dom0
-		else:
-			doms = self.server.xenapi.VM.get_all()
-			core.debug("[API]", self.hostname, "doms=", doms)
-			return len(doms)-1
+	def get_vm_started(self, nocache=False):
+		"""
+		Return the number of started vm on this node.
+		Result will be cached for 5 seconds, unless 'nocache' is True.
+		"""
+
+		def _get_vm_started():
+			if core.cfg['USESSH']:
+				vm_started = int(self.run('xenstore-list /local/domain | wc -l').read())-1 # don't count Dom0
+			else:
+				doms = self.server.xenapi.VM.get_all()
+				core.debug("[API]", self.hostname, "doms=", doms)
+				vm_started = len(doms)-1
+
+			return vm_started
+
+		if nocache:
+			return _get_vm_started()
+
+		try:
+			return self._cache.get('vm_started')
+		except datacache.CacheException:
+			vm_started = _get_vm_started()
+			self._cache.add('vm_started', 5, vm_started)
+			return vm_started
 
 	def get_vgs(self,lvs):
 		"""Return the list of volumes groups associated with the given logicals volumes."""
@@ -373,7 +390,7 @@ class Node:
 	def get_vms(self, nocache=False):
 		"""
 		Return the list of VM instance for each running vm.
-		The result could be cached for 5 seconds.
+		Result will be cached for 5 seconds, unless 'nocache' is True.
 		"""
 
 		def _get_vms():
@@ -403,7 +420,7 @@ class Node:
 			return vms
 
 		if nocache:
-			return get_vms()
+			return _get_vms()
 
 		try:
 			return self._cache.get('vms')
