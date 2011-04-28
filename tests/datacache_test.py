@@ -24,8 +24,9 @@
 
 import cxm.datacache
 import unittest
+from mocker import *
 
-class DataCacheTests(unittest.TestCase):
+class DataCacheTests(MockerTestCase):
 
 	def setUp(self):
 		self.cache=cxm.datacache.DataCache()
@@ -66,6 +67,41 @@ class DataCacheTests(unittest.TestCase):
 		self.cache.cleanup()
 		self.assertRaises(cxm.datacache.CacheMissingException, self.cache.get,"test1")
 		self.assertEqual(self.cache.get("test2"), value)
+
+	def test_cache_miss(self):
+		value = 26
+
+		obj = self.mocker.mock()
+		obj.callback.__name__
+		self.mocker.result("myfunc")
+		obj.callback("26")
+		self.mocker.result(value)
+		obj.callback.__name__
+		self.mocker.result("myfunc")
+		self.mocker.replay()
+
+		self.assertEqual(self.cache.cache(5, False, obj.callback, "26"), value)
+
+	def test_cache_hit(self):
+		value = 26
+
+		obj = self.mocker.mock()
+		obj.callback.__name__
+		self.mocker.result("myfunc")
+		self.mocker.replay()
+
+		self.cache.add("myfunc", 5, value)
+		self.assertEqual(self.cache.cache(5, False, obj.callback, "26"), value)
+
+	def test_cache_nocache(self):
+		value = 26
+
+		obj = self.mocker.mock()
+		obj.callback("26")
+		self.mocker.result(value)
+		self.mocker.replay()
+
+		self.assertEqual(self.cache.cache(5, True, obj.callback, "26"), value)
 
 if __name__ == "__main__":
 	unittest.main()   

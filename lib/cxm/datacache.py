@@ -85,6 +85,24 @@ class DataCache(object):
 			if data['expire'] <= int(time.time()):
 				self.delete(key)
 
+	def cache(self, lifetime, nocache, callback, *args, **kw):
+		"""
+		Return the cached result of the callback.
+
+		If the result is not in the cache or is outdated, the callback will 
+		be run and the new value put in cache for 'lifetime' seconds.
+		If 'nocache' is True, the cache is not used.
+		"""
+		if nocache:
+			return callback(*args, **kw)
+
+		try:
+			return self.get(callback.__name__)
+		except CacheException:
+			value = callback(*args, **kw)
+			self.add(callback.__name__, lifetime, value)
+			return value
+
 
 class CacheException(Exception):
 	"""Parent for all exceptions raised by the cache."""

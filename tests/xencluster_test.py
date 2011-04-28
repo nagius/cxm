@@ -55,6 +55,7 @@ class XenClusterTests(MockerTestCase):
 		node_mock.verify()
 		node_mock.restore()
 
+	# TODO a remplacer par disconnect
 	def __del__(self):
 		n_mock = Mocker()
 		n = n_mock.mock()

@@ -228,15 +228,7 @@ class Node:
 
 			return vm_started
 
-		if nocache:
-			return _get_vm_started()
-
-		try:
-			return self._cache.get('vm_started')
-		except datacache.CacheException:
-			vm_started = _get_vm_started()
-			self._cache.add('vm_started', 5, vm_started)
-			return vm_started
+		return self._cache.cache(5, nocache, _get_vm_started)
 
 	def get_vgs(self,lvs):
 		"""Return the list of volumes groups associated with the given logicals volumes."""
@@ -419,15 +411,7 @@ class Node:
 
 			return vms
 
-		if nocache:
-			return _get_vms()
-
-		try:
-			return self._cache.get('vms')
-		except datacache.CacheException:
-			vms=_get_vms()
-			self._cache.add('vms', 5, vms)
-			return vms
+		return self._cache.cache(5, nocache, _get_vms)
 
 	def check_lvs(self):
 		"""Perform a sanity check of the LVM activation on this node."""
