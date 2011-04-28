@@ -26,8 +26,8 @@
 # Note that some part of code came from xen/xm
 
 # TODO snapshot
-# TODO Add a cache to metrics.get_ram_infos() ?
 # Formaliser documentation des fonctions
+# TODO adaptation puor xenbaloond dans VM.get_ram() get_real_ram() ?
 # Modifier gestion exception avec héritage
 
 

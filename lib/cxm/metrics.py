@@ -273,33 +273,41 @@ class Metrics:
 
 		return self._cache.cache(5, nocache, _get_used_irq)
 
-	def get_free_ram(self):
+	def get_free_ram(self, nocache=False):
 		"""Return the amount of free ram of this node. Unit: MB"""
-		return self.get_ram_infos()['free']
+		return self.get_ram_infos(nocache)['free']
 
-	def get_total_ram(self):
+	def get_total_ram(self, nocache=False):
 		"""Return the amount of ram of this node (including Dom0 and Hypervisor). Unit: MB"""
-		return self.get_ram_infos()['total']
+		return self.get_ram_infos(nocache)['total']
 
-	def get_used_ram(self):
+	def get_used_ram(self, nocache=False):
 		"""Return the amount of used ram (including Dom0 and Hypervisor) of this node. Unit: MB"""
-		return self.get_ram_infos()['used']
+		return self.get_ram_infos(nocache)['used']
 
-	def get_ram_infos(self):
-		"""Return a dict with the free, used, and total ram of this node. Units: MB"""
-		# TODO add a cache
-		if core.cfg['USESSH']:
-			vals=map(int, self.node.run('xm info | grep -E total_memory\|free_memory | cut -d: -f 2').read().strip().split())
-			return { 'total':vals[0], 'free':vals[1], 'used':vals[0]-vals[1] }
-		else:
-			host_record = self.server.xenapi.host.get_record(self.server.xenapi.session.get_this_host(self.server.getSession()))
-			host_metrics_record = self.server.xenapi.host_metrics.get_record(host_record["metrics"])
-			core.debug("[API]", self.node.get_hostname(), "host_metrics_record=", host_metrics_record)
+	def get_ram_infos(self, nocache=False):
+		"""
+		Return a dict with the free, used, and total ram of this node. Units: MB
+		Result will be cached for 5 seconds, unless 'nocache' is True.
+		"""
 
-			total=int(host_metrics_record["memory_total"])/1024/1024
-			free=int(host_metrics_record["memory_free"])/1024/1024
+		def _get_ram_infos():
+			if core.cfg['USESSH']:
+				vals=map(int, self.node.run('xm info | grep -E total_memory\|free_memory | cut -d: -f 2').read().strip().split())
+				ram_infos = { 'total':vals[0], 'free':vals[1], 'used':vals[0]-vals[1] }
+			else:
+				host_record = self.server.xenapi.host.get_record(self.server.xenapi.session.get_this_host(self.server.getSession()))
+				host_metrics_record = self.server.xenapi.host_metrics.get_record(host_record["metrics"])
+				core.debug("[API]", self.node.get_hostname(), "host_metrics_record=", host_metrics_record)
 
-			return { 'total': total, 'free':free, 'used':total-free }
+				total=int(host_metrics_record["memory_total"])/1024/1024
+				free=int(host_metrics_record["memory_free"])/1024/1024
+
+				ram_infos = { 'total': total, 'free':free, 'used':total-free }
+
+			return ram_infos
+
+		return self._cache.cache(5, nocache, _get_ram_infos)
 
 	def get_available_ram(self):
 		"""

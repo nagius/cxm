@@ -337,7 +337,7 @@ class XenCluster:
 			selected_node=None
 	
 			# Sort nodes by free ram
-			pool.sort(key=lambda x: x.metrics.get_free_ram())
+			pool.sort(key=lambda x: x.metrics.get_free_ram(False))
 			for node in pool:
 				if node.metrics.get_free_ram() >= vm.get_ram():
 					selected_node=node
