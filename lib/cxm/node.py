@@ -33,7 +33,7 @@ from sets import Set
 
 from metrics import Metrics
 from vm import VM
-import core
+import core, datacache
 
 
 class Node:
@@ -71,6 +71,9 @@ class Node:
 
 		# Prepare metrics
 		self.__metrics=None
+
+		# Prepare cache
+		self._cache=datacache.DataCache()
 
 	def disconnect(self):
 		"""Close all connections."""
@@ -367,32 +370,47 @@ class Node:
 			vm.metrics=self.server.xenapi.VM_metrics.get_record(vm_rec['metrics'])
 			return vm
 
-	def get_vms(self):
-		"""Return the list of VM instance for each running vm."""
-		vms=list()
-		if core.cfg['USESSH']:
-			for line in self.run("xm list | awk '{print $1,$2,$3,$4;}' | tail -n +3").readlines():
-				(name, id, ram, vcpu)=line.strip().split()
-				if name.startswith("migrating-"):
-					continue
-				vms.append(VM(name, id, ram, vcpu))
-		else:
-			dom_recs = self.server.xenapi.VM.get_all_records()
-			dom_metrics_recs = self.server.xenapi.VM_metrics.get_all_records()
-			core.debug("[API]", self.hostname, "dom_recs=", dom_recs)
-			core.debug("[API]", self.hostname, "dom_metrics_recs=", dom_metrics_recs)
+	def get_vms(self, nocache=False):
+		"""
+		Return the list of VM instance for each running vm.
+		The result could be cached for 5 seconds.
+		"""
 
-			for dom_rec in dom_recs.values():
-				if dom_rec['name_label'] == "Domain-0":
-					continue # Discard Dom0
-				if dom_rec['name_label'].startswith("migrating-"):
-					continue # Discard migration temporary vm
+		def _get_vms():
+			vms=list()
+			if core.cfg['USESSH']:
+				for line in self.run("xm list | awk '{print $1,$2,$3,$4;}' | tail -n +3").readlines():
+					(name, id, ram, vcpu)=line.strip().split()
+					if name.startswith("migrating-"):
+						continue
+					vms.append(VM(name, id, ram, vcpu))
+			else:
+				dom_recs = self.server.xenapi.VM.get_all_records()
+				dom_metrics_recs = self.server.xenapi.VM_metrics.get_all_records()
+				core.debug("[API]", self.hostname, "dom_recs=", dom_recs)
+				core.debug("[API]", self.hostname, "dom_metrics_recs=", dom_metrics_recs)
 
-				vm=VM(dom_rec['name_label'],dom_rec['domid'])
-				vm.metrics=dom_metrics_recs[dom_rec['metrics']]
-				vms.append(vm)
+				for dom_rec in dom_recs.values():
+					if dom_rec['name_label'] == "Domain-0":
+						continue # Discard Dom0
+					if dom_rec['name_label'].startswith("migrating-"):
+						continue # Discard migration temporary vm
 
-		return vms
+					vm=VM(dom_rec['name_label'],dom_rec['domid'])
+					vm.metrics=dom_metrics_recs[dom_rec['metrics']]
+					vms.append(vm)
+
+			return vms
+
+		if nocache:
+			return get_vms()
+
+		try:
+			return self._cache.get('vms')
+		except datacache.CacheException:
+			vms=_get_vms()
+			self._cache.add('vms', 5, vms)
+			return vms
 
 	def check_lvs(self):
 		"""Perform a sanity check of the LVM activation on this node."""
