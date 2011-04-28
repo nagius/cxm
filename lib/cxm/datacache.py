@@ -91,13 +91,14 @@ class DataCache(object):
 
 		If the result is not in the cache or is outdated, the callback will 
 		be run and the new value put in cache for 'lifetime' seconds.
-		If 'nocache' is True, the cache is not used.
+		If 'nocache' is True, the cache is only feeded.
 		"""
-		if nocache:
-			return callback(*args, **kw)
 
 		try:
-			return self.get(callback.__name__)
+			if nocache:
+				raise CacheException
+			else:
+				return self.get(callback.__name__)
 		except CacheException:
 			value = callback(*args, **kw)
 			self.add(callback.__name__, lifetime, value)

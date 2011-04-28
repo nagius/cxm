@@ -97,6 +97,8 @@ class DataCacheTests(MockerTestCase):
 		value = 26
 
 		obj = self.mocker.mock()
+		obj.callback.__name__
+		self.mocker.result("myfunc")
 		obj.callback("26")
 		self.mocker.result(value)
 		self.mocker.replay()
