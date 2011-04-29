@@ -335,6 +335,25 @@ class NodeTests(MockerTestCase):
 		self.assertEqual(isinstance(result[0], cxm.vm.VM),True)
 		self.assertEqual(len(result),1)
 
+	def test_get_vms_names(self):	
+		vm_records = {
+            '6ab3fd4c-d1d3-158e-d72d-3fc4831ae1e5': {
+                'name_label': 'test1.home.net'},
+            '11ab12fd4c-d1d3-153e-d75d1fc4841ae1e7': {
+                'name_label': 'migrating-test1.home.net'},
+             '7efcbac8-4714-88ee-007c-0246a3cb52b8': {
+                'name_label': 'Domain-0'}
+            }
+
+		xs = self.mocker.mock()
+		xs.xenapi.VM.get_all_records()
+		self.mocker.result(vm_records)
+		self.mocker.replay()
+		self.node.server=xs
+
+		result=self.node.get_vms_names()
+		self.assertEqual(result,['test1.home.net'])
+
 	def test_check_lvs_ok(self):
 		vm_records = {
             '6ab3fd4c-d1d3-158e-d72d-3fc4831ae1e5': {

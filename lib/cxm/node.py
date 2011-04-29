@@ -413,6 +413,29 @@ class Node:
 
 		return self._cache.cache(5, nocache, _get_vms)
 
+	def get_vms_names(self):
+		"""Return the list of running vm."""
+		vms_names=list()
+		if core.cfg['USESSH']:
+			for line in self.run("xm list | awk '{print $1}' | tail -n +3").readlines():
+				name=line.strip()
+				if name.startswith("migrating-"):
+					continue
+				vms_names.append(name)
+		else:
+			dom_recs = self.server.xenapi.VM.get_all_records()
+			core.debug("[API]", self.hostname, "dom_recs=", dom_recs)
+
+			for dom_rec in dom_recs.values():
+				if dom_rec['name_label'] == "Domain-0":
+					continue # Discard Dom0
+				if dom_rec['name_label'].startswith("migrating-"):
+					continue # Discard migration temporary vm
+
+				vms_names.append(dom_rec['name_label'])
+
+		return vms_names
+
 	def check_lvs(self):
 		"""Perform a sanity check of the LVM activation on this node."""
 		if not core.cfg['QUIET']: print "Checking LV activation on",self.get_hostname(),"..." 

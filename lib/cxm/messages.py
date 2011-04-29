@@ -75,7 +75,7 @@ class MessageSlaveHB(Message):
 	def forge(self, node):
 		super(MessageSlaveHB,self).forge()
 		self.ts=int(time.time())
-		self.vms=map(lambda x: x.name, node.get_vms())
+		self.vms=node.get_vms_names()
 		return self
 
 	def value(self):
