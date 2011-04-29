@@ -309,19 +309,23 @@ class Metrics:
 
 		return self._cache.cache(5, nocache, _get_ram_infos)
 
-	def get_available_ram(self):
+	def get_available_ram(self, nocache=False):
 		"""
-		Return the amount of really available ram (for VM usage, excluding Dom0 and Hypervisor) of this node. 
-		
-		Unit: MB
+		Return the amount of really available ram (for VM usage, excluding Dom0 
+		and Hypervisor) of this node. Unit: MB
+		Result will be cached for 5 seconds, unless 'nocache' is True.
 		"""
-		vms = self.node.get_vms() # Get all vm running on this node
+		def _get_available_ram():
+			# Get all vm running on this node
+			vms = self.node.get_vms(nocache)
 
-		# Compute amount of ram used by VMs
-		used_ram = sum(map(lambda x: x.get_ram(), vms))
+			# Compute amount of ram used by VMs
+			used_ram = sum(map(lambda x: x.get_ram(), vms))
 
-		# Return really available ram for VM
-		return self.get_free_ram() + used_ram
+			# Return really available ram for VM
+			return self.get_free_ram(nocache) + used_ram
+
+		return self._cache.cache(5, nocache, _get_available_ram)
 
 	def get_load(self):
 		"""Return the load of this node.
