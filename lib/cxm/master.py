@@ -49,6 +49,7 @@ from diskheartbeat import DiskHeartbeat
 # TODO add check disk nr_node
 # TODO gérer cas partition + possibilité d'ajout de node pendant partition ?
 # TODO mode debug
+# TODO refactoring status autre nom
 
 
 class MasterService(Service):
@@ -68,16 +69,20 @@ class MasterService(Service):
 
 
 	def __init__(self):
-		self.role		= MasterService.RL_ALONE		# Current role of this node
-		self.state		= MasterService.ST_NORMAL		# Current cluster error status
-		self.master		= None							# Name of the active master
-		self.status		= dict()						# Whole cluster status
-		self.localNode	= Node(DNSCache.getInstance().name)
-		self.disk		= DiskHeartbeat()
-		self.l_check	= task.LoopingCall(self.checkHeartbeats)
-		self.s_slaveHb	= SlaveHearbeatService(self)
-		self.s_masterHb	= MasterHeartbeatService(self)
-		self.s_rpc		= RPCService(self) 
+		self.role			= MasterService.RL_ALONE		# Current role of this node
+		self.state			= MasterService.ST_NORMAL		# Current cluster error status
+		self.master			= None							# Name of the active master
+		self.masterLastSeen	= 0								# Timestamp for master failover
+		self.status			= dict()						# Whole cluster status
+		self.localNode		= Node(DNSCache.getInstance().name)
+		self.disk			= DiskHeartbeat()
+		self.s_slaveHb		= SlaveHearbeatService(self)
+		self.s_masterHb		= MasterHeartbeatService(self)
+		self.s_rpc			= RPCService(self) 
+
+		# Watchdogs for failover
+		self.l_slaveDog		= task.LoopingCall(self.checkMasterHeartbeat)
+		self.l_masterDog	= task.LoopingCall(self.checkSlaveHeartbeats)
 
 		# Election Stuff
 		self.ballotBox = None
@@ -107,8 +112,8 @@ class MasterService(Service):
 
 			# Cleanly leave cluster
 			d = self.leaveCluster()
-			d.addCallback(exit)
 			d.addErrback(log.err)
+			d.addBoth(exit) # Even if there are errors
 			return d
 		else:
 			return defer.succeed(None)
@@ -124,7 +129,9 @@ class MasterService(Service):
 		log.emerg("Please check logs and be sure of what you're doing before re-engaging normal mode.")
 		self.state=MasterService.ST_PANIC
 
-		# TODO stop check heartbeat + stop LB
+		# TODO + stop LB
+		if self.l_masterDog.running:
+			self.l_masterDog.stop()
 
 
 	# Properties accessors
@@ -220,6 +227,7 @@ class MasterService(Service):
 		# Keep a backup of the active master's state and status
 		self.status=msg.status
 		self.state=msg.state
+		self.masterLastSeen=int(time.time())
 #		pprint(self.status)
 
 	def voteForNewMaster(self, msg):
@@ -295,18 +303,20 @@ class MasterService(Service):
 	def _stopMaster(self):
 		self.s_masterHb.forcePulse() # Send a last hearbeat before stopping
 		self.s_masterHb.stopService().addErrback(log.err)
-		if self.l_check.running:
-			self.l_check.stop()
+		if self.l_masterDog.running:
+			self.l_masterDog.stop()
 		# TODO stop LB service
 
 	def _startMaster(self):
-		def checkHeartbeatsFailed(reason):
-			log.emerg("Heartbeats' checks failed: %s." % (reason.getErrorMessage()))
+		def masterWatchdogFailed(reason):
+			log.emerg("Slaves Heartbeats' checks failed: %s." % (reason.getErrorMessage()))
 			self.panic()
 
 		self.s_masterHb.startService()
-		d=self.l_check.start(1)
-		d.addErrback(checkHeartbeatsFailed)
+
+		# Start master's watchdog for slaves failover
+		d=self.l_masterDog.start(1)
+		d.addErrback(masterWatchdogFailed)
 		d.addErrback(log.err)
 		# TODO start LB service
 
@@ -404,7 +414,9 @@ class MasterService(Service):
 		log.info("Recovering from panic mode. Back to normals operations.")
 		self.state=MasterService.ST_NORMAL
 		self.s_masterHb.forcePulse()
-		self.triggerElection()
+		d=self.triggerElection()
+
+		return d
 
 
 	# Passive master's stuff
@@ -420,6 +432,7 @@ class MasterService(Service):
 
 		previousRole=self.role
 		self.role=MasterService.RL_LEAVING
+		self.l_slaveDog.stop()
 
 		if previousRole == MasterService.RL_ACTIVE:
 			# Self-delete our own record 
@@ -431,9 +444,10 @@ class MasterService(Service):
 			else:
 				# New election only if there is at least one node
 				d=self.triggerElection()
+				d.addErrback(log.err)
 
 			# Stop master hearbeat when vote request has been sent
-			d.addCallback(lambda _: self._stopMaster())
+			d.addBoth(lambda _: self._stopMaster())
 		elif previousRole == MasterService.RL_PASSIVE:
 			rpcFactory = pb.PBClientFactory()
 			rpcConnector = reactor.connectTCP(self.master, core.cfg['TCP_PORT'], rpcFactory)
@@ -449,12 +463,26 @@ class MasterService(Service):
 
 
 	def joinCluster(self):
+
+		def slaveWatchdogFailed(reason):
+			log.emerg("Master Heartbeats' checks failed: %s." % (reason.getErrorMessage()))
+			# Stop slave heartbeat to tell master we have a problem, but if we are here, 
+			# there is no more master, and so, we cannot switch into panic mode.
+			# Hope that another node will trigger an election... and fence me.
+			self.s_slaveHb.stopService()  
+			log.emerg("This is an unrecoverable error: FENCE ME !")
+
 		def startHeartbeats():
 			self.s_slaveHb.startService()
 			self.s_rpc.startService()
 
 			if self.role == MasterService.RL_ACTIVE:
 				self._startMaster() 
+
+			# Start slave's watchdog for master failover
+			d=self.l_slaveDog.start(1)
+			d.addErrback(slaveWatchdogFailed)
+			d.addErrback(log.err)
 		
 		def joinRefused(reason):
 			reason.trap(NodeRefusedError, RPCRefusedError)
@@ -507,16 +535,30 @@ class MasterService(Service):
 			self.stopService()
 			
 
-	# TODO 
-	def checkHeartbeats(self):
+	# Failover stuff
+	###########################################################################
+
+	def checkMasterHeartbeat(self):
+		TM_MASTER = 4
+
+		# Master failover only if we are a slave
+		if self.role != MasterService.RL_PASSIVE:
+			return 
+
 		# Master failover still possible even if in panic mode
-		pass
+		if self.masterLastSeen+TM_MASTER <= int(time.time()):
+			log.warn("Heartbeat lost, master has disappeared.")
+			return self.triggerElection()
+
+
+	def checkSlaveHeartbeats(self):
 
 
 		# TODO comparaison liste node ? cas partition a voir
 #		pprint(self.disk.get_all_ts())
 		# TODO cas perte baie disque locale
 		# TODO cas timestamps à 0
+		pass
 
 
 # vim: ts=4:sw=4:ai
