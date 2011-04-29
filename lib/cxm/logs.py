@@ -31,23 +31,26 @@ import syslog
 def init(name):
 	syslog.openlog(name, syslog.LOG_PID, syslog.LOG_DAEMON)
 
-def info(message, **kw):
-	log.msg(message, **kw)
+def info(*args):
+	log.msg(*args)
 
-def debug(message, **kw):
+def debug(*args):
 	if core.cfg['DEBUG']:
-		log.msg("DEBUG: %s" % (message), **kw)
+		log.msg("DEBUG:", *args)
 		
-def warn(message, **kw):
-	log.msg("Warning: %s" % (message), **kw)
-	syslog.syslog(syslog.LOG_WARNING, str(message))
+def warn(*args):
+	message = " ".join(map(str, args))
+	log.msg("Warning: %s" % (message))
+	syslog.syslog(syslog.LOG_WARNING, message)
 
-def err(message, **kw):
-	log.err("Error: %s" % (message), **kw)
-	syslog.syslog(syslog.LOG_ERR, str(message))
+def err(*args):
+	message = " ".join(map(str, args))
+	log.err("Error: %s" % (message))
+	syslog.syslog(syslog.LOG_ERR, message)
 
-def emerg(message, **kw):
-	log.err("CRITICAL ERROR: %s" % (message), **kw)
-	syslog.syslog(syslog.LOG_EMERG, str(message))
+def emerg(*args):
+	message = " ".join(map(str, args))
+	log.err("CRITICAL ERROR: %s" % (message))
+	syslog.syslog(syslog.LOG_EMERG, message)
 
 # vim: ts=4:sw=4:ai
