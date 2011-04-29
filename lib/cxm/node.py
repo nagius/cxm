@@ -74,6 +74,7 @@ class Node:
 
 		# Prepare cache
 		self._cache=datacache.DataCache()
+		self._last_refresh=0
 
 	def disconnect(self):
 		"""Close all connections."""
@@ -249,8 +250,13 @@ class Node:
 
 	def refresh_lvm(self,vgs):
 		"""Perform a LVM refresh."""
+
+		GRACE_TIME=60  # Don't refresh for 60 seconds
+
 		if not core.cfg['NOREFRESH']:
-			self.run("lvchange --refresh " + " ".join(vgs))
+			if self._last_refresh+GRACE_TIME < int(time.time()):
+				self.run("lvchange --refresh " + " ".join(vgs))
+				self._last_refresh=int(time.time())
 
 	def deactivate_lv(self,vmname):
 		"""Deactivate the logicals volumes of the specified VM on this node.
