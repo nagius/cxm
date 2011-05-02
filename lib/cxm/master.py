@@ -49,7 +49,7 @@ from diskheartbeat import DiskHeartbeat
 # TODO add check disk nr_node
 # TODO gérer cas partition + possibilité d'ajout de node pendant partition ?
 # TODO mode debug
-# TODO refactoring status autre nom
+# TODO refactoring status / vmsBox ?
 
 
 class MasterService(Service):
@@ -432,7 +432,8 @@ class MasterService(Service):
 
 		previousRole=self.role
 		self.role=MasterService.RL_LEAVING
-		self.l_slaveDog.stop()
+		if self.l_slaveDog.running:
+			self.l_slaveDog.stop()
 
 		if previousRole == MasterService.RL_ACTIVE:
 			# Self-delete our own record 
@@ -552,8 +553,38 @@ class MasterService(Service):
 
 
 	def checkSlaveHeartbeats(self):
+		TM_SLAVE = 5
+
+		# Checks slaves timestamps only if we are active master
+		if self.role != MasterService.RL_ACTIVE:
+			return
+
+		# No failover is panic mode
+		if self.state == MasterService.ST_PANIC:
+			return
+
+		# Check net heartbeat
+		netFailed=list()
+		for name, values in self.status.items():
+			try:
+				if values['timestamp']+TM_SLAVE <= int(time.time()):
+					log.warn("Net heartbeat lost for %s." % (name))
+					netFailed.append(name)
+			except KeyError:
+				# Do nothing if first heartbeat has not been received yet
+				continue
+
+		# TODO gerer offset
+		# Check disk heartbeat
+		diskFailed=list()
+		for name, timestamp in self.disk.get_all_ts().items():
+			if timestamp+TM_SLAVE <= int(time.time()):
+				log.warn("Disk heartbeat lost for %s." % (name))
+				diskFailed.append(name)
 
 
+
+		# TODO faire un state revovering/failover ?
 		# TODO comparaison liste node ? cas partition a voir
 #		pprint(self.disk.get_all_ts())
 		# TODO cas perte baie disque locale
