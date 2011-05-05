@@ -30,7 +30,8 @@ import core
 class DiskHeartbeat(object):
 
 	BS = 4096			# Block size
-	MAX_SLOT = 32		# Maximum number of slots. File size must be at least (MAX_SLOT+1)*2*BS Bytes
+	MAX_SLOT = 16		# Maximum number of slots. File size must be at least (MAX_SLOT+1)*2*BS Bytes
+						# Redhat Cluster Suite has a maximum of 16 nodes.
 	MAGIC = "CXMHBv1-%s-%s" % (BS, MAX_SLOT)	# Magic number for heartbeat disk
 
 	def __init__(self):
