@@ -103,6 +103,10 @@ node=None
       |  +-- -R-- Counter   XenStatsHostVmNetRx(8)		(Bytes)
       |  +-- -R-- Counter   XenStatsHostVmNetTx(9)		(Bytes)
 
+
+Shell command to walk through this tree :
+	snmpwalk -Cc -v 1 -c netcomm localhost -m all -M/ .1.3.6.1.3.53.3.54.1
+
 """
 
 
