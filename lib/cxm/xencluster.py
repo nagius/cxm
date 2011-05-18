@@ -129,7 +129,11 @@ class XenCluster:
 		def computeLoad(result):
 			# The load is computed without the bigger node
 			# and so take in account a failure of one node.
-			return (sum(result['used'])*100)/(sum(result['total'])-max(result['total']))
+			try:
+				return (sum(result['used'])*100)/(sum(result['total'])-max(result['total']))
+			except ZeroDivisionError:
+				# Just one node: cannot do failover
+				return 100
 
 		d=self.get_ram_details()
 		d.addCallback(computeLoad)
