@@ -234,8 +234,10 @@ start()
 	touch $LOCKFILE
 
 	# Only one refresh before starting
-	VG=`vgs -o vg_name --noheading`
-	lvchange --refresh $VG
+	grep "NOREFRESH=True" /etc/xen/cxm.conf >/dev/null || {
+		VG=`vgs -o vg_name --noheading`
+		lvchange --refresh $VG
+	}
 
 	# Initiate the cluster 
 	cxm init --no-refresh
