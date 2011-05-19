@@ -32,7 +32,10 @@ case "$1" in
 	start)
 		echo -n "Starting $prog"
 
-		/usr/bin/twistd -y $TAC_FILE --pidfile=$PID_FILE --logfile=$LOG_DIR/$prog.log
+		# Wait a little to spread startup
+		usleep $(($RANDOM * 10))
+
+		nice --1 /usr/bin/twistd -y $TAC_FILE --pidfile=$PID_FILE --logfile=$LOG_DIR/$prog.log
 		RETVAL=$?
 		[ "$RETVAL" = 0 ] && success || failure
 		[ "$RETVAL" = 0 ] && touch /var/lock/subsys/$prog
