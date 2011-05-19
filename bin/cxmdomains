@@ -231,6 +231,14 @@ start()
 	return; 
     fi
 
+	# Check if cxmd is running
+	cxmd_ctl --ping >/dev/null 2>&1 || {
+		echo -n "cxmd not running !"
+		rc_failed 1
+		echo_rc
+		return 
+	}
+
 	touch $LOCKFILE
 
 	# Only one refresh before starting
@@ -320,6 +328,13 @@ watchdog_xm()
 stop()
 {
     exec 3>&2 2> /dev/null
+
+	# Check if cxmd is running
+	cxmd_ctl --ping >/dev/null 2>&1 || {
+		echo -n "cxmd not running !"
+		rc_failed 1
+		return 
+	}
     
     # Collect list of domains to shut down
     if test "$XENDOMAINS_AUTO_ONLY" = "true"; then
