@@ -52,6 +52,9 @@ class UDPSender(DatagramProtocol):
 			self._ip=result
 			self.d_onStart.callback(self) 
 
+		# Set IP TOS field to Minimize-Delay
+		self.transport.socket.setsockopt(socket.IPPROTO_IP, socket.IP_TOS, 0x10)
+
 		if self.dest is None:
 			# Enable broadcast
 			self.transport.socket.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, True)
