@@ -85,8 +85,9 @@ class MasterService(Service):
 		self.l_masterDog	= task.LoopingCall(self.checkSlaveHeartbeats)
 
 		# Election Stuff
-		self.ballotBox = None
-		self.currentElection = None
+		self.ballotBox = None			# All received votes
+		self.currentElection = None		# Election name
+		self.f_tally = None				# IDelayedCall used to trigger countVotes()
 
 	def startService(self):
 		Service.startService(self)
@@ -181,13 +182,14 @@ class MasterService(Service):
 #		print "slave recu " + str(msg)
 
 		if self.role != MasterService.RL_ACTIVE:
-			print "Warning: received slave HB alors que pas master"
+			# Some slave HB could reach us during election...
+			if self.role == MasterService.RL_PASSIVE:
+				log.warn("Received slave heartbeat from %s while we're not master." % (msg.node))
 			return
 
 		if msg.node not in self.status:
-			print "Warning: received slave HB from unknown node"
+			log.warn("Received slave heartbeat from unknown node %s." % (msn.node))
 			return
-			
 
 		now=int(time.time())
 		self.status[msg.node]={'timestamp': now, 'offset': now-msg.ts, 'vms': msg.vms}
@@ -206,8 +208,8 @@ class MasterService(Service):
 			if self.master == msg.node:
 				return		# Discard our own master heartbeat
 			else:
-				log.warn("Received another master's heartbeat ! Trying to recover from partition...")
-				self.triggerElection().addErrback(log.err) # TODO test collision vote request
+				log.warn("Received another master's heartbeat from %s ! Trying to recover from partition..." % (msg.node))
+				self.triggerElection().addErrback(log.err) 
 
 				# Propagate panic mode from another master
 				if msg.state == MasterService.ST_PANIC:
@@ -217,7 +219,7 @@ class MasterService(Service):
 
 		# Passive master's checks
 		if self.master != msg.node:
-			log.err("Received master heartbeat from a wrong master %s !" % (msg.node))
+			log.warn("Received master heartbeat from a wrong master %s !" % (msg.node))
 			return
 
 		# Check error mode change to panic
@@ -238,6 +240,14 @@ class MasterService(Service):
 			result.sendMessage()
 			port.stopListening()
 
+		# Discard current election if there is a new one
+		if self.role == MasterService.RL_VOTING:
+			log.warn("Previous election aborded: new vote request received.")
+			try:
+				self.f_tally.cancel()
+			except:
+				pass
+
 		log.info("Vote request received from %s." % (msg.node))
 		self.currentElection=msg.election
 
@@ -245,6 +255,7 @@ class MasterService(Service):
 		if self.role == MasterService.RL_LEAVING:
 			log.info("Vote request ignored: we are leaving this cluster.")
 			return
+
 
 		# Stop heartbeating
 		self.s_slaveHb.stopService().addErrback(log.err)
@@ -254,7 +265,7 @@ class MasterService(Service):
 		# Prepare election
 		self.role=MasterService.RL_VOTING
 		self.ballotBox=dict()
-		reactor.callLater(1, self.countVotes) # Timout of election stage
+		self.f_tally=reactor.callLater(1, self.countVotes) # Timout of election stage
 
 		# Send our vote
 		d = Deferred()
@@ -554,6 +565,7 @@ class MasterService(Service):
 
 	def checkSlaveHeartbeats(self):
 		TM_SLAVE = 5
+		# TODO augemneter timeout election > master > slave
 
 		# Checks slaves timestamps only if we are active master
 		if self.role != MasterService.RL_ACTIVE:
@@ -589,6 +601,7 @@ class MasterService(Service):
 #		pprint(self.disk.get_all_ts())
 		# TODO cas perte baie disque locale
 		# TODO cas timestamps à 0
+			# -> timestamps now ?
 		pass
 
 
