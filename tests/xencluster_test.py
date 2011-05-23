@@ -55,14 +55,14 @@ class XenClusterTests(MockerTestCase):
 		node_mock.verify()
 		node_mock.restore()
 
-	# TODO a remplacer par disconnect
-	def __del__(self):
+	def test_disconnect(self):
 		n_mock = Mocker()
 		n = n_mock.mock()
-		n.__del__()
+		n.disconnect()
 		n_mock.replay()
 
 		self.cluster.nodes={socket.gethostname(): n}
+		self.cluster.disconnect()
 
 	def test_xencluster(self):
 		self.assertNotEqual(self.cluster, None)

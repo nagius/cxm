@@ -64,6 +64,15 @@ class NodeTests(MockerTestCase):
 		xenapi_mock.verify()
 		xenapi_mock.restore()
 
+	def test_disconnect(self):
+		xs = self.mocker.mock()
+		xs.xenapi.session.logout()
+		self.mocker.result(None)
+		self.mocker.replay()
+		self.node.server=xs
+
+		self.assertEqual(self.node.disconnect(), None)
+
 	def test_node(self):
 		self.assertNotEqual(self.node, None)
 
