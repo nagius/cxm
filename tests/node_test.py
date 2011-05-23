@@ -59,13 +59,16 @@ class NodeTests(MockerTestCase):
 		cxm.node.ServerProxy=proxy
 
 		# Run test
-		self.node=cxm.node.Node(socket.gethostname())
+		self.node=cxm.node.Node.getLocalInstance()
 
 		xenapi_mock.verify()
 		xenapi_mock.restore()
 
 	def test_node(self):
 		self.assertNotEqual(self.node, None)
+
+	def test_getLocalInstance(self):
+		self.assertTrue(isinstance(self.node, cxm.node.Node))
 
 	def test_get_bridges(self):
 		val = ['xenbr123', 'xenbr2004', 'xenbr12']

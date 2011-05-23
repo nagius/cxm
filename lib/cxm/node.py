@@ -76,6 +76,11 @@ class Node:
 		self._cache=datacache.DataCache()
 		self._last_refresh=0
 
+	@staticmethod
+	def getLocalInstance():
+		"""Instanciate and return the Node object representing the local machine."""
+		return Node(socket.gethostname())
+
 	def disconnect(self):
 		"""Close all connections."""
 		# Close SSH
