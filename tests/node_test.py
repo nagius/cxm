@@ -146,9 +146,11 @@ class NodeTests(MockerTestCase):
 
 	def test_refresh_lvm(self):
 		vgs=['LVM_XEN', 'vgrack']
+		cxm.core.cfg['NOREFRESH']=False
 		self.node.refresh_lvm(vgs) # No return value 
 
 	def test_refresh_lvm_bad_input(self):
+		cxm.core.cfg['NOREFRESH']=False
 		self.assertRaises(cxm.node.ClusterNodeError,self.node.refresh_lvm, []) 
 
 	def test_deactivate_lv(self):
