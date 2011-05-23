@@ -40,6 +40,7 @@ cxm.core.cfg['QUIET']=True
 # Globals vars
 pp=None
 node=None
+nr_cpu=None
 
 
 """
@@ -114,11 +115,11 @@ def update_data():
 	"""Update snmp's data from cxm API"""
 	global pp
 	global node
+	global nr_cpu
 
 	# Load all stats once
 	vms=node.get_vms()
 	ram=node.metrics.get_ram_infos()
-	nr_cpu=int(node.metrics.get_host_nr_cpus())
 	vgs_io=node.metrics.get_host_vgs_io()
 	net_io=node.metrics.get_host_net_io()
 	vms_stat=node.metrics.get_vms_record()
@@ -176,6 +177,7 @@ def main():
 	"""Feed the snmp_xen MIB tree and start listening for snmp's passpersist"""
 	global pp
 	global node
+	global nr_cpu
 
 	syslog.openlog(sys.argv[0],syslog.LOG_PID)
 	
@@ -188,10 +190,11 @@ def main():
 			# Load helpers
 			pp=snmp.PassPersist(OID_BASE)
 			node=cxm.node.Node(socket.gethostname())
+			nr_cpu=node.metrics.get_host_nr_cpus()
 
 			# Set statics data
 			pp.add_str('1.1.0',node.get_hostname())
-			pp.add_gau('1.2.0',int(node.metrics.get_host_nr_cpus()))
+			pp.add_gau('1.2.0',nr_cpu)
 			oid=pp.encode("Domain-0")
 			pp.add_str('1.9.1.' + oid,'Domain-0')
 			pp.add_int('1.9.2.' + oid,0)

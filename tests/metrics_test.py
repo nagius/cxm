@@ -139,12 +139,13 @@ class MetricsTests(MockerTestCase):
 		xs.getSession()
 		xs.xenapi.session.get_this_host(ANY)
 		xs.xenapi.host.get_record(ANY)
-		self.mocker.result({'cpu_configuration': {'nr_cpus': 2}})
+		self.mocker.result({'cpu_configuration': {'nr_cpus': '2'}})
 		self.mocker.replay()
 		self.metrics.server=xs
 
 		result=self.metrics.get_host_nr_cpus()
 		self.assertEqual(result, val)
+		self.assertEqual(type(result), int)
 
 	def test_get_dom0_nr_cpus(self):
 		val=2	
@@ -157,6 +158,7 @@ class MetricsTests(MockerTestCase):
 
 		result=self.metrics.get_dom0_nr_cpus()
 		self.assertEqual(result, val)
+		self.assertEqual(type(result), int)
 
 	def test_get_vms_disk_io(self):
 		vm_records= {

@@ -60,13 +60,13 @@ class Metrics:
 		return "<Metrics Instance : "+ self.node.hostname +">"
 
 	def get_host_nr_cpus(self):
-		"""Return the number of CPU on the host."""
+		"""Return the number (int) of CPU on the host."""
 		host_record = self.server.xenapi.host.get_record(self.server.xenapi.session.get_this_host(self.server.getSession()))
 		core.debug("[API]", self.node.get_hostname(), "host_record=", host_record)
-		return host_record['cpu_configuration']['nr_cpus']
+		return int(host_record['cpu_configuration']['nr_cpus'])
 
 	def get_dom0_nr_cpus(self):
-		"""Return the number of VCPU for the Domain-0."""
+		"""Return the number (int) of VCPU for the Domain-0."""
 		dom0_record = self.server.xenapi.VM.get_record('00000000-0000-0000-0000-000000000000')
 		core.debug("[API]", self.node.get_hostname(), "dom0_record=", dom0_record)
 		return int(dom0_record['VCPUs_max'])
