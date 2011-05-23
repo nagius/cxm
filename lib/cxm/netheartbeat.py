@@ -112,7 +112,7 @@ class NetHeartbeat(object):
 			self._proto.sendMessage()
 		except AttributeError:   # If _proto has not been started
 			pass	
-		except Exception e:
+		except Exception, e:
 			self._sendError(e)
 
 	def _run(self, result):
