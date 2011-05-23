@@ -65,6 +65,12 @@ class Metrics:
 		core.debug("[API]", self.node.get_hostname(), "host_record=", host_record)
 		return host_record['cpu_configuration']['nr_cpus']
 
+	def get_dom0_nr_cpus(self):
+		"""Return the number of VCPU for the Domain-0."""
+		dom0_record = self.server.xenapi.VM.get_record('00000000-0000-0000-0000-000000000000')
+		core.debug("[API]", self.node.get_hostname(), "dom0_record=", dom0_record)
+		return int(dom0_record['VCPUs_max'])
+
 	def get_vms_cpu_usage(self):
 		"""
 		Return a dict with the computed CPU usage for all runing VMs.

@@ -146,6 +146,18 @@ class MetricsTests(MockerTestCase):
 		result=self.metrics.get_host_nr_cpus()
 		self.assertEqual(result, val)
 
+	def test_get_dom0_nr_cpus(self):
+		val=2	
+
+		xs = self.mocker.mock()
+		xs.xenapi.VM.get_record('00000000-0000-0000-0000-000000000000')
+		self.mocker.result({'VCPUs_max': '2'})
+		self.mocker.replay()
+		self.metrics.server=xs
+
+		result=self.metrics.get_dom0_nr_cpus()
+		self.assertEqual(result, val)
+
 	def test_get_vms_disk_io(self):
 		vm_records= {
 			'6ab3fd4c-d1d3-158e-d72d-3fc4831ae1e5': {

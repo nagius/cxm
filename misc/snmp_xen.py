@@ -195,7 +195,7 @@ def main():
 			oid=pp.encode("Domain-0")
 			pp.add_str('1.9.1.' + oid,'Domain-0')
 			pp.add_int('1.9.2.' + oid,0)
-			pp.add_gau('1.9.4.' + oid,2) # Always 2 VPCU for Dom0 (TODO: ask the Xen-API)
+			pp.add_gau('1.9.4.' + oid,node.metrics.get_dom0_nr_cpus()) 
 			
 			pp.start(update_data,POOLING_INTERVAL) # Should'nt return (except if updater thread has died)
 
