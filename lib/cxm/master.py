@@ -67,6 +67,10 @@ class MasterService(Service):
 	ST_PARTITION = "partition"		# When a network failure separate cluster in two part
 	ST_PANIC     = "panic"			# "I don't do anything" mode
 
+	# Elections and failover timeouts
+	TM_TALLY	= 1		# Records vote for 1 sec
+	TM_MASTER	= 6		# Re-elect master if no response wihtin 6 sec
+	TM_SLAVE	= 10	# Trigger failover if no response within 10 sec (master + tally + rounding)
 
 	def __init__(self):
 		self.role			= MasterService.RL_ALONE		# Current role of this node
@@ -265,7 +269,7 @@ class MasterService(Service):
 		# Prepare election
 		self.role=MasterService.RL_VOTING
 		self.ballotBox=dict()
-		self.f_tally=reactor.callLater(1, self.countVotes) # Timout of election stage
+		self.f_tally=reactor.callLater(MasterService.TM_TALLY, self.countVotes) # Timout of election stage
 
 		# Send our vote
 		d = Deferred()
@@ -551,22 +555,17 @@ class MasterService(Service):
 	###########################################################################
 
 	def checkMasterHeartbeat(self):
-		TM_MASTER = 4
-
 		# Master failover only if we are a slave
 		if self.role != MasterService.RL_PASSIVE:
 			return 
 
 		# Master failover still possible even if in panic mode
-		if self.masterLastSeen+TM_MASTER <= int(time.time()):
+		if self.masterLastSeen+MasterService.TM_MASTER <= int(time.time()):
 			log.warn("Heartbeat lost, master has disappeared.")
 			return self.triggerElection()
 
 
 	def checkSlaveHeartbeats(self):
-		TM_SLAVE = 5
-		# TODO augemneter timeout election > master > slave
-
 		# Checks slaves timestamps only if we are active master
 		if self.role != MasterService.RL_ACTIVE:
 			return
@@ -579,7 +578,7 @@ class MasterService(Service):
 		netFailed=list()
 		for name, values in self.status.items():
 			try:
-				if values['timestamp']+TM_SLAVE <= int(time.time()):
+				if values['timestamp']+MasterService.TM_SLAVE <= int(time.time()):
 					log.warn("Net heartbeat lost for %s." % (name))
 					netFailed.append(name)
 			except KeyError:
@@ -590,7 +589,7 @@ class MasterService(Service):
 		# Check disk heartbeat
 		diskFailed=list()
 		for name, timestamp in self.disk.get_all_ts().items():
-			if timestamp+TM_SLAVE <= int(time.time()):
+			if timestamp+MasterService.TM_SLAVE <= int(time.time()):
 				log.warn("Disk heartbeat lost for %s." % (name))
 				diskFailed.append(name)
 
