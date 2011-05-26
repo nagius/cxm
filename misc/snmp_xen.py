@@ -202,6 +202,9 @@ def main():
 			
 			pp.start(update_data,POOLING_INTERVAL) # Should'nt return (except if updater thread has died)
 
+		except KeyboardInterrupt:
+			print "Exiting on user request."
+			sys.exit(0)
 		except IOError, e:
 			if e.errno == errno.EPIPE:
 				syslog.syslog(syslog.LOG_INFO,"Snmpd had close the pipe, exiting...")
