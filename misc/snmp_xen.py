@@ -96,7 +96,7 @@ nr_cpu=None
       |  |        Textual Convention: DisplayString
       |  |        Size: 0..255
       |  +-- -R-- INTEGER   XenStatsHostVmId(2)
-      |  +-- -R-- Gauge     XenStatsHostVmCpuUsage(3)	(Percentage 0-100)
+      |  +-- -R-- Gauge     XenStatsHostVmCpuUsage(3)	(Percentage*100: 0-10000)
       |  +-- -R-- Gauge     XenStatsHostVmVcpu(4)		(integer)
       |  +-- -R-- Gauge     XenStatsHostVmAllocRam(5)	(MB)
       |  +-- -R-- Counter   XenStatsHostVmDiskRead(6)	(Requests)
@@ -159,7 +159,8 @@ def update_data():
 		oid=pp.encode(vm.name)
 		pp.add_str('1.9.1.'+oid,vm.name)
 		pp.add_int('1.9.2.'+oid,vm.id)
-		pp.add_gau('1.9.3.'+oid,"%.1f" % round(vms_stat[vm.name]['cpu']/nr_cpu,1)) # CPU Percentage relative to the host capacity
+		# CPU Percentage relative to the host capacity and *100 to pass decimal through snmpd
+		pp.add_gau('1.9.3.'+oid,"%d" % (round(vms_stat[vm.name]['cpu']/nr_cpu,2)*100)) 
 		pp.add_gau('1.9.4.'+oid,vm.get_vcpu())
 		pp.add_gau('1.9.5.'+oid,vm.get_ram())
 		pp.add_cnt('1.9.6.'+oid,vms_stat[vm.name]['disk']['Read'])
