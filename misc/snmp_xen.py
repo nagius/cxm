@@ -206,6 +206,8 @@ def main():
 			if e.errno == errno.EPIPE:
 				syslog.syslog(syslog.LOG_INFO,"Snmpd had close the pipe, exiting...")
 				sys.exit(0)
+			else:
+				syslog.syslog(syslog.LOG_WARNING,"Updater thread as died: %s" % (e))
 		except Exception, e:
 			syslog.syslog(syslog.LOG_WARNING,"Main thread as died: %s" % (e))
 		else:
