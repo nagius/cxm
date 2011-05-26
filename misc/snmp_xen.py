@@ -176,7 +176,7 @@ def update_data():
 	oid=pp.encode("Domain-0")
 	pp.add_str('1.9.1.'+oid,'Domain-0')
 	pp.add_int('1.9.2.'+oid,0)
-	pp.add_gau('1.9.3.'+oid,"%.1f" % round(vms_stat['Domain-0']['cpu']/nr_cpu,1))
+	pp.add_gau('1.9.3.'+oid,"%d" % (round(vms_stat['Domain-0']['cpu']/nr_cpu,2)*100))
 	pp.add_gau('1.9.4.'+oid,node.metrics.get_dom0_nr_cpus()) 
 
 
