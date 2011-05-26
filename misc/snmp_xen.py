@@ -124,6 +124,10 @@ def update_data():
 	net_io=node.metrics.get_host_net_io()
 	vms_stat=node.metrics.get_vms_record()
 
+	# Node infos
+	pp.add_str('1.1.0',node.get_hostname())
+	pp.add_gau('1.2.0',nr_cpu)
+
 	# Number of VM
 	pp.add_gau('1.3.0',len(vms))
 
@@ -170,8 +174,10 @@ def update_data():
 
 	# For the dom0
 	oid=pp.encode("Domain-0")
+	pp.add_str('1.9.1.'+oid,'Domain-0')
+	pp.add_int('1.9.2.'+oid,0)
 	pp.add_gau('1.9.3.'+oid,"%.1f" % round(vms_stat['Domain-0']['cpu']/nr_cpu,1))
-
+	pp.add_gau('1.9.4.'+oid,node.metrics.get_dom0_nr_cpus()) 
 
 
 def main():
@@ -191,16 +197,10 @@ def main():
 			# Load helpers
 			pp=snmp.PassPersist(OID_BASE)
 			node=cxm.node.Node.getLocalInstance()
-			nr_cpu=node.metrics.get_host_nr_cpus()
 
 			# Set statics data
-			pp.add_str('1.1.0',node.get_hostname())
-			pp.add_gau('1.2.0',nr_cpu)
-			oid=pp.encode("Domain-0")
-			pp.add_str('1.9.1.' + oid,'Domain-0')
-			pp.add_int('1.9.2.' + oid,0)
-			pp.add_gau('1.9.4.' + oid,node.metrics.get_dom0_nr_cpus()) 
-			
+			nr_cpu=node.metrics.get_host_nr_cpus()
+
 			pp.start(update_data,POOLING_INTERVAL) # Should'nt return (except if updater thread has died)
 
 		except KeyboardInterrupt:
