@@ -32,7 +32,7 @@ from sets import Set
 from twisted.internet import threads, defer
 
 import core, node, vm, loadbalancer
-from node import ClusterNodeError
+from node import NotEnoughRamError, RunningVmError, NotRunningVmError
 from agent import Agent
 
 class XenCluster:
@@ -224,11 +224,11 @@ class XenCluster:
 		selected_node - (Node) Node where to activate the LVs
 		vmname - (String) hostname of the vm
 
-		Raise a ClusterNodeError if the VM is running.
+		Raise a RunningVmError if the VM is running.
 		"""
 		for node in self.get_nodes():
 			if node.is_vm_started(vmname):
-				raise ClusterNodeError(node.get_hostname(),ClusterNodeError.VM_RUNNING,vmname) 
+				raise RunningVmError(node.get_hostname(), vmname) 
 			else:
 				node.deactivate_lv(vmname)
 
@@ -259,7 +259,7 @@ class XenCluster:
 			# Last resources checks
 			free_ram=node.metrics.get_free_ram()
 			if needed_ram>free_ram:
-				raise ClusterNodeError(node.get_hostname(),ClusterNodeError.NOT_ENOUGH_RAM,"need "+str(needed_ram)+"M, has "+str(free_ram)+"M.")
+				raise NotEnoughRamError(node.get_hostname(),"need "+str(needed_ram)+"M, has "+str(free_ram)+"M.")
 
 			if not core.cfg['QUIET']: print " -> Not enough ram, starting it on %s." % node.get_hostname()
 
@@ -289,7 +289,8 @@ class XenCluster:
 		All params are strings.
 
 		Raise a ClusterError if src or dst are not part of cluster.
-		Raise a ClusterNodeError if vm is not started on src or already started on dst.
+		Raise a NotRunningVmError if vm is not started on src or 
+		a RunningVmError if vm is already started on dst.
 		"""
 
 		# Security checks
@@ -303,16 +304,16 @@ class XenCluster:
 		src_node=self.get_node(src_hostname)
 
 		if not src_node.is_vm_started(vmname):
-			raise ClusterNodeError(src_node.get_hostname(),ClusterNodeError.VM_NOT_RUNNING,vmname)
+			raise NotRunningVmError(src_node.get_hostname(), vmname)
 		
 		if dst_node.is_vm_started(vmname):
-			raise ClusterNodeError(dst_node.get_hostname(),ClusterNodeError.VM_RUNNING,vmname)
+			raise RunningVmError(dst_node.get_hostname(), vmname)
 
 		# Resources checks
 		used_ram=src_node.get_vm(vmname).get_ram()
 		free_ram=dst_node.metrics.get_free_ram()
 		if used_ram>free_ram:
-			raise ClusterNodeError(dst_node.get_hostname(),ClusterNodeError.NOT_ENOUGH_RAM,"need "+str(used_ram)+"M, has "+str(free_ram)+"M.")
+			raise NotEnoughRamError(dst_node.get_hostname(),"need "+str(used_ram)+"M, has "+str(free_ram)+"M.")
 
 		# Take care of proper migration
 		dst_node.activate_lv(vmname)
@@ -355,7 +356,7 @@ class XenCluster:
 			self.migrate(vm.name,ejected_node.get_hostname(),selected_node.get_hostname())
 
 		if len(failed)>0:
-			raise ClusterNodeError(ejected_node.get_hostname(),ClusterNodeError.NOT_ENOUGH_RAM,"Cannot migrate "+", ".join([vm.name for vm in failed]))
+			raise NotEnoughRamError(ejected_node.get_hostname(), "Cannot migrate "+", ".join([vm.name for vm in failed]))
 	
 	def loadbalance(self):
 		"""

@@ -148,7 +148,7 @@ class XenClusterTests(MockerTestCase):
 		self.mocker.replay()
 		self.cluster.nodes={socket.gethostname(): node}
 	
-		self.assertRaises(cxm.xencluster.ClusterNodeError,self.cluster.activate_vm,node,vmname)
+		self.assertRaises(cxm.node.RunningVmError,self.cluster.activate_vm,node,vmname)
 
 	def test_start_vm(self):
 		vmname="test1.home.net"
@@ -214,7 +214,7 @@ class XenClusterTests(MockerTestCase):
 
 		self.cluster.nodes={socket.gethostname(): node}
 		
-		self.assertRaises(cxm.xencluster.ClusterNodeError,self.cluster.start_vm,node, vmname, False)
+		self.assertRaises(cxm.node.NotEnoughRamError,self.cluster.start_vm,node, vmname, False)
 
 	def test_start_vm__error(self):
 		vmname="test1.home.net"
@@ -298,7 +298,7 @@ class XenClusterTests(MockerTestCase):
 
 		self.cluster.nodes={'host1': n1, 'host2': n2}
 
-		self.assertRaises(cxm.xencluster.ClusterNodeError,self.cluster.migrate,vmname, 'host1', 'host2')
+		self.assertRaises(cxm.node.NotRunningVmError,self.cluster.migrate,vmname, 'host1', 'host2')
 		
 		n1_mocker.verify()
 		n2_mocker.verify()
@@ -322,7 +322,7 @@ class XenClusterTests(MockerTestCase):
 
 		self.cluster.nodes={'host1': n1, 'host2': n2}
 
-		self.assertRaises(cxm.xencluster.ClusterNodeError,self.cluster.migrate,vmname, 'host1', 'host2')
+		self.assertRaises(cxm.node.RunningVmError,self.cluster.migrate,vmname, 'host1', 'host2')
 		
 		n1_mocker.verify()
 		n2_mocker.verify()
@@ -350,7 +350,7 @@ class XenClusterTests(MockerTestCase):
 
 		self.cluster.nodes={'host1': n1, 'host2': n2}
 
-		self.assertRaises(cxm.xencluster.ClusterNodeError,self.cluster.migrate,vmname, 'host1', 'host2')
+		self.assertRaises(cxm.node.NotEnoughRamError,self.cluster.migrate,vmname, 'host1', 'host2')
 		
 		n1_mocker.verify()
 		n2_mocker.verify()
@@ -538,7 +538,7 @@ class XenClusterTests(MockerTestCase):
 
 		self.cluster.nodes={'node1': n1, 'node2': n2, 'node3': n3}
 
-		self.assertRaises(cxm.xencluster.ClusterNodeError,self.cluster.emergency_eject,n1)
+		self.assertRaises(cxm.node.NotEnoughRamError,self.cluster.emergency_eject,n1)
 
 		n1_mocker.verify()
 		n2_mocker.verify()

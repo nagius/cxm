@@ -152,22 +152,24 @@ class Node:
 			stdout.seek(0)
 			stderr.seek(0)
 
-			if proc.wait() != 0:
+			exitcode=proc.wait()
+			if exitcode != 0:
 				msg=stderr.read()
-				raise ClusterNodeError(self.hostname,ClusterNodeError.SHELL_ERROR,msg)
+				raise ShellError(self.hostname,msg, exitcode)
 		else:
 			core.debug("[SSH]", self.hostname, "->", cmd)
 			stdin, stdout, stderr = self.ssh.exec_command(cmd)
 			# Lock bug workaround : Check exit status before trying to read stderr
 			# Because sometimes, when stdout is big (maybe >65k ?), strderr.read() hand on
 			# a thread's deadlock if stderr is readed before stdout...
-			if stderr.channel.recv_exit_status() != 0:
+			exitcode=stderr.channel.recv_exit_status()
+			if exitcode != 0:
 				stderr.channel.settimeout(3)
 				try:
 					msg=stderr.read()
-					raise ClusterNodeError(self.hostname,ClusterNodeError.SSH_ERROR,msg)
+					raise SSHError(self.hostname, msg, exitcode)
 				except socket.timeout:
-					raise ClusterNodeError(self.hostname,ClusterNodeError.SSH_ERROR,"Timeout reading stderr !")
+					raise SSHError(self.hostname, "Timeout reading stderr !", exitcode)
 		return stdout
 
 	def is_local_node(self):
@@ -266,10 +268,10 @@ class Node:
 	def deactivate_lv(self,vmname):
 		"""Deactivate the logicals volumes of the specified VM on this node.
 
-		Raise a ClusterNodeError if the VM is running.
+		Raise a RunningVmError if the VM is running.
 		"""
 		if(self.is_vm_started(vmname)):
-			raise ClusterNodeError(self.hostname,ClusterNodeError.VM_RUNNING,vmname) 
+			raise RunningVmError(self.hostname,vmname) 
 		else:
 			lvs=VM(vmname).get_lvs()
 			self.refresh_lvm(self.get_vgs(lvs))
@@ -311,7 +313,7 @@ class Node:
 	def migrate(self, vmname, dest_node):
 		"""Live migration of specified VM to the given node.
 
-		Raise a ClusterNodeError if the vm is not started on this node.
+		Raise a NotRunningVmError if the vm is not started on this node.
 		"""
 		if core.cfg['USESSH']:
 			self.run("xm migrate -l " + vmname + " " + dest_node.get_hostname())
@@ -324,7 +326,7 @@ class Node:
 				try:
 					vm=self.server.xenapi.VM.get_by_name_label(vmname)[0]
 				except IndexError:
-					raise ClusterNodeError(self.get_hostname(),ClusterNodeError.VM_NOT_RUNNING,vmname)
+					raise NotRunningVmError(self.get_hostname(),vmname)
 				self.server.xenapi.VM.migrate(vm,dest_node.get_hostname(),True,{'port':0,'node':-1,'ssl':None})
 
 		
@@ -340,7 +342,7 @@ class Node:
 		"""Shutdown the specified vm.
 
 		If 'clean' is false, do a hard shutdown (destroy).
-		Raise a ClusterNodeError if the vm is not running.
+		Raise a NotRunningVmError if the vm is not running.
 		"""
 		MAX_TIMOUT=50	# Time waiting for VM shutdown 
 
@@ -353,7 +355,7 @@ class Node:
 			try:
 				vm=self.server.xenapi.VM.get_by_name_label(vmname)[0]
 			except IndexError:
-				raise ClusterNodeError(self.get_hostname(),ClusterNodeError.VM_NOT_RUNNING,vmname)
+				raise NotRunningVmError(self.get_hostname(),vmname)
 
 			if clean:
 				self.server.xenapi.VM.clean_shutdown(vm)
@@ -377,14 +379,14 @@ class Node:
 		if core.cfg['USESSH']:
 			line=self.run("xm list | grep " + vmname + " | awk '{print $1,$2,$3,$4;}'").read()
 			if len(line)<1:
-				raise ClusterNodeError(self.get_hostname(),ClusterNodeError.VM_NOT_RUNNING,vmname)
+				raise NotRunningVmError(self.get_hostname(),vmname)
 			(name, id, ram, vcpu)=line.strip().split()
 			return VM(name, id, ram, vcpu)
 		else:
 			try:
 				uuid=self.server.xenapi.VM.get_by_name_label(vmname)[0]
 			except IndexError:
-				raise ClusterNodeError(self.get_hostname(),ClusterNodeError.VM_NOT_RUNNING,vmname)
+				raise NotRunningVmError(self.get_hostname(),vmname)
 			vm_rec=self.server.xenapi.VM.get_record(uuid)
 			vm=VM(vm_rec['name_label'],vm_rec['domid'])
 			vm.metrics=self.server.xenapi.VM_metrics.get_record(vm_rec['metrics'])
@@ -529,7 +531,7 @@ class Node:
 
 		try:
 			self.run(core.cfg['FENCE_CMD'] + " " + self.get_hostname())
-		except ClusterNodeError, e:
+		except ShellError, e:
 			raise FenceNodeError(e.value)
 
 	# Define accessors 
@@ -537,43 +539,46 @@ class Node:
 	metrics = property(get_metrics)
 
 
-
-
 class ClusterNodeError(Exception):
+	"""This class is the main class for all errors relatives to the node."""
 
-	"""This class is used to raise specials errors relatives to the node."""
+	# Nice message for each specific errors
+	msg = "%s"
 
-	# Error codes list
-	VM_RUNNING=1
-	VM_NOT_RUNNING=2
-	SSH_ERROR=3
-	SHELL_ERROR=4
-	NOT_ENOUGH_RAM=5
-
-	def __init__(self, nodename, type, value=""):
+	def __init__(self, nodename, value=""):
 		self.nodename=nodename
-		self.type=type
 		self.value=value
 
 	def __str__(self):
-		if(self.type==self.VM_RUNNING):
-			msg = "VM "+ self.value + " is running."
-		elif(self.type==self.VM_NOT_RUNNING):
-			msg = "VM " + self.value + " is not running here."
-		elif(self.type==self.SSH_ERROR):
-			msg = "SSH failure: " + self.value
-		elif(self.type==self.SHELL_ERROR):
-			msg = "Local Exec failure: " + self.value
-		elif(self.type==self.NOT_ENOUGH_RAM):
-			msg = "There is not enough ram: " + self.value
-		else:
-			msg = "Unknown error."
-		return "\nError on node " +self.nodename+ ": " + msg
+		return "Error on node " +self.nodename+ ": " + ClusterNodeError.msg % self.value
 
-
-class FenceNodeError(Exception):
+class FenceNodeError(ClusterNodeError):
 	"""This class is used to raise error when fencing fail."""
 	pass
+
+class ShellError(ClusterNodeError):
+	"""This class is used to raise error when local exec fail."""
+
+	def __init__(self, nodename, value, exitcode):
+		# Why don't use super() ? because python really sucks !
+		ClusterNodeError.__init__(self, nodename, value)
+		self.exitcode=exitcode
+
+class SSHError(ShellError):
+	"""This class is used to raise error when SSH exec fail."""
+	pass
+
+class RunningVmError(ClusterNodeError):
+	"""This class is used when a VM is running and should'nt."""
+	ClusterNodeError.msg="VM %s is running."
+
+class NotRunningVmError(ClusterNodeError):
+	"""This class is used when a VM is not running and shoudg be."""
+	ClusterNodeError.msg="VM %s is not running here."
+
+class NotEnoughRamError(ClusterNodeError):
+	"""This class is used when there is not enough ram."""
+	ClusterNodeError.msg="There is not enough ram: %s"
 
 
 # vim: ts=4:sw=4:ai

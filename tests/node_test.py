@@ -163,7 +163,7 @@ class NodeTests(MockerTestCase):
 
 	def test_refresh_lvm_bad_input(self):
 		cxm.core.cfg['NOREFRESH']=False
-		self.assertRaises(cxm.node.ClusterNodeError,self.node.refresh_lvm, []) 
+		self.assertRaises(cxm.node.ShellError,self.node.refresh_lvm, []) 
 
 	def test_deactivate_lv(self):
 		vmname="test1.home.net"
@@ -185,7 +185,7 @@ class NodeTests(MockerTestCase):
 		self.mocker.replay()
 		self.node.server=xs
 
-		self.assertRaises(cxm.node.ClusterNodeError,self.node.deactivate_lv,vmname) 
+		self.assertRaises(cxm.node.RunningVmError,self.node.deactivate_lv,vmname) 
 
 	def test_deactivate_lv_bad_input(self):
 		xs = self.mocker.mock()
@@ -243,7 +243,7 @@ class NodeTests(MockerTestCase):
 		self.mocker.replay()
 		self.node.server=xs
 		
-		self.assertRaises(cxm.node.ClusterNodeError,self.node.migrate,vmname, self.node) 
+		self.assertRaises(cxm.node.NotRunningVmError,self.node.migrate,vmname, self.node) 
 		
 	def test_shutdown__running(self):
 		vmname="test1.home.net"
@@ -284,7 +284,7 @@ class NodeTests(MockerTestCase):
 		self.mocker.replay()
 		self.node.server=xs
 		
-		self.assertRaises(cxm.node.ClusterNodeError,self.node.shutdown,vmname) 
+		self.assertRaises(cxm.node.NotRunningVmError,self.node.shutdown,vmname) 
 
 	def test_get_vm_running(self):
 		vmname="test1.home.net"
@@ -314,7 +314,7 @@ class NodeTests(MockerTestCase):
 		self.mocker.replay()
 		self.node.server=xs
 		
-		self.assertRaises(cxm.node.ClusterNodeError,self.node.get_vm,vmname) 
+		self.assertRaises(cxm.node.NotRunningVmError,self.node.get_vm,vmname) 
 		
 	def test_get_vms(self):	
 		vm_records = {
@@ -415,7 +415,7 @@ class NodeTests(MockerTestCase):
 		self.assertEqual(result.read(),"OK\n")
 
 	def test_run_error(self):
-		self.assertRaises(cxm.node.ClusterNodeError,self.node.run,"run failure")
+		self.assertRaises(cxm.node.ShellError,self.node.run,"run failure")
 
 	def test_fence_ok(self):
 		cxm.core.cfg['FENCE_CMD'] = "fence_ok"
