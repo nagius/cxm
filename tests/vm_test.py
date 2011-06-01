@@ -30,6 +30,15 @@ class VMTests(unittest.TestCase):
 	def setUp(self):
 		cxm.core.cfg['VMCONF_DIR'] = "tests/stubs/cfg/"
 
+	def test_vm_ok1(self):
+		self.assertTrue(isinstance(cxm.vm.VM("test1.home.net"), cxm.vm.VM))
+
+	def test_vm_ok2(self):
+		self.assertTrue(isinstance(cxm.vm.VM("testcfg.home.net"), cxm.vm.VM))
+
+	def test_vm_error(self):
+		self.assertRaises(IOError, cxm.vm.VM,"non-exist")
+
 	def test_get_lvs(self):
 		lvs = ['/dev/LVM_XEN/usr-test1.home.net', '/dev/vgrack/WOO-test1.home.net', '/dev/vgrack/root-test1.home.net']
 

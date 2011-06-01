@@ -48,7 +48,10 @@ class VM:
 		self.metrics=None
 		self.devices=dict()
 
-		execfile("%s/%s" % (core.cfg['VMCONF_DIR'],vmname) ,dict(),self.config)
+		try:
+			execfile("%s/%s.cfg" % (core.cfg['VMCONF_DIR'],vmname) ,dict(),self.config)
+		except IOError:
+			execfile("%s/%s" % (core.cfg['VMCONF_DIR'],vmname) ,dict(),self.config)
 		core.debug("[VM]", vmname, self.config)
 
 		# Get devices from config file

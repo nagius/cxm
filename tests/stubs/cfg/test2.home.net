@@ -1,4 +1,3 @@
-#xenmgt-autoconf
 kernel = "/boot/vmlinuz-2.6.18-149.el5xen"
 ramdisk = "/boot/initrd-2.6.18-149.el5xen-debian.img"
 memory = "128"
@@ -13,5 +12,3 @@ disk = [ 'phy:/dev/vgrack/root-test2.home.net,/dev/sda1,w',
          'phy:/dev/vgrack/swap-test2.home.net,/dev/sda8,w' ]
 root = "/dev/sda1 ro"
 extra = ""
-#SYSADMIN=
-#VMTYPE=FAI/V_DEFAULT
