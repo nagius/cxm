@@ -28,7 +28,6 @@
 # TODO snapshot
 # Formaliser documentation des fonctions
 # TODO adaptation puor xenbaloond dans VM.get_ram() get_real_ram() ?
-# Modifier gestion exception avec héritage
 
 
 """
