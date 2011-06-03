@@ -74,7 +74,7 @@ class XenClusterTests(MockerTestCase):
 		self.assertNotEqual(self.cluster.get_node(socket.gethostname()),None)
 
 	def test_get_node__ko(self):
-		self.assertRaises(cxm.xencluster.ClusterError,self.cluster.get_node,"non-exist")
+		self.assertRaises(cxm.xencluster.NotInClusterError,self.cluster.get_node,"non-exist")
 
 	def test_get_local_node(self):
 		node = self.mocker.mock()
@@ -271,14 +271,14 @@ class XenClusterTests(MockerTestCase):
 
 		self.cluster.nodes={'host1': None, 'host2': None}
 
-		self.assertRaises(cxm.xencluster.ClusterError,self.cluster.migrate,vmname, 'non-exist', 'host2')
+		self.assertRaises(cxm.xencluster.NotInClusterError,self.cluster.migrate,vmname, 'non-exist', 'host2')
 		
 	def test_migrate__dst_error(self):
 		vmname="test1.home.net"
 
 		self.cluster.nodes={'host1': None, 'host2': None}
 
-		self.assertRaises(cxm.xencluster.ClusterError,self.cluster.migrate,vmname, 'host1', 'non-exist')
+		self.assertRaises(cxm.xencluster.NotInClusterError,self.cluster.migrate,vmname, 'host1', 'non-exist')
 
 		
 	def test_migrate__vm_not_running(self):

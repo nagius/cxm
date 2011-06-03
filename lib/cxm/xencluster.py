@@ -108,12 +108,12 @@ class XenCluster:
 	def get_node(self,hostname):
 		"""Return the Node object of the specified hostname.
 	
-		Raise a ClusterError if the given hostname is not a clusters's node.
+		Raise a NotInClusterError if the given hostname is not a clusters's node.
 		"""
 		try:
 			return self.nodes[hostname]
 		except KeyError:
-			raise ClusterError(ClusterError.NOT_IN_CLUSTER,hostname)
+			raise NotInClusterError(hostname)
 
 	def get_local_node(self):
 		"""Return the Node object of the local node."""
@@ -288,17 +288,17 @@ class XenCluster:
 
 		All params are strings.
 
-		Raise a ClusterError if src or dst are not part of cluster.
+		Raise a NotInClusterError if src or dst are not part of cluster.
 		Raise a NotRunningVmError if vm is not started on src or 
 		a RunningVmError if vm is already started on dst.
 		"""
 
 		# Security checks
 		if not self.is_in_cluster(src_hostname):
-			raise ClusterError(ClusterError.NOT_IN_CLUSTER,src_hostname)
+			raise NotInClusterError(src_hostname)
 
 		if not self.is_in_cluster(dst_hostname):
-			raise ClusterError(ClusterError.NOT_IN_CLUSTER,dst_hostname)
+			raise NotInClusterError(dst_hostname)
 
 		dst_node=self.get_node(dst_hostname)
 		src_node=self.get_node(src_hostname)
@@ -489,28 +489,16 @@ class XenCluster:
 
 
 class ClusterError(Exception):
+	"""This class is the main class for all errors relatives to the cluster."""
 
-	"""This class is used to raise specials errors relatives to the cluster."""
-
-	# Error codes list
-	NOT_IN_CLUSTER=2
-
-	def __init__(self, type, value=""):
-		self.type=type
+	def __init__(self, value=""):
 		self.value=value
 
+class NotInClusterError(ClusterError):
+	"""This class is used when a node does'nt belong to the cluster."""
+
 	def __str__(self):
-		if(self.type==self.NOT_IN_CLUSTER):
-			msg = "Node "+ self.value + " is not a cluster's member."
-		else:
-			msg = "Unknown error."
-		return "\nCluster error : " + msg
-
-
-
-if __name__ == "__main__":
-	"""Main is used to run test case."""
-	pass
+		return "Cluster error: Node %s is not a cluster's member." % (self.value)
 
 
 # vim: ts=4:sw=4:ai
