@@ -542,15 +542,12 @@ class Node:
 class ClusterNodeError(Exception):
 	"""This class is the main class for all errors relatives to the node."""
 
-	# Nice message for each specific errors
-	msg = "%s"
-
 	def __init__(self, nodename, value=""):
 		self.nodename=nodename
 		self.value=value
 
 	def __str__(self):
-		return "Error on node " +self.nodename+ ": " + ClusterNodeError.msg % self.value
+		return "Error on %s : %s" % (self.nodename, self.value)
 
 class FenceNodeError(ClusterNodeError):
 	"""This class is used to raise error when fencing fail."""
@@ -570,15 +567,21 @@ class SSHError(ShellError):
 
 class RunningVmError(ClusterNodeError):
 	"""This class is used when a VM is running and should'nt."""
-	ClusterNodeError.msg="VM %s is running."
+
+	def __str__(self):
+		return "Error on %s : VM %s is running." % (self.nodename, self.value)
 
 class NotRunningVmError(ClusterNodeError):
 	"""This class is used when a VM is not running and shoudg be."""
-	ClusterNodeError.msg="VM %s is not running here."
+
+	def __str__(self):
+		return "Error on %s : VM %s is not running here." % (self.nodename, self.value)
 
 class NotEnoughRamError(ClusterNodeError):
 	"""This class is used when there is not enough ram."""
-	ClusterNodeError.msg="There is not enough ram: %s"
+
+	def __str__(self):
+		return "Error on %s : There is not enough ram: %s" % (self.nodename, self.value)
 
 
 # vim: ts=4:sw=4:ai
