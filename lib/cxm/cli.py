@@ -69,13 +69,19 @@ def cxm_create(cluster, options, vm):
 	"""
 	vm=os.path.basename(vm)
 
-	# Check if vm is't already started somewhere
+	# Check if vm is't already started somewhere on the cluster
 	nodes=cluster.search_vm_started(vm)
 	if(len(nodes)>0):
 		print "** Nothing to do :"
 		print "** " + vm + " is running on "+", ".join([n.get_hostname() for n in nodes])
 		raise SystemExit(2)
 
+	# Ping check
+	print "Checking if VM is already started somewhere else..."
+	if cluster.get_local_node().ping(vm):
+		print "** Error: got a ping response !"
+		raise SystemExit(2)
+	
 	if options.node:
 		node=cluster.get_node(options.node)
 	else:
