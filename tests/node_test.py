@@ -425,6 +425,15 @@ class NodeTests(MockerTestCase):
 		cxm.core.cfg['FENCE_CMD'] = "fence_fail"
 		self.assertRaises(cxm.node.FenceNodeError,self.node.fence)
 
+	def test_ping__ok(self):
+		self.assertTrue(self.node.ping(["test1.home.net", "test2.home.net", "test3.home.net"]))
+
+	def test_ping__norunning(self):
+		self.assertFalse(self.node.ping("test4.home.net"))
+
+	def test_ping__baddns(self):
+		self.assertFalse(self.node.ping("non-exist"))
+
 if __name__ == "__main__":
 	unittest.main()   
 

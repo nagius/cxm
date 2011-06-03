@@ -155,7 +155,7 @@ class Node:
 			exitcode=proc.wait()
 			if exitcode != 0:
 				msg=stderr.read()
-				raise ShellError(self.hostname,msg, exitcode)
+				raise ShellError(self.hostname,msg, exitcode >> 8)
 		else:
 			core.debug("[SSH]", self.hostname, "->", cmd)
 			stdin, stdout, stderr = self.ssh.exec_command(cmd)
@@ -533,6 +533,15 @@ class Node:
 			self.run(core.cfg['FENCE_CMD'] + " " + self.get_hostname())
 		except ShellError, e:
 			raise FenceNodeError(e.value)
+
+	def ping(self, hostnames):
+		"""Return True if one or more hostname is alive"""
+
+		if not isinstance(hostnames, list):
+			hostnames=[hostnames]
+
+		# TODO: handle DNS failure and missing command ?
+		return "alive" in self.run("fping -r1 " + " ".join(hostnames) + "|| true").read()
 
 	# Define accessors 
 	legacy_server = property(get_legacy_server)
