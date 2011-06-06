@@ -238,7 +238,19 @@ def cxm_infos(cluster, options):
 def cxm_search(cluster, options, vm):
 	"""Search the specified vm on the cluster."""
 
+	# Strip vm name
 	vm=os.path.basename(vm)
+
+	try:
+		names = cluster.get_local_node().get_possible_vm_names(vm)
+		vm=names[0] # Should have at least one value, if not, it's a ShellError
+
+		if(len(names)>1):
+			print "Possible names are %s: be more specific." % (", ".join(names))
+			return
+	except node.ShellError, IndexError:
+		print "** WARNING: configuration file not found for %s" % (vm)
+	
 	if not core.cfg['QUIET'] : print "Searching", vm, "..."
 
 	# Search started vm
@@ -403,7 +415,7 @@ SUBCOMMAND_HELP = {
 	'loadbalance'	: ('', 
 		'Run the loadbalancer to equilibrate load.'),
 	'search'		: ('<fqdn>', 
-		'Search the cluster for the VM.',
+		'Search the cluster for the VM. You can use globbing to match vm name.',
 		'’auto’ symlinks founds are also reported.'),
 	'console'		: ('<fqdn>', 
 		'Attach console to the virtual machine.',

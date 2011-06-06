@@ -368,6 +368,21 @@ class NodeTests(MockerTestCase):
 		result=self.node.get_vms_names()
 		self.assertEqual(result,['test1.home.net'])
 
+	def test_get_possible_vm_names__all(self):
+		names=['test1.home.net', 'test2.home.net', 'testcfg.home.net']
+
+		result=self.node.get_possible_vm_names()
+		self.assertEqual(result, names)
+
+	def test_get_possible_vm_names__one(self):
+		names=['testcfg.home.net']
+
+		result=self.node.get_possible_vm_names("*tcfg")
+		self.assertEqual(result, names)
+
+	def test_get_possible_vm_names__none(self):
+		self.assertRaises(cxm.node.ShellError, self.node.get_possible_vm_names, "non-exist")
+
 	def test_check_lvs_ok(self):
 		vm_records = {
             '6ab3fd4c-d1d3-158e-d72d-3fc4831ae1e5': {

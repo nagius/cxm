@@ -25,7 +25,7 @@
 
 """This module hold the Node class."""
 
-import paramiko, re, time, popen2, socket, StringIO, sys
+import paramiko, re, time, popen2, socket, StringIO, sys, os
 from xen.xm import XenAPI
 from xen.xm import main
 from xen.util.xmlrpcclient import ServerProxy
@@ -448,6 +448,20 @@ class Node:
 				vms_names.append(dom_rec['name_label'])
 
 		return vms_names
+
+	def get_possible_vm_names(self, name=""): 
+		"""
+		Return the list of possible vm name, based on file's names in the configuration directory.
+		You can use globbing (bash syntax) to match names.
+		If there is no match, raise a ShellError.
+		"""
+
+		names=list()
+		for file in self.run("ls %s/%s*" % (core.cfg['VMCONF_DIR'], name)).readlines():
+			name=os.path.basename(file.strip()).rsplit(".cfg",1)[0]
+			names.append(name)
+
+		return names
 
 	def check_lvs(self):
 		"""Perform a sanity check of the LVM activation on this node."""

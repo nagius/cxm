@@ -35,8 +35,22 @@ EOF
 		cat <<EOF
 test1.home.net
 EOF
-
 	;;
+
+	"tests/stubs/cfg//test1.home.net tests/stubs/cfg//test2.home.net tests/stubs/cfg//testcfg.home.net.cfg")
+		cat <<EOF
+tests/stubs/cfg//test1.home.net
+tests/stubs/cfg//test2.home.net
+tests/stubs/cfg//testcfg.home.net.cfg
+EOF
+	;;
+
+	"tests/stubs/cfg//testcfg.home.net.cfg")
+		cat <<EOF
+tests/stubs/cfg//testcfg.home.net.cfg
+EOF
+	;;
+
 	*)
 	echo "Error: bad params: $@" >&2
 	exit 1
