@@ -192,7 +192,7 @@ class MasterService(Service):
 			return
 
 		if msg.node not in self.status:
-			log.warn("Received slave heartbeat from unknown node %s." % (msn.node))
+			log.warn("Received slave heartbeat from unknown node %s." % (msg.node))
 			return
 
 		now=int(time.time())
@@ -586,6 +586,7 @@ class MasterService(Service):
 				continue
 
 		# TODO gerer offset
+		# TODO cas timestamps à 0
 		# Check disk heartbeat
 		diskFailed=list()
 		for name, timestamp in self.disk.get_all_ts().items():
@@ -599,7 +600,6 @@ class MasterService(Service):
 		# TODO comparaison liste node ? cas partition a voir
 #		pprint(self.disk.get_all_ts())
 		# TODO cas perte baie disque locale
-		# TODO cas timestamps à 0
 			# -> timestamps now ?
 		pass
 
