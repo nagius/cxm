@@ -362,14 +362,22 @@ class MetricsTests(MockerTestCase):
 			'6ab3fd4c-d1d3-158e-d72d-3fc4831ae1e5': {
 				'domid': '73',
 				'metrics': '237f589-e62b-5573-915b-51117c9eb52e',
+				'power_state': "Running",
 				'name_label': 'test1.home.net'},
 			'a7d7bd0d-8885-6989-53e5-4e56559a286c': {
 				'name_label': 'test2.home.net',
 				'metrics': 'c31514fb-1471-194b-14eb-3bd54bdbf4cb',
+				'power_state': "Running",
 				'domid': '74'},
+			'f6773d0d-4724-9043-65eF-87fa7dbc295b': {
+				'name_label': 'test2.home.net',
+				'metrics': 'c31572fb-1557-141b-27eb-3bd90bdbf46cb',
+				'power_state': "Halted",
+				'domid': '-1'},
 			'7efcbac8-4714-88ee-007c-0246a3cb52b8': {
 				'name_label': 'Domain-0',
 				'metrics': '0208f543-e60b-5622-839b-51080c9eb63e',
+				'power_state': "Running",
 				'domid': '72'}
 		}
 		metrics_records = { 

@@ -186,7 +186,10 @@ class Node:
 		else:
 			vm=self.server.xenapi.VM.get_by_name_label(vmname)
 			core.debug("[API]", self.hostname, "vm=", vm)
-			return len(vm)>0	
+			try:
+				return self.server.xenapi.VM.get_power_state(vm[0]) != "Halted"
+			except IndexError:
+				return False
 
 	def is_vm_autostart_enabled(self, vmname):
 		"""Return True if the autostart link is present for the specified vm on this node."""
@@ -226,17 +229,12 @@ class Node:
 		Result will be cached for 5 seconds, unless 'nocache' is True.
 		"""
 
-		def _get_vm_started():
-			if core.cfg['USESSH']:
-				vm_started = int(self.run('xenstore-list /local/domain | wc -l').read())-1 # don't count Dom0
-			else:
-				doms = self.server.xenapi.VM.get_all()
-				core.debug("[API]", self.hostname, "doms=", doms)
-				vm_started = len(doms)-1
+		if core.cfg['USESSH']:
+			vm_started = int(self.run('xenstore-list /local/domain | wc -l').read())-1 # don't count Dom0
+		else:
+			vm_started = len(self.get_vms_names(nocache))
 
-			return vm_started
-
-		return self._cache.cache(5, nocache, _get_vm_started)
+		return vm_started
 
 	def get_vgs(self,lvs):
 		"""Return the list of volumes groups associated with the given logicals volumes."""
@@ -417,6 +415,9 @@ class Node:
 						continue # Discard Dom0
 					if dom_rec['name_label'].startswith("migrating-"):
 						continue # Discard migration temporary vm
+					if dom_rec['power_state'] == "Halted":
+						# power_state could be: Halted, Paused, Running, Suspended, Crashed, Unknown
+						continue # Discard non instantiated vm
 
 					vm=VM(dom_rec['name_label'],dom_rec['domid'])
 					vm.metrics=dom_metrics_recs[dom_rec['metrics']]
@@ -426,28 +427,38 @@ class Node:
 
 		return self._cache.cache(5, nocache, _get_vms)
 
-	def get_vms_names(self):
-		"""Return the list of running vm."""
-		vms_names=list()
-		if core.cfg['USESSH']:
-			for line in self.run("xm list | awk '{print $1}' | tail -n +3").readlines():
-				name=line.strip()
-				if name.startswith("migrating-"):
-					continue
-				vms_names.append(name)
-		else:
-			dom_recs = self.server.xenapi.VM.get_all_records()
-			core.debug("[API]", self.hostname, "dom_recs=", dom_recs)
+	def get_vms_names(self, nocache=False):
+		"""
+		Return the list of running vm.
+		Result will be cached for 5 seconds, unless 'nocache' is True.
+		"""
 
-			for dom_rec in dom_recs.values():
-				if dom_rec['name_label'] == "Domain-0":
-					continue # Discard Dom0
-				if dom_rec['name_label'].startswith("migrating-"):
-					continue # Discard migration temporary vm
+		def _get_vms_names():
+			vms_names=list()
+			if core.cfg['USESSH']:
+				for line in self.run("xm list | awk '{print $1}' | tail -n +3").readlines():
+					name=line.strip()
+					if name.startswith("migrating-"):
+						continue
+					vms_names.append(name)
+			else:
+				dom_recs = self.server.xenapi.VM.get_all_records()
+				core.debug("[API]", self.hostname, "dom_recs=", dom_recs)
 
-				vms_names.append(dom_rec['name_label'])
+				for dom_rec in dom_recs.values():
+					if dom_rec['name_label'] == "Domain-0":
+						continue # Discard Dom0
+					if dom_rec['name_label'].startswith("migrating-"):
+						continue # Discard migration temporary vm
+					if dom_rec['power_state'] == "Halted":
+						# power_state could be: Halted, Paused, Running, Suspended, Crashed, Unknown
+						continue # Discard non instantiated vm
 
-		return vms_names
+					vms_names.append(dom_rec['name_label'])
+
+			return vms_names
+
+		return self._cache.cache(5, nocache, _get_vms_names)
 
 	def get_possible_vm_names(self, name=""): 
 		"""

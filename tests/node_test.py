@@ -107,7 +107,9 @@ class NodeTests(MockerTestCase):
 
 		xs = self.mocker.mock()
 		xs.xenapi.VM.get_by_name_label(vmname)
-		self.mocker.result(vmname)
+		self.mocker.result(['39cb706a-eae1-b5cd-2ed0-fbbd7cbb8ee8'])
+		xs.xenapi.VM.get_power_state('39cb706a-eae1-b5cd-2ed0-fbbd7cbb8ee8')
+		self.mocker.result("Running")
 		self.mocker.replay()
 		self.node.server=xs
 
@@ -119,7 +121,23 @@ class NodeTests(MockerTestCase):
 
 		xs = self.mocker.mock()
 		xs.xenapi.VM.get_by_name_label(vmname)
-		self.mocker.result("")
+		self.mocker.result([])
+		xs.xenapi.VM.get_power_state()
+		self.mocker.count(0)
+		self.mocker.replay()
+		self.node.server=xs
+
+		result=self.node.is_vm_started(vmname)
+		self.assertEqual(result, False)
+
+	def test_is_vm_started__not_running(self):
+		vmname="test1.home.net"
+
+		xs = self.mocker.mock()
+		xs.xenapi.VM.get_by_name_label(vmname)
+		self.mocker.result(['39cb706a-eae1-b5cd-2ed0-fbbd7cbb8ee8'])
+		xs.xenapi.VM.get_power_state('39cb706a-eae1-b5cd-2ed0-fbbd7cbb8ee8')
+		self.mocker.result("Halted")
 		self.mocker.replay()
 		self.node.server=xs
 
@@ -136,12 +154,26 @@ class NodeTests(MockerTestCase):
 		self.assertEqual(self.node.get_hostname(), socket.gethostname())
 
 	def test_get_vm_started(self):
-		vm_records= ['00000000-0000-0000-0000-000000000000',
-			'faaa6580-7336-ab25-866c-db5f02b92047',
-			'39cb706a-eae1-b5cd-2ed0-fbbd7cbb8ee8']
+		vm_records = {
+			'6ab3fd4c-d1d3-158e-d72d-3fc4831ae1e5': {
+				'name_label': 'test1.home.net',
+				'power_state': 'Running'},
+			'9875358c-a6d7-1864-d878-afc4831aef41': {
+				'name_label': 'test2.home.net',
+				'power_state': 'Running'},
+			'ab22fd4c-d7d1-112e-d90d-3f8a81ae1e23': {
+				'name_label': 'test3.home.net',
+				'power_state': 'Halted'},
+			'11ab12fd4c-d1d3-153e-d75d1fc4841ae1e7': {
+				'name_label': 'migrating-test1.home.net',
+				'power_state': 'Running'},
+			'7efcbac8-4714-88ee-007c-0246a3cb52b8': {
+				'name_label': 'Domain-0',
+				'power_state': 'Running'}
+		}
 
 		xs = self.mocker.mock()
-		xs.xenapi.VM.get_all()
+		xs.xenapi.VM.get_all_records()
 		self.mocker.result(vm_records)
 		self.mocker.replay()
 		self.node.server=xs
@@ -321,19 +353,28 @@ class NodeTests(MockerTestCase):
             '6ab3fd4c-d1d3-158e-d72d-3fc4831ae1e5': {
                 'domid': '73',
 				'metrics': '237f589-e62b-5573-915b-51117c9eb52e',
+				'power_state': 'Running',
                 'name_label': 'test1.home.net'},
+            'ab22fd4c-d7d1-112e-d90d-3f8a81ae1e23': {
+                'domid': '74',
+				'metrics': '330f626-e98b-5266-867b-50968c1eb62e',
+				'power_state': 'Halted',
+                'name_label': 'test2.home.net'},
             '11ab12fd4c-d1d3-153e-d75d1fc4841ae1e7': {
                 'domid': '73',
 				'metrics': '248f596-e71b-5494-876b-50973c20eb72e',
+				'power_state': 'Running',
                 'name_label': 'migrating-test1.home.net'},
              '7efcbac8-4714-88ee-007c-0246a3cb52b8': {
                 'name_label': 'Domain-0',
+				'power_state': 'Running',
 				'metrics': '0208f543-e60b-5622-839b-51080c9eb63e',
                 'domid': '72'}
             }
 
 		metrics_records = { '237f589-e62b-5573-915b-51117c9eb52e': {}, 
 							'0208f543-e60b-5622-839b-51080c9eb63e': {},
+							'330f626-e98b-5266-867b-50968c1eb62e': {},
 							'248f596-e71b-5494-876b-50973c20eb72e': {} 
 				}
 
@@ -351,13 +392,19 @@ class NodeTests(MockerTestCase):
 
 	def test_get_vms_names(self):	
 		vm_records = {
-            '6ab3fd4c-d1d3-158e-d72d-3fc4831ae1e5': {
-                'name_label': 'test1.home.net'},
-            '11ab12fd4c-d1d3-153e-d75d1fc4841ae1e7': {
-                'name_label': 'migrating-test1.home.net'},
-             '7efcbac8-4714-88ee-007c-0246a3cb52b8': {
-                'name_label': 'Domain-0'}
-            }
+			'6ab3fd4c-d1d3-158e-d72d-3fc4831ae1e5': {
+				'name_label': 'test1.home.net',
+				'power_state': 'Running'},
+			'ab22fd4c-d7d1-112e-d90d-3f8a81ae1e23': {
+				'name_label': 'test3.home.net',
+				'power_state': 'Halted'},
+			'11ab12fd4c-d1d3-153e-d75d1fc4841ae1e7': {
+				'name_label': 'migrating-test1.home.net',
+				'power_state': 'Running'},
+			'7efcbac8-4714-88ee-007c-0246a3cb52b8': {
+				'name_label': 'Domain-0',
+				'power_state': 'Running'}
+		}
 
 		xs = self.mocker.mock()
 		xs.xenapi.VM.get_all_records()

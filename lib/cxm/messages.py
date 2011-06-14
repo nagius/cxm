@@ -75,7 +75,7 @@ class MessageSlaveHB(Message):
 	def forge(self, node):
 		super(MessageSlaveHB,self).forge()
 		self.ts=int(time.time())
-		self.vms=node.get_vms_names()
+		self.vms=node.get_vms_names(True) # Every second: no cache
 		return self
 
 	def value(self):
