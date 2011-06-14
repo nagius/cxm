@@ -124,6 +124,9 @@ class Metrics:
 
 		io=dict()
 		for dom_rec in dom_recs.values():
+			if dom_rec['power_state'] == "Halted":
+				continue # Discard non instantiated vm
+
 			io_read=[ int(val) for val in \
 				self.node.run("cat /sys/bus/xen-backend/devices/vbd-" + dom_rec['domid'] + "-*/statistics/rd_req 2>/dev/null || true").readlines() ]
 			io_write=[ int(val) for val in \
