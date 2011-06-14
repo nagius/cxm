@@ -22,7 +22,7 @@
 #
 ###########################################################################
 
-import cxm.core, cxm.node, cxm.metrics
+import cxm.core, cxm.node, cxm.metrics, cxm.vm
 import unittest, os, socket
 from mocker import *
 
@@ -200,41 +200,43 @@ class NodeTests(MockerTestCase):
 	def test_deactivate_lv(self):
 		vmname="test1.home.net"
 
-		xs = self.mocker.mock()
-		xs.xenapi.VM.get_by_name_label(vmname)
-		self.mocker.result("")
+		n = self.mocker.mock()
+		n.is_vm_started(ANY)
+		self.mocker.result(False)
 		self.mocker.replay()
-		self.node.server=xs
+		self.node.is_vm_started=n.is_vm_started
 
 		self.node.deactivate_lv(vmname)
 
 	def test_deactivate_lv_vm_running(self):
 		vmname="test1.home.net"
 
-		xs = self.mocker.mock()
-		xs.xenapi.VM.get_by_name_label(vmname)
-		self.mocker.result("not-empty")
+		n = self.mocker.mock()
+		n.is_vm_started(vmname)
+		self.mocker.result(True)
 		self.mocker.replay()
-		self.node.server=xs
+		self.node.is_vm_started=n.is_vm_started
 
 		self.assertRaises(cxm.node.RunningVmError,self.node.deactivate_lv,vmname) 
 
 	def test_deactivate_lv_bad_input(self):
-		xs = self.mocker.mock()
-		xs.xenapi.VM.get_by_name_label(ANY)
-		self.mocker.result("")
+
+		n = self.mocker.mock()
+		n.is_vm_started(ANY)
+		self.mocker.result(False)
 		self.mocker.replay()
-		self.node.server=xs
+		self.node.is_vm_started=n.is_vm_started
 
 		self.assertRaises(IOError,self.node.deactivate_lv,"nonexist") 
 
-	def test_deacticvate_all_lv(self):
-		xs = self.mocker.mock()
-		xs.xenapi.VM.get_by_name_label(ANY)
+	def test_deactivate_all_lv(self):
+
+		n = self.mocker.mock()
+		n.is_vm_started(ANY)
+		self.mocker.result(False)
 		self.mocker.count(2)
-		self.mocker.result("")
 		self.mocker.replay()
-		self.node.server=xs
+		self.node.is_vm_started=n.is_vm_started
 
 		self.node.deactivate_all_lv()
 		
@@ -280,32 +282,50 @@ class NodeTests(MockerTestCase):
 	def test_shutdown__running(self):
 		vmname="test1.home.net"
 
+		n_mocker = Mocker()
+		n = n_mocker.mock()
+		n.is_vm_started(vmname)
+		n_mocker.result(True)
+		n.is_vm_started(vmname)
+		n_mocker.result(False)
+		n_mocker.count(2)
+		n_mocker.replay()
+		self.node.is_vm_started=n.is_vm_started
+
 		xs = self.mocker.mock()
 		xs.xenapi.VM.get_by_name_label(vmname)
 		self.mocker.result(['39cb706a-eae1-b5cd-2ed0-fbbd7cbb8ee8'])
 		xs.xenapi.VM.clean_shutdown('39cb706a-eae1-b5cd-2ed0-fbbd7cbb8ee8')
-		xs.xenapi.VM.get_by_name_label(vmname)
-		self.mocker.count(2)
-		self.mocker.result([])
 		self.mocker.replay()
 		self.node.server=xs
-		
+
 		self.node.shutdown(vmname)		
+
+		n_mocker.verify()
 
 	def test_shutdown__hard_running(self):
 		vmname="test1.home.net"
+
+		n_mocker = Mocker()
+		n = n_mocker.mock()
+		n.is_vm_started(vmname)
+		n_mocker.result(True)
+		n.is_vm_started(vmname)
+		n_mocker.result(False)
+		n_mocker.count(2)
+		n_mocker.replay()
+		self.node.is_vm_started=n.is_vm_started
 
 		xs = self.mocker.mock()
 		xs.xenapi.VM.get_by_name_label(vmname)
 		self.mocker.result(['39cb706a-eae1-b5cd-2ed0-fbbd7cbb8ee8'])
 		xs.xenapi.VM.hard_shutdown('39cb706a-eae1-b5cd-2ed0-fbbd7cbb8ee8')
-		xs.xenapi.VM.get_by_name_label(vmname)
-		self.mocker.count(2)
-		self.mocker.result([])
 		self.mocker.replay()
 		self.node.server=xs
 		
 		self.node.shutdown(vmname, False)		
+
+		n_mocker.verify()
 
 	def test_shutdown__not_running(self):
 		vmname="test1.home.net"
@@ -431,43 +451,23 @@ class NodeTests(MockerTestCase):
 		self.assertRaises(cxm.node.ShellError, self.node.get_possible_vm_names, "non-exist")
 
 	def test_check_lvs_ok(self):
-		vm_records = {
-            '6ab3fd4c-d1d3-158e-d72d-3fc4831ae1e5': {
-                'domid': '73',
-				'metrics': '237f589-e62b-5573-915b-51117c9eb52e',
-                'name_label': 'test1.home.net'}
-            }
 
-		metrics_records = { '237f589-e62b-5573-915b-51117c9eb52e': {}}
-
-		xs = self.mocker.mock()
-		xs.xenapi.VM.get_all_records()
-		self.mocker.result(vm_records)
-		xs.xenapi.VM_metrics.get_all_records()
-		self.mocker.result(metrics_records)
+		n = self.mocker.mock()
+		n.get_vms()
+		self.mocker.result([cxm.vm.VM("test1.home.net")])
 		self.mocker.replay()
-		self.node.server=xs
+		self.node.get_vms=n.get_vms
 		
 		result=self.node.check_lvs()
 		self.assertEqual(result,False)
 
 	def test_check_autostart(self):
-		vm_records = {
-            '6ab3fd4c-d1d3-158e-d72d-3fc4831ae1e5': {
-                'domid': '73',
-				'metrics': '237f589-e62b-5573-915b-51117c9eb52e',
-                'name_label': 'test1.home.net'}
-            }
 
-		metrics_records = { '237f589-e62b-5573-915b-51117c9eb52e': {}}
-
-		xs = self.mocker.mock()
-		xs.xenapi.VM.get_all_records()
-		self.mocker.result(vm_records)
-		xs.xenapi.VM_metrics.get_all_records()
-		self.mocker.result(metrics_records)
+		n = self.mocker.mock()
+		n.get_vms()
+		self.mocker.result([cxm.vm.VM("test1.home.net")])
 		self.mocker.replay()
-		self.node.server=xs
+		self.node.get_vms=n.get_vms
 
 		result=self.node.check_autostart()	
 		self.assertEqual(result,False)
