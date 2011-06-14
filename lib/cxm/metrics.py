@@ -76,6 +76,7 @@ class Metrics:
 		Return a dict with the computed CPU usage for all runing VMs.
 
 		The result is a percetage relative to one CPU (eg. 2 full-used CPU -> 200%)
+		Warning: paused VM will not be present in result.
 
 		Values are floats with 16 digit of precision (python standard's binary float)
 		If you want a string with less precision, you can use "%.1f" % round(xxx).
@@ -252,6 +253,7 @@ class Metrics:
 	def get_vms_record(self):
 		"""
 		Return a tree with CPU, disks'IO and network IO for all running VMs.
+		Warning: paused VM will not be present in result.
 
 		Units: 
 			CPU: Percetage
@@ -267,7 +269,7 @@ class Metrics:
 		vms_disk_io=self.get_vms_disk_io(dom_recs)
 
 		vms_record=dict()
-		for vm in vms_net_io.keys():
+		for vm in vms_cpu.keys():
 			vms_record[vm]=dict()
 			vms_record[vm]['disk']=vms_disk_io[vm]
 			vms_record[vm]['cpu']=vms_cpu[vm]
