@@ -33,6 +33,9 @@ case "$1" in
 	start)
 		echo -n "Starting $prog"
 
+		# Updating repo at startup
+		svn update $SVN_REPO >> $LOG_DIR/$prog.log
+
 		if [ -n "$(svn status $SVN_REPO)" ]; then
 			echo 
 			echo "Svn repository $SVN_REPO is not clean."
