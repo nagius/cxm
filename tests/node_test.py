@@ -286,6 +286,7 @@ class NodeTests(MockerTestCase):
 		n = n_mocker.mock()
 		n.is_vm_started(vmname)
 		n_mocker.result(True)
+		n_mocker.count(2)
 		n.is_vm_started(vmname)
 		n_mocker.result(False)
 		n_mocker.count(2)
@@ -310,6 +311,7 @@ class NodeTests(MockerTestCase):
 		n = n_mocker.mock()
 		n.is_vm_started(vmname)
 		n_mocker.result(True)
+		n_mocker.count(2)
 		n.is_vm_started(vmname)
 		n_mocker.result(False)
 		n_mocker.count(2)
@@ -330,12 +332,12 @@ class NodeTests(MockerTestCase):
 	def test_shutdown__not_running(self):
 		vmname="test1.home.net"
 
-		xs = self.mocker.mock()
-		xs.xenapi.VM.get_by_name_label(vmname)
-		self.mocker.result([])
+		n = self.mocker.mock()
+		n.is_vm_started(vmname)
+		self.mocker.result(False)
 		self.mocker.replay()
-		self.node.server=xs
-		
+		self.node.is_vm_started=n.is_vm_started
+
 		self.assertRaises(cxm.node.NotRunningVmError,self.node.shutdown,vmname) 
 
 	def test_get_vm_running(self):
