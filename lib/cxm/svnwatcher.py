@@ -43,6 +43,13 @@ class InotifyPP(protocol.ProcessProtocol):
 		self.node=node
 		self.agent=agent
 
+		if self.agent:
+			# Short delay to quickly propagate modifications to others nodes
+			self.delay=0.5
+		else:
+			# We wait more longer before autocommit if we are standalone
+			self.delay=10
+
 	def connectionMade(self):
 		log.info("Inotify started.")
 
@@ -57,9 +64,9 @@ class InotifyPP(protocol.ProcessProtocol):
 				self.toDel.append(info[2])
 		
 		if isinstance(self._call, DelayedCall) and self._call.active():
-			self._call.reset(0.5)
+			self._call.reset(self.delay)
 		else:
-			self._call=reactor.callLater(0.5, self.doCommit)
+			self._call=reactor.callLater(self.delay, self.doCommit)
 
 	def doCommit(self):
 		toAdd=deepcopy(self.toAdd)
