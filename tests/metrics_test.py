@@ -189,23 +189,17 @@ class MetricsTests(MockerTestCase):
 		self.assertEqual(result, val)
 
 	def test_get_vms_disk_io_rate(self):
-		vm_records= {
-			'6ab3fd4c-d1d3-158e-d72d-3fc4831ae1e5': {
-				'domid': '73',
-				'name_label': 'test1.home.net'},
-			 '7efcbac8-4714-88ee-007c-0246a3cb52b8': {
-				'name_label': 'test2.home.net',
-				'domid': '72'}
-			}
-
 		val= {  'test1.home.net': {'Read': 0, 'Write': 0 }, 
 				'test2.home.net': {'Read': 0, 'Write': 0 }}
 
-		xs = self.mocker.mock()
-		xs.xenapi.VM.get_all_records()
-		self.mocker.result(vm_records)
+		n = self.mocker.mock()
+		n.get_vms_disk_io(ANY)
+		self.mocker.result({
+			'test2.home.net': {'Read': 9757, 'Write': 87547}, 
+			'test1.home.net': {'Read': 8573, 'Write': 975}
+		})
 		self.mocker.replay()
-		self.metrics.server=xs
+		self.metrics.get_vms_disk_io=n.get_vms_disk_io
 		
 		result=self.metrics.get_vms_disk_io_rate()
 		self.assertEqual(result, val)
@@ -303,56 +297,35 @@ class MetricsTests(MockerTestCase):
 		self.assertEqual(result, val)
 
 	def test_get_vms_record(self):
-		val =  {'test15.home.net': 
-					{'net': [], 'disk': {'Read': 6, 'Write': 68}, 'cpu': 0.0}, 
-				'test22.home.net': 
-					{'net': [
-						{'Rx': 7900011, 'Tx': 1010}, 
-						{'Rx': 8531582, 'Tx': 384}], 
-					'disk': {'Read': 1931, 'Write': 2293}, 'cpu': 0.0}}
-
-		# Mock for get_vms_cpu_usage
-		xenlegacy_mock = Mocker()
-		xenlegacy=xenlegacy_mock.mock()
-		xenlegacy.xend.domains(True)
-		xenlegacy_mock.result(
-			[['domain',
-			  ['name', 'test15.home.net'],
-			  ['cpu_time', 159.379459621]],
-			 ['domain',
-			  ['name', 'test22.home.net'],
-			  ['cpu_time', 146.65212068700001],
-			 ]]
-		)
-		xenlegacy_mock.replay()
-		self.node.legacy_server=xenlegacy
-
-		# Mock for get_vms_net_io and get_vms_disk_io
-		vm_records= {
-			'6ab3fd4c-d1d3-158e-d72d-3fc4831ae1e5': {
-				'VIFs': [],
-				'domid': '73',
-				'name_label': 'test15.home.net'},
-			 '7efcbac8-4714-88ee-007c-0246a3cb52b8': {
-				'name_label': 'test22.home.net',
-				'domid': '72',
-				'VIFs': [ 'a7d7bd0d-8885-6989-53e5-4e56559a286c', 'c31514fb-1471-194b-14eb-3bd54bdbf4cb' ]}
+		val =  {
+			'test22.home.net': {
+				'net': [], 
+				'disk': {'Read': 1931, 'Write': 2293}, 
+				'cpu': 0.0}, 
+			'test15.home.net': {
+				'net': [{'Rx': 7900011, 'Tx': 1010}, {'Rx': 8531582, 'Tx': 384}], 
+				'disk': {'Read': 6, 'Write': 68}, 
+				'cpu': 0.0}
 			}
 
-		vif_records = {'a7d7bd0d-8885-6989-53e5-4e56559a286c': {
-                                          'io_total_read_kbs': 7714.8544921875,
-                                          'io_total_write_kbs': 0.987 },
-					 'c31514fb-1471-194b-14eb-3bd54bdbf4cb': {
-                                          'io_total_read_kbs': 8331.623046875,
-                                          'io_total_write_kbs': 0.375 }}
-
-		xs = self.mocker.mock()
-		xs.xenapi.VM.get_all_records()
-		self.mocker.result(vm_records)
-		xs.xenapi.VIF_metrics.get_all_records()
-		self.mocker.result(vif_records)
+		n = self.mocker.mock()
+		n.get_vms_cpu_usage()
+		self.mocker.result({'test15.home.net': 0.0, 'test22.home.net': 0.0})
+		n.get_vms_net_io(ANY)
+		self.mocker.result({
+			'test15.home.net': [{'Rx': 7900011, 'Tx': 1010}, {'Rx': 8531582, 'Tx': 384}], 
+			'test22.home.net': []
+		})
+		n.get_vms_disk_io(ANY)
+		self.mocker.result({
+			'test15.home.net': {'Read': 6, 'Write': 68 },
+			'test22.home.net': {'Read': 1931, 'Write': 2293},
+			'test47.home.net': {'Read': 13, 'Write': 23}
+		})
 		self.mocker.replay()
-		self.metrics.server=xs
+		self.metrics.get_vms_cpu_usage=n.get_vms_cpu_usage
+		self.metrics.get_vms_net_io=n.get_vms_net_io
+		self.metrics.get_vms_disk_io=n.get_vms_disk_io
 
 		result=self.metrics.get_vms_record()
 		self.assertEqual(result, val)
