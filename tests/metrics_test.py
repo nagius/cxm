@@ -208,9 +208,15 @@ class MetricsTests(MockerTestCase):
 		vm_records= {
 			'6ab3fd4c-d1d3-158e-d72d-3fc4831ae1e5': {
 				'VIFs': [],
+				'power_state': 'Running',
 				'name_label': 'test1.home.net'},
+			'3ab9fd2c-d5d6-176e-d82d-2fc5028ae4e7': {
+				'VIFs': [],
+				'power_state': 'Halted',
+				'name_label': 'test3.home.net'},
 			 '7efcbac8-4714-88ee-007c-0246a3cb52b8': {
 				'name_label': 'test2.home.net',
+				'power_state': 'Running',
 				'VIFs': [ 'a7d7bd0d-8885-6989-53e5-4e56559a286c', 'c31514fb-1471-194b-14eb-3bd54bdbf4cb' ]}
 			}
 

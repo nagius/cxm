@@ -176,6 +176,9 @@ class Metrics:
 
 		vifs_doms_metrics=dict()
 		for dom_rec in dom_recs.values():
+			if dom_rec['power_state'] == "Halted":
+				continue # Discard non instantiated vm
+
 			vifs_metrics=list()
 			for vif in dom_rec['VIFs']:
 				vifs_metrics.append({
@@ -209,6 +212,7 @@ class Metrics:
 			stats=line.strip().split()
 			if stats[2] in devices:
 				"""
+				Doc is in <kernel>/Documentation/iostats.txt
 				Struct of file /proc/diskstats :
 
 						Field 3 -- # of reads issued
