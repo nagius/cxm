@@ -259,9 +259,12 @@ def run():
 		reactor.addSystemEventTrigger('after', 'shutdown', os._exit, rc)
 	
 	# Call specified command
-	d=commands[keys[0]](options.__dict__[keys[0]])
-	d.addErrback(fail)
-	d.addBoth(quit)
+	try:
+		d=commands[keys[0]](options.__dict__[keys[0]])
+		d.addErrback(fail)
+		d.addBoth(quit)
+	except IndexError:
+		syntax_error("Need at least one argument.")
 
 	reactor.run()
 
