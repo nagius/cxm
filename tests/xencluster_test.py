@@ -32,6 +32,7 @@ class XenClusterTests(MockerTestCase):
 
 		cxm.core.cfg['PATH'] = "tests/stubs/bin/"
 		cxm.core.cfg['VMCONF_DIR'] = "tests/stubs/cfg/"
+		cxm.core.cfg['DISABLE_FENCING'] = False
 		cxm.core.cfg['QUIET']=True
 
 		# Dummy mocker
@@ -641,6 +642,27 @@ class XenClusterTests(MockerTestCase):
 		vm2_mocker.verify()
 		vm3_mocker.verify()
 		
+	def test_fence_ok(self):
+		cxm.core.cfg['FENCE_CMD'] = "fence_ok"
+
+		nodename = socket.gethostname()
+		self.cluster.nodes={nodename: cxm.node.Node(nodename)}
+
+		self.assertEqual(self.cluster.fence(nodename),None)
+
+	def test_fence_error(self):
+		cxm.core.cfg['FENCE_CMD'] = "fence_fail"
+
+		nodename = socket.gethostname()
+		self.cluster.nodes={nodename: cxm.node.Node(nodename)}
+
+		self.assertRaises(cxm.xencluster.FenceNodeError,self.cluster.fence, nodename)
+
+	def test_fence_disabled(self):
+		cxm.core.cfg['FENCE_CMD'] = "fence_ok"
+		cxm.core.cfg['DISABLE_FENCING'] = True
+
+		self.assertRaises(cxm.xencluster.FenceNodeError,self.cluster.fence, "dummy-input")
 
 if __name__ == "__main__":
 	unittest.main()   

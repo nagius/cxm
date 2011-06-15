@@ -31,7 +31,6 @@ class NodeTests(MockerTestCase):
 	def setUp(self):
 		cxm.core.cfg['PATH'] = "tests/stubs/bin/"
 		cxm.core.cfg['VMCONF_DIR'] = "tests/stubs/cfg/"
-		cxm.core.cfg['DISABLE_FENCING'] = False
 		cxm.core.cfg['QUIET']=True
 		cxm.core.cfg['DEBUG']=False
 
@@ -479,19 +478,6 @@ class NodeTests(MockerTestCase):
 
 	def test_run_error(self):
 		self.assertRaises(cxm.node.ShellError,self.node.run,"run failure")
-
-	def test_fence_ok(self):
-		cxm.core.cfg['FENCE_CMD'] = "fence_ok"
-		self.assertEqual(self.node.fence(),None)
-
-	def test_fence_error(self):
-		cxm.core.cfg['FENCE_CMD'] = "fence_fail"
-		self.assertRaises(cxm.node.FenceNodeError,self.node.fence)
-
-	def test_fence_disabled(self):
-		cxm.core.cfg['FENCE_CMD'] = "fence_ok"
-		cxm.core.cfg['DISABLE_FENCING'] = True
-		self.assertRaises(cxm.node.FenceNodeError,self.node.fence)
 
 	def test_ping__ok(self):
 		self.assertTrue(self.node.ping(["test1.home.net", "test2.home.net", "test3.home.net"]))

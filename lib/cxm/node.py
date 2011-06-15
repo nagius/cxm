@@ -541,27 +541,6 @@ class Node:
 
 		return safe
 
-	def fence(self):
-		"""
-		Fence this node. 
-
-		You have to make a fencing script that will use iLo, IPMI or other such fencing device.
-		See FENCE_CMD in configuration file.
-
-		Raise a FenceNodeError if the fence fail of if DISABLE_FENCING is True.
-		"""
-		if core.cfg['DISABLE_FENCING']:
-			raise FenceNodeError("Fencing disabled by configuration")
-
-		if self.is_local_node():
-			print " ** WARNING : node is self-fencing !"
-			print "\"Chérie ça va trancher.\""
-
-		try:
-			self.run(core.cfg['FENCE_CMD'] + " " + self.get_hostname())
-		except ShellError, e:
-			raise FenceNodeError(e.value)
-
 	def ping(self, hostnames):
 		"""Return True if one or more hostname is alive"""
 
@@ -585,10 +564,6 @@ class ClusterNodeError(Exception):
 
 	def __str__(self):
 		return "Error on %s : %s" % (self.nodename, self.value)
-
-class FenceNodeError(ClusterNodeError):
-	"""This class is used to raise error when fencing fail."""
-	pass
 
 class ShellError(ClusterNodeError):
 	"""This class is used to raise error when local exec fail."""
