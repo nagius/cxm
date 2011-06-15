@@ -83,7 +83,7 @@ class InotifyPP(protocol.ProcessProtocol):
 			self.node.run("svn --non-interactive commit -m 'svnwatcher autocommit' "+core.cfg['VMCONF_DIR'])
 			self.doUpdate()
 		except Exception, e:
-			print "SVN failed: " + str(e)
+			log.err("SVN failed: %s" % (e))
 			reactor.stop()
 		
 	def doUpdate(self):
@@ -152,11 +152,18 @@ class SvnwatcherService(Service):
 			except:
 				pass
 
+	def forceUpdate(self):
+		log.info("SIGHUP received: updating all repos.")
+		try:
+			self.pp.doUpdate()
+		except:
+			pass
+
 	def spawnInotify(self):
 		# We use this ugly way because Pyinotify and Twisted's INotify require Python 2.6
 		argv=["inotifywait", "-e", "create", "-e", "modify", "-e", "delete", "-m", core.cfg['VMCONF_DIR'], "--exclude", "/\.|~$|[0-9]+$"]
-		pp = InotifyPP(self.node, self.agent)
-		self._process=reactor.spawnProcess(pp, argv[0], argv, {})
+		self.pp = InotifyPP(self.node, self.agent)
+		self._process=reactor.spawnProcess(self.pp, argv[0], argv, {})
 
 
 # vim: ts=4:sw=4:ai

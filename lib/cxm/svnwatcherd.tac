@@ -44,4 +44,7 @@ cxm.logs.init(name)
 # Reinstall signal ignored by xen
 signal.signal(signal.SIGINT, lambda signum,frame: svnwatcher.stopService())
 
+# Install signal for manual update
+signal.signal(signal.SIGHUP, lambda signum,frame: svnwatcher.forceUpdate())
+
 # vim: ts=4:sw=4:ai

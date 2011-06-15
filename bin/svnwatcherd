@@ -65,6 +65,19 @@ case "$1" in
 		[ "$RETVAL" = 0 ] && rm -f /var/lock/subsys/$prog
 		;;
 
+	update)
+		echo -n "Triggering an update with $prog"
+		if [ -e "$PID_FILE" ]; then
+			kill -HUP `cat $PID_FILE`
+			success
+		else
+			echo -n " : pidfile not found !"
+			failure
+		fi
+		echo
+		RETVAL=$?
+		;;
+
 	restart)
 		"${0}" stop
 		"${0}" start
@@ -76,7 +89,7 @@ case "$1" in
         ;;
 
     *)
-        echo $"Usage: $0 {start|stop|restart|status}"
+        echo $"Usage: $0 {start|stop|update|restart|status}"
         RETVAL=1
 esac
 
