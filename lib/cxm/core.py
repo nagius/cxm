@@ -68,6 +68,7 @@ cfg = {
 	'LB_MAX_LAYER': 4,
 	'LB_MIN_GAIN': 5,
 	'FENCE_CMD': "cxm_fence",	# Take the node's name as first param
+	'DISABLE_FENCING': False,
 	'CLUSTER_NAME': None,		# (string) Mandatory for cxmd
 	'ALLOWED_NODES': [],
 	'UDP_PORT': 1255,

@@ -548,8 +548,11 @@ class Node:
 		You have to make a fencing script that will use iLo, IPMI or other such fencing device.
 		See FENCE_CMD in configuration file.
 
-		Raise a FenceNodeError if the fence fail.
+		Raise a FenceNodeError if the fence fail of if DISABLE_FENCING is True.
 		"""
+		if core.cfg['DISABLE_FENCING']:
+			raise FenceNodeError("Fencing disabled by configuration")
+
 		if self.is_local_node():
 			print " ** WARNING : node is self-fencing !"
 			print "\"Chérie ça va trancher.\""
