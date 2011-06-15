@@ -230,13 +230,16 @@ class NodeTests(MockerTestCase):
 		self.assertRaises(IOError,self.node.deactivate_lv,"nonexist") 
 
 	def test_deactivate_all_lv(self):
+		names=['test1.home.net', 'test2.home.net', 'testcfg.home.net']
 
 		n = self.mocker.mock()
-		n.is_vm_started(ANY)
-		self.mocker.result(False)
-		self.mocker.count(2)
+		for name in names:
+			n.is_vm_started(name)
+			self.mocker.result(False)
+			n.deactivate_lv(name)
 		self.mocker.replay()
 		self.node.is_vm_started=n.is_vm_started
+		self.node.deactivate_lv=n.deactivate_lv
 
 		self.node.deactivate_all_lv()
 		

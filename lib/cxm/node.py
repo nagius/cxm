@@ -277,7 +277,7 @@ class Node:
 
 	def deactivate_all_lv(self):
 		"""Deactivate all the logicals volumes used by stopped VM on this node."""
-		for vm in [ vm.strip() for vm in self.run("ls -F "+ core.cfg['VMCONF_DIR'] +" | grep -v '/'").readlines() ]:
+		for vm in self.get_possible_vm_names():
 			if not self.is_vm_started(vm):
 				self.deactivate_lv(vm)
 
