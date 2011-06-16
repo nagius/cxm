@@ -489,7 +489,7 @@ class Node:
 
 		# Get all LVs used by VMs
 		used_lvs = list()
-		for vm in [ vm.strip() for vm in self.run("ls -F "+ core.cfg['VMCONF_DIR'] +" | grep -v '/'").readlines() ]:
+		for vm in self.get_possible_vm_names():
 			used_lvs.extend(VM(vm).get_lvs())
 
 		# Compute the intersection of the two lists (active and used LVs)
