@@ -388,6 +388,8 @@ class XenClusterTests(MockerTestCase):
 		n1_mocker.result([vm1, vm2])
 		n1.get_bridges()
 		n1_mocker.result(['xenbr1','xenbr2'])
+		n1.check_missing_lvs()
+		n1_mocker.result(True)
 		n1.check_activated_lvs()
 		n1_mocker.result(True)
 		n1.check_autostart()
@@ -408,6 +410,11 @@ class XenClusterTests(MockerTestCase):
 		n2.check_autostart()
 		n2_mocker.result(True)
 		n2_mocker.replay()
+
+		get_local_node = self.mocker.replace(cxm.xencluster.XenCluster.get_local_node)
+		get_local_node()
+		self.mocker.result(n1)
+		self.mocker.replay()
 
 		self.cluster.nodes={'node1': n1, 'node2': n2}
 

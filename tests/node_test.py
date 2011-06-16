@@ -464,6 +464,28 @@ class NodeTests(MockerTestCase):
 		result=self.node.check_activated_lvs()
 		self.assertEqual(result,False)
 
+	def test_check_missing_lvs__ok(self):
+
+		n = self.mocker.mock()
+		n.get_possible_vm_names()
+		self.mocker.result(["test1.home.net"])
+		self.mocker.replay()
+		self.node.get_possible_vm_names=n.get_possible_vm_names
+		
+		result=self.node.check_missing_lvs()
+		self.assertEqual(result,True)
+
+	def test_check_missing_lvs__nok(self):
+
+		n = self.mocker.mock()
+		n.get_possible_vm_names()
+		self.mocker.result(["test1.home.net","test2.home.net"])
+		self.mocker.replay()
+		self.node.get_possible_vm_names=n.get_possible_vm_names
+		
+		result=self.node.check_missing_lvs()
+		self.assertEqual(result,False)
+
 	def test_check_autostart(self):
 
 		n = self.mocker.mock()

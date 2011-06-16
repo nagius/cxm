@@ -467,6 +467,10 @@ class XenCluster:
 		if not self.check_bridges():
 			safe=False
 
+		# Check existence of used logicals volumes
+		if not self.get_local_node().check_missing_lvs():
+			safe=False
+
 		# Other checks
 		for node in self.get_nodes():
 			# Check (non)activation of LVs

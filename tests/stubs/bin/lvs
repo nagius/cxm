@@ -37,6 +37,17 @@ case "$@" in
 EOF
 	;;
 
+	"-o vg_name,name --noheading")
+		cat <<EOF
+  vgrack    root-test1.home.net
+  LVM_XEN   usr-test1.home.net
+  vgrack    WOO-test1.home.net
+  vgrack    root-test2.home.net
+  vgrack    usr-test2.home.net
+  vgrack    swap-test2.home.net
+EOF
+	;;
+
 	"-o vg_name,lv_name,lv_size --noheading --units k --nosuffix /dev/vgrack/root-test1.home.net /dev/LVM_XEN/usr-test1.home.net /dev/vgrack/WOO-test1.home.net")
 		cat <<EOF
   vgrack root-test1.home.net   4194304.00

@@ -474,8 +474,38 @@ class Node:
 
 		return names
 
+	def check_missing_lvs(self):
+		"""
+		Perform a check on logicals volumes used by VMs. 
+		Return False if some are missing.
+		"""
+		if not core.cfg['QUIET']: print "Checking for missing LV..." 
+		safe=True
+		
+		# Get all LVs used by VMs
+		used_lvs = list()
+		for vm in self.get_possible_vm_names():
+			used_lvs.extend(VM(vm).get_lvs())
+
+		# Get all existent LVs
+		existent_lvs = list()
+		for line in self.run("lvs -o vg_name,name --noheading").readlines():
+			(vg, lv)=line.strip().split()
+			existent_lvs.append("/dev/"+vg+"/"+lv)
+		
+		# Compute missing LVs 
+		missing_lvs = list(Set(used_lvs) - Set(existent_lvs))
+		if len(missing_lvs):
+			print " ** WARNING : Found missing LV :\n\t", "\n\t".join(missing_lvs)
+			safe=False
+
+		return safe
+
 	def check_activated_lvs(self):
-		"""Perform a sanity check of the LVM activation on this node."""
+		"""
+		Perform a sanity check of the LVM activation on this node.
+		Return False if there is some inconsistencies.
+		"""
 		if not core.cfg['QUIET']: print "Checking LV activation on",self.get_hostname(),"..." 
 		safe=True
 
