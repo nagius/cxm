@@ -474,7 +474,7 @@ class Node:
 
 		return names
 
-	def check_lvs(self):
+	def check_activated_lvs(self):
 		"""Perform a sanity check of the LVM activation on this node."""
 		if not core.cfg['QUIET']: print "Checking LV activation on",self.get_hostname(),"..." 
 		safe=True

@@ -470,7 +470,7 @@ class XenCluster:
 		# Other checks
 		for node in self.get_nodes():
 			# Check (non)activation of LVs
-			if not node.check_lvs():
+			if not node.check_activated_lvs():
 				safe=False
 
 			# Check autostart link
@@ -482,7 +482,7 @@ class XenCluster:
 	def check_bridges(self):
 		"""Perform a check on briges' configurations.
 
-		Return a corresponding exit code (0=sucess, 0!=error)
+		Return False if a bridge is missing somewhere.
 		"""
 		if not core.cfg['QUIET']: print "Checking bridges configurations..."
 		safe=True

@@ -453,7 +453,7 @@ class NodeTests(MockerTestCase):
 	def test_get_possible_vm_names__none(self):
 		self.assertRaises(cxm.node.ShellError, self.node.get_possible_vm_names, "non-exist")
 
-	def test_check_lvs_ok(self):
+	def test_check_activated_lvs_ok(self):
 
 		n = self.mocker.mock()
 		n.get_vms()
@@ -461,7 +461,7 @@ class NodeTests(MockerTestCase):
 		self.mocker.replay()
 		self.node.get_vms=n.get_vms
 		
-		result=self.node.check_lvs()
+		result=self.node.check_activated_lvs()
 		self.assertEqual(result,False)
 
 	def test_check_autostart(self):
