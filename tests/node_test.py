@@ -31,6 +31,7 @@ class NodeTests(MockerTestCase):
 	def setUp(self):
 		cxm.core.cfg['PATH'] = "tests/stubs/bin/"
 		cxm.core.cfg['VMCONF_DIR'] = "tests/stubs/cfg/"
+		cxm.core.cfg['DISABLE_FENCING'] = False
 		cxm.core.cfg['QUIET']=True
 		cxm.core.cfg['DEBUG']=False
 
@@ -512,6 +513,18 @@ class NodeTests(MockerTestCase):
 
 	def test_ping__baddns(self):
 		self.assertFalse(self.node.ping("non-exist"))
+
+	def test_fence_ok(self):
+		self.assertEqual(self.node.fence("node1"),None)
+
+	def test_fence_error(self):
+		self.assertRaises(cxm.node.FenceNodeError,self.node.fence, "node2")
+
+	def test_fence_disabled(self):
+		cxm.core.cfg['DISABLE_FENCING'] = True
+
+		self.assertRaises(cxm.node.FenceNodeError,self.node.fence, "dummy-input")
+
 
 if __name__ == "__main__":
 	unittest.main()   

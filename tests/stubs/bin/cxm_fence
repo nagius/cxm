@@ -24,7 +24,24 @@
 
 # Mock : Simulate a successfull fence action
 
-echo "Fencing $1"
-exit 0
+
+case "$@" in
+    "node1")
+		echo "Fencing $1"
+		exit 0
+		;;
+
+    "node2")
+		echo "Fencing $1"
+		echo "Fence failed ! " >&2
+		exit 1
+		;;
+
+    *)
+    echo "Error: bad params: $@" >&2
+    exit 1
+    ;;
+esac
+
 
 

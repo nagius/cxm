@@ -580,6 +580,27 @@ class Node:
 		# TODO: handle DNS failure and missing command ?
 		return "alive" in self.run("fping -r1 " + " ".join(hostnames) + "|| true").read()
 
+	def fence(self, hostname):
+		"""
+		Fence the given node. 
+
+		You have to make a fencing script that will use iLo, IPMI or other such fencing device.
+		See FENCE_CMD in configuration file.
+
+		Raise a FenceNodeError if the fence fail of if DISABLE_FENCING is True.
+		"""
+		if core.cfg['DISABLE_FENCING']:
+			raise FenceNodeError(self.get_hostname(), "Fencing disabled by configuration")
+
+		if self.get_hostname() == hostname:
+			print " ** WARNING : node is self-fencing !"
+			print "\"Chérie ça va trancher.\""
+
+		try:
+			self.run(core.cfg['FENCE_CMD'] + " " + hostname)
+		except ShellError, e:
+			raise FenceNodeError(self.get_hostname(), e.value, hostname)
+
 	# Define accessors 
 	legacy_server = property(get_legacy_server)
 	metrics = property(get_metrics)
@@ -614,7 +635,7 @@ class RunningVmError(ClusterNodeError):
 		return "Error on %s : VM %s is running." % (self.nodename, self.value)
 
 class NotRunningVmError(ClusterNodeError):
-	"""This class is used when a VM is not running and shoudg be."""
+	"""This class is used when a VM is not running and should be."""
 
 	def __str__(self):
 		return "Error on %s : VM %s is not running here." % (self.nodename, self.value)
@@ -624,6 +645,17 @@ class NotEnoughRamError(ClusterNodeError):
 
 	def __str__(self):
 		return "Error on %s : There is not enough ram: %s" % (self.nodename, self.value)
+
+class FenceNodeError(ClusterNodeError):
+	"""This class is used to raise error when fencing fail."""
+
+	def __init__(self, nodename, value, hostname=""):
+		# Why don't use super() ? because python really sucks !
+		ClusterNodeError.__init__(self, nodename, value)
+		self.hostname=hostname
+
+	def __str__(self):
+		return "Error on %s : Cannot fence %s : %s" % (self.nodename, self.hostname, self.value)
 
 
 # vim: ts=4:sw=4:ai

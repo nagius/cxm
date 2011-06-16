@@ -32,7 +32,7 @@ from sets import Set
 from twisted.internet import threads, defer
 
 import core, node, vm, loadbalancer
-from node import NotEnoughRamError, RunningVmError, NotRunningVmError, ShellError
+from node import NotEnoughRamError, RunningVmError, NotRunningVmError
 from agent import Agent
 
 class XenCluster:
@@ -410,27 +410,6 @@ class XenCluster:
 				if not core.cfg['QUIET'] : print "Migrating",path['vm'],"from",path['src'],"to",path['dst'],"..."
 				self.migrate(path['vm'], path['src'], path['dst'])
 
-	def fence(self, hostname):
-		"""
-		Fence the given node. 
-
-		You have to make a fencing script that will use iLo, IPMI or other such fencing device.
-		See FENCE_CMD in configuration file.
-
-		Raise a FenceNodeError if the fence fail of if DISABLE_FENCING is True.
-		"""
-		if core.cfg['DISABLE_FENCING']:
-			raise FenceNodeError("Fencing disabled by configuration")
-
-		if self.get_local_node().get_hostname() == hostname:
-			print " ** WARNING : node is self-fencing !"
-			print "\"Chérie ça va trancher.\""
-
-		try:
-			self.get_local_node().run(core.cfg['FENCE_CMD'] + " " + hostname)
-		except ShellError, e:
-			raise FenceNodeError(e.value)
-
 	def check(self):
 		"""Perform a sanity check of the cluster.
 
@@ -527,9 +506,5 @@ class NotInClusterError(ClusterError):
 
 	def __str__(self):
 		return "Cluster error: Node %s is not a cluster's member." % (self.value)
-
-class FenceNodeError(ClusterError):
-	"""This class is used to raise error when fencing fail."""
-	pass
 
 # vim: ts=4:sw=4:ai
