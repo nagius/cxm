@@ -110,18 +110,20 @@ class MetricsTests(MockerTestCase):
 		self.assertEqual(result, val)
 
 	def test_get_host_pvs_io(self):
-		val = { 'cciss/c0d0p7': {'Read': 3397277, 'Write': 11736}, 
-				 'sdc': {'Read': 98544853, 'Write': 964975}, 
-				 'sdb': {'Read': 58756867, 'Write': 947286},
-				 'sda1': {'Read': 53322250, 'Write': 964286}}
+		val = { 'cciss/c0d0p7': {'Read': 9859116032, 'Write': 1083310080}, 
+				'sdc': {'Read': 257978694656, 'Write': 4485101056}, 
+				'sdb': {'Read': 259293510656, 'Write': 2360301056}, 
+				'sda1': {'Read': 257578310656, 'Write': 2923501056}
+			}
 
 		result=self.metrics.get_host_pvs_io()
 		self.assertEqual(result, val)
 
 	def test_get_host_vgs_io(self):
-		val =  {'LVM_XEN': {'Read': 3397277, 'Write': 11736}, 
-				 'MULTI': {'Read': 157301720, 'Write': 1912261}, 
-				 'vgrack': {'Read': 53322250, 'Write': 964286}}
+		val = { 'LVM_XEN': {'Read': 9859116032, 'Write': 1083310080}, 
+				'MULTI': {'Read': 517272205312, 'Write': 6845402112}, 
+				'vgrack': {'Read': 257578310656, 'Write': 2923501056}
+			}
 
 		result=self.metrics.get_host_vgs_io()
 		self.assertEqual(result, val)

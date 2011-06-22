@@ -68,8 +68,8 @@ nr_cpu=None
       |  +-- -R-- String    XenStatsHostDiskName(1)
       |  |        Textual Convention: DisplayString
       |  |        Size: 0..255
-      |  +-- -R-- Counter   XenStatsHostDiskRead(2)		(Requests)
-      |  +-- -R-- Counter   XenStatsHostDiskWrite(3)	(Requests)
+      |  +-- -R-- Counter   XenStatsHostDiskRead(2)		(Bytes)
+      |  +-- -R-- Counter   XenStatsHostDiskWrite(3)	(Bytes)
       |
       +--XenStatsHostBridges(7)
       |  |  Index: XenStatsHostBridgeName

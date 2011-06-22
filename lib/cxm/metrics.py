@@ -128,6 +128,7 @@ class Metrics:
 			if dom_rec['power_state'] == "Halted":
 				continue # Discard non instantiated vm
 
+			# We use *_req and report Requests instead of Bytes because *_sect values are not self-consistent
 			io_read=[ int(val) for val in \
 				self.node.run("cat /sys/bus/xen-backend/devices/vbd-" + dom_rec['domid'] + "-*/statistics/rd_req 2>/dev/null || true").readlines() ]
 			io_write=[ int(val) for val in \
@@ -208,8 +209,9 @@ class Metrics:
 		return io
 
 	def get_host_pvs_io(self):
-		"""Return a dict with PVs'IO stats for the host. Unit: Requests"""
+		"""Return a dict with PVs' bandwidth stats for the host. Unit: Bytes"""
 		io=dict()
+		sector_size=512 # This is a world constant (for now)
 
 		devices=[ dev.strip().lstrip("/dev/") for dev in self.node.run("pvs -o pv_name --noheadings").readlines() ]
 		for line in self.node.run('cat /proc/diskstats').readlines():
@@ -231,12 +233,12 @@ class Metrics:
 						Field 12 -- # of milliseconds spent doing I/Os
 						Field 13 -- weighted # of milliseconds spent doing I/Os 
 				"""
-				io[stats[2]]= { 'Read': int(stats[3]), 'Write': int(stats[7]) }
+				io[stats[2]]= { 'Read': int(stats[5])*sector_size, 'Write': int(stats[9])*sector_size }
 
 		return io
 
 	def get_host_vgs_io(self):
-		"""Return a dict with VGs'IO stats for the host. Unit: Requests"""
+		"""Return a dict with VGs' bandwidth stats for the host. Unit: Bytes"""
 		io=dict()
 
 		pvs_io=self.get_host_pvs_io()
