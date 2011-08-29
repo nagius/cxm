@@ -142,21 +142,21 @@ def update_data():
 	for name in vgs_io.keys():
 		oid=pp.encode(name)
 		pp.add_str('1.6.1.'+oid,name)
-		pp.add_cnt('1.6.2.'+oid,vgs_io[name]['Read'])
-		pp.add_cnt('1.6.3.'+oid,vgs_io[name]['Write'])
+		pp.add_cnt_32bit('1.6.2.'+oid,vgs_io[name]['Read'])
+		pp.add_cnt_32bit('1.6.3.'+oid,vgs_io[name]['Write'])
 
 	# Network's IO
 	for name in net_io['bridges'].keys():
 		oid=pp.encode(name)
 		pp.add_str('1.7.1.'+oid,name)
-		pp.add_cnt('1.7.2.'+oid,net_io['bridges'][name]['Rx'])
-		pp.add_cnt('1.7.3.'+oid,net_io['bridges'][name]['Tx'])
+		pp.add_cnt_32bit('1.7.2.'+oid,net_io['bridges'][name]['Rx'])
+		pp.add_cnt_32bit('1.7.3.'+oid,net_io['bridges'][name]['Tx'])
 
 	for name in net_io['vlans'].keys():
 		oid=pp.encode(name)
 		pp.add_str('1.8.1.'+oid,name)
-		pp.add_cnt('1.8.2.'+oid,net_io['vlans'][name]['Rx'])
-		pp.add_cnt('1.8.3.'+oid,net_io['vlans'][name]['Tx'])
+		pp.add_cnt_32bit('1.8.2.'+oid,net_io['vlans'][name]['Rx'])
+		pp.add_cnt_32bit('1.8.3.'+oid,net_io['vlans'][name]['Tx'])
 
 	# For each VM
 	for vm in vms:
@@ -167,10 +167,10 @@ def update_data():
 		pp.add_gau('1.9.3.'+oid,"%d" % (round(vms_stat[vm.name]['cpu']/nr_cpu,2)*100)) 
 		pp.add_gau('1.9.4.'+oid,vm.get_vcpu())
 		pp.add_gau('1.9.5.'+oid,vm.get_ram())
-		pp.add_cnt('1.9.6.'+oid,vms_stat[vm.name]['disk']['Read'])
-		pp.add_cnt('1.9.7.'+oid,vms_stat[vm.name]['disk']['Write'])
-		pp.add_cnt('1.9.8.'+oid,sum([ vif['Rx'] for vif in vms_stat[vm.name]['net'] ]))
-		pp.add_cnt('1.9.9.'+oid,sum([ vif['Tx'] for vif in vms_stat[vm.name]['net'] ]))
+		pp.add_cnt_32bit('1.9.6.'+oid,vms_stat[vm.name]['disk']['Read'])
+		pp.add_cnt_32bit('1.9.7.'+oid,vms_stat[vm.name]['disk']['Write'])
+		pp.add_cnt_32bit('1.9.8.'+oid,sum([ vif['Rx'] for vif in vms_stat[vm.name]['net'] ]))
+		pp.add_cnt_32bit('1.9.9.'+oid,sum([ vif['Tx'] for vif in vms_stat[vm.name]['net'] ]))
 
 	# For the dom0
 	oid=pp.encode("Domain-0")
