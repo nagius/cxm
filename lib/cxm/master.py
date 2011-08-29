@@ -561,7 +561,7 @@ class MasterService(Service):
 
 		# Master failover still possible even if in panic mode
 		if self.masterLastSeen+MasterService.TM_MASTER <= int(time.time()):
-			log.warn("Heartbeat lost, master has disappeared.")
+			log.warn("Broadcast heartbeat lost, master has disappeared.")
 			return self.triggerElection()
 
 
@@ -570,7 +570,7 @@ class MasterService(Service):
 		if self.role != MasterService.RL_ACTIVE:
 			return
 
-		# No failover is panic mode
+		# No failover in panic mode
 		if self.state == MasterService.ST_PANIC:
 			return
 
