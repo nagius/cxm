@@ -68,6 +68,7 @@ class LocalRPC(pb.Root):
 		status['state']=self._master.state
 		status['role']=self._master.role
 		status['master']=self._master.master
+		status['lastTallyDate']=self._master.lastTallyDate
 
 		return status
 

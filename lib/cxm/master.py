@@ -89,9 +89,10 @@ class MasterService(Service):
 		self.l_masterDog	= task.LoopingCall(self.checkSlaveHeartbeats)
 
 		# Election Stuff
-		self.ballotBox = None			# All received votes
-		self.currentElection = None		# Election name
-		self.f_tally = None				# IDelayedCall used to trigger countVotes()
+		self.ballotBox 			= None		# All received votes
+		self.currentElection	= None		# Election name, none if no pending election
+		self.f_tally			= None		# IDelayedCall used to trigger countVotes()
+		self.lastTallyDate		= 0			# Timestamp for debbuging elections
 
 	def startService(self):
 		Service.startService(self)
@@ -299,6 +300,7 @@ class MasterService(Service):
 			return
 
 		self.currentElection=None
+		self.lastTallyDate=int(time.time())
 		self.master=self.ballotBox[max(self.ballotBox.keys())]
 		log.info("New master is %s." % (self.master))
 		self.s_slaveHb.startService()

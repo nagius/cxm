@@ -68,6 +68,7 @@ def ctl_status(*args):
 	def success(result):
 		print "Role:", result['role']
 		print "Master:", result['master']
+		print "Since:", time.strftime("%a, %d %b %Y %H:%M:%S", time.localtime(result['lastTallyDate']))
 		print "State:", result['state']
 
 	agent=Agent()
