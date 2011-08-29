@@ -48,7 +48,6 @@ from diskheartbeat import DiskHeartbeat
 
 # TODO add check disk nr_node
 # TODO gérer cas partition + possibilité d'ajout de node pendant partition ?
-# TODO mode debug
 # TODO refactoring status / vmsBox ?
 
 
@@ -177,6 +176,7 @@ class MasterService(Service):
 
 		try:
 			msg=MessageHelper.get(data, host)
+			log.debug("Received", msg)
 			dispatcher[msg.type()](msg)
 		except (MessageError, KeyError), e:
 			log.err("Bad message from %s : %s , %s" % (host,data,e))
@@ -184,7 +184,6 @@ class MasterService(Service):
 			pass # Discard useless messages
 
 	def updateNodeStatus(self, msg):
-#		print "slave recu " + str(msg)
 
 		if self.role != MasterService.RL_ACTIVE:
 			# Some slave HB could reach us during election...
@@ -198,11 +197,8 @@ class MasterService(Service):
 
 		now=int(time.time())
 		self.status[msg.node]={'timestamp': now, 'offset': now-msg.ts, 'vms': msg.vms}
-		#pprint(self.status)
 
 	def updateMasterStatus(self, msg):
-
-#		print "master recu " + str(msg)
 
 		if self.master is None:
 			self.master=msg.node
@@ -235,7 +231,6 @@ class MasterService(Service):
 		self.status=msg.status
 		self.state=msg.state
 		self.masterLastSeen=int(time.time())
-#		pprint(self.status)
 
 	def voteForNewMaster(self, msg):
 		# Elections accepted even if in panic mode
@@ -260,7 +255,6 @@ class MasterService(Service):
 		if self.role == MasterService.RL_LEAVING:
 			log.info("Vote request ignored: we are leaving this cluster.")
 			return
-
 
 		# Stop heartbeating
 		self.s_slaveHb.stopService().addErrback(log.err)
@@ -590,6 +584,7 @@ class MasterService(Service):
 		# TODO gerer offset
 		# TODO cas timestamps à 0
 		# Check disk heartbeat
+		log.debug("Diskhearbeat status:", self.disk.get_all_ts())
 		diskFailed=list()
 		for name, timestamp in self.disk.get_all_ts().items():
 			if timestamp+MasterService.TM_SLAVE <= int(time.time()):
@@ -600,7 +595,6 @@ class MasterService(Service):
 
 		# TODO faire un state revovering/failover ?
 		# TODO comparaison liste node ? cas partition a voir
-#		pprint(self.disk.get_all_ts())
 		# TODO cas perte baie disque locale
 			# -> timestamps now ?
 		pass

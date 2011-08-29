@@ -62,6 +62,7 @@ cfg = {
 	'PATH': "",					# Only usefull for testing
 	'NOREFRESH': False,
 	'DEBUG': False,
+	'DAEMON_DEBUG': False,		# For cxmd
 	'QUIET': False,
 	'USESSH': False,
 	'LB_MAX_VM_PER_NODE': 20,

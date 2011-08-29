@@ -23,6 +23,7 @@
 #
 ###########################################################################
 
+# TODO logrotate ?
 
 from twisted.python import log
 import core
@@ -35,7 +36,7 @@ def info(*args):
 	log.msg(*args)
 
 def debug(*args):
-	if core.cfg['DEBUG']:
+	if core.cfg['DAEMON_DEBUG']:
 		log.msg("DEBUG:", *args)
 		
 def warn(*args):
