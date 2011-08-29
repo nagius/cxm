@@ -34,7 +34,7 @@ MAX_RETRY=10				# Number of successives retry in case of error
 OID_BASE=".1.3.6.1.3.53.3.54.1"
 
 # Configure cxm module
-cxm.core.cfg['DEBUG']=False
+cxm.core.cfg['API_DEBUG']=False
 cxm.core.cfg['QUIET']=True
 
 # Globals vars

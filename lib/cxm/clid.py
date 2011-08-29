@@ -252,7 +252,7 @@ def run():
 			rc=int(reason.getErrorMessage())
 		else:
 			rc=1
-			if core.cfg['DEBUG']:
+			if core.cfg['API_DEBUG']:
 				reason.printTraceback()
 			else:
 				print >>sys.stderr, "Error:", reason.getErrorMessage()

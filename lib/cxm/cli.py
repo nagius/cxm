@@ -353,7 +353,7 @@ def get_parser():
 
 	parser = OptionParser(version="%prog "+core.get_api_version())
 	parser.add_option("-d", "--debug",
-					  action="store_true", dest="debug", default=core.cfg['DEBUG'],
+					  action="store_true", dest="debug", default=core.cfg['API_DEBUG'],
 					  help="Enable debug mode")
 	parser.add_option("-f", "--force-node", dest="node", metavar="hostname", default=None,
 					  help="Specify the node to operate with")
@@ -499,7 +499,7 @@ def run():
 		syntax_error("Missing argument.")
 
 	# Override default behavior
-	core.cfg['DEBUG']=options.debug
+	core.cfg['API_DEBUG']=options.debug
 	core.cfg['QUIET']=options.quiet
 	core.cfg['USESSH']=options.usessh
 	core.cfg['NOREFRESH']=options.norefresh

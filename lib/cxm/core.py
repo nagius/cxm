@@ -61,7 +61,7 @@ cfg = {
 	'VMCONF_DIR': "/etc/xen/vm/",
 	'PATH': "",					# Only usefull for testing
 	'NOREFRESH': False,
-	'DEBUG': False,
+	'API_DEBUG': False,			# For API and CLI
 	'DAEMON_DEBUG': False,		# For cxmd
 	'QUIET': False,
 	'USESSH': False,
@@ -95,8 +95,8 @@ def load_cfg():
 		cfg['VMCONF_DIR']+="/"
 
 def debug(*args):
-	"""Print a debug message, if DEBUG is true."""
-	if cfg['DEBUG']:
+	"""Print a debug message, if API_DEBUG is true."""
+	if cfg['API_DEBUG']:
 		print "DEBUG", " ".join(map(str,args))
 
 # vim: ts=4:sw=4:ai

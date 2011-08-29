@@ -33,7 +33,7 @@ class NodeTests(MockerTestCase):
 		cxm.core.cfg['VMCONF_DIR'] = "tests/stubs/cfg/"
 		cxm.core.cfg['DISABLE_FENCING'] = False
 		cxm.core.cfg['QUIET']=True
-		cxm.core.cfg['DEBUG']=False
+		cxm.core.cfg['API_DEBUG']=False
 
 		# Mock xen session object
 		xs_mock = Mocker()
