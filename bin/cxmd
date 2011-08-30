@@ -37,6 +37,10 @@ case "$1" in
 
 		nice --1 /usr/bin/twistd -y $TAC_FILE --pidfile=$PID_FILE --logfile=$LOG_DIR/$prog.log
 		RETVAL=$?
+
+		# Use realtime scheduler for disk hearbeat system
+		ionice -c 1 -p `cat $PID_FILE` 	
+
 		[ "$RETVAL" = 0 ] && success || failure
 		[ "$RETVAL" = 0 ] && touch /var/lock/subsys/$prog
 		echo
