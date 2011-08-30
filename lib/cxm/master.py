@@ -582,11 +582,14 @@ class MasterService(Service):
 				continue
 
 		# TODO gerer offset
-		# TODO cas timestamps à 0
 		# Check disk heartbeat
 		log.debug("Diskhearbeat status:", self.disk.get_all_ts())
 		diskFailed=list()
 		for name, timestamp in self.disk.get_all_ts().items():
+			if timestamp == 0:
+				# Do nothing if first heartbeat has not been received yet
+				continue
+
 			if timestamp+MasterService.TM_SLAVE <= int(time.time()):
 				log.warn("Disk heartbeat lost for %s." % (name))
 				diskFailed.append(name)
