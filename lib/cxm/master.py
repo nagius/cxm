@@ -48,7 +48,6 @@ from diskheartbeat import DiskHeartbeat
 
 # TODO add check disk nr_node
 # TODO gérer cas partition + possibilité d'ajout de node pendant partition ?
-# TODO refactoring status / vmsBox ?
 
 
 class MasterService(Service):
@@ -339,7 +338,7 @@ class MasterService(Service):
 			except DiskHeartbeatError, e:
 				raise NodeRefusedError("Disk heartbeat failure: %s" % (e))
 
-			self.status[name]={}
+			self.status[name]={'timestamp': 0, 'offset': 0, 'vms': []}
 			log.info("Node %s has joined the cluster." % (name))
 			
 		def invalidHostname(reason):
@@ -528,7 +527,7 @@ class MasterService(Service):
 				log.info("No master found. I'm now the new master of %s." % (core.cfg['CLUSTER_NAME']))
 				self.role=MasterService.RL_ACTIVE
 				self.master=DNSCache.getInstance().name
-				self.status[self.master]={}
+				self.status[self.master]={'timestamp': 0, 'offset': 0, 'vms': []}
 				self.disk.make_slot(DNSCache.getInstance().name)
 				startHeartbeats()
 
@@ -581,7 +580,6 @@ class MasterService(Service):
 				# Do nothing if first heartbeat has not been received yet
 				continue
 
-		# TODO gerer offset
 		# Check disk heartbeat
 		log.debug("Diskhearbeat status:", self.disk.get_all_ts())
 		diskFailed=list()
@@ -590,7 +588,9 @@ class MasterService(Service):
 				# Do nothing if first heartbeat has not been received yet
 				continue
 
-			if timestamp+MasterService.TM_SLAVE <= int(time.time()):
+			# Timestamp from diskheartbeat is taken from each node, not relative to the master's time
+			# so we compute the absolute delta, with the time drift between nodes
+			if abs(int(time.time()) - timestamp - self.status[name]['offset']) > MasterService.TM_SLAVE:
 				log.warn("Disk heartbeat lost for %s." % (name))
 				diskFailed.append(name)
 
