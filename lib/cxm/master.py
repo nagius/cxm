@@ -572,13 +572,13 @@ class MasterService(Service):
 		# Check net heartbeat
 		netFailed=list()
 		for name, values in self.status.items():
-			try:
-				if values['timestamp']+MasterService.TM_SLAVE <= int(time.time()):
-					log.warn("Net heartbeat lost for %s." % (name))
-					netFailed.append(name)
-			except KeyError:
+			if values['timestamp'] == 0:
 				# Do nothing if first heartbeat has not been received yet
 				continue
+
+			if values['timestamp']+MasterService.TM_SLAVE <= int(time.time()):
+				log.warn("Net heartbeat lost for %s." % (name))
+				netFailed.append(name)
 
 		# Check disk heartbeat
 		log.debug("Diskhearbeat status:", self.disk.get_all_ts())
