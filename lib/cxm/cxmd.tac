@@ -25,7 +25,7 @@
 ###########################################################################
 
 from twisted.application import service
-import signal
+import signal, gc
 from cxm.master import MasterService
 import cxm.logs, cxm.core
 
@@ -47,5 +47,8 @@ cxm.logs.init(name)
 
 # Reinstall signal ignored by xen
 signal.signal(signal.SIGINT, lambda signum,frame: master.stopService())
+
+# Disable garbage collector, because it cause freeze is heartbeat system
+gc.disable()
 
 # vim: ts=4:sw=4:ai
