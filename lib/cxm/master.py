@@ -319,15 +319,18 @@ class MasterService(Service):
 
 	def _startMaster(self):
 		def masterWatchdogFailed(reason):
-			log.emerg("Slaves Heartbeats' checks failed: %s." % (reason.getErrorMessage()))
+			log.emerg("Slave heartbeat checks failed: %s." % (reason.getErrorMessage()))
 			self.panic()
+
+		def startMasterWatchdog():
+			d=self.l_masterDog.start(1)
+			d.addErrback(masterWatchdogFailed)
+			d.addErrback(log.err)
 
 		self.s_masterHb.startService()
 
 		# Start master's watchdog for slaves failover
-		d=self.l_masterDog.start(1)
-		d.addErrback(masterWatchdogFailed)
-		d.addErrback(log.err)
+		reactor.callLater(2, startMasterWatchdog)
 		# TODO start LB service
 
 
@@ -417,7 +420,7 @@ class MasterService(Service):
 
 		# Only master can do recovery
 		if self.role != MasterService.RL_ACTIVE:
-			log.warn("I'm not master. Cannot revover from panic.")
+			log.warn("I'm not master. Cannot recover from panic.")
 			raise RPCRefusedError("Not master")
 
 		# Back to normal mode 
