@@ -23,9 +23,6 @@
 #
 ###########################################################################
 
-
-from pprint import pprint
-
 import simplejson as json
 from twisted.internet.protocol import DatagramProtocol
 from twisted.internet import reactor, task, defer
@@ -95,7 +92,7 @@ class UDPListener(DatagramProtocol):
 
 class NetHeartbeat(object):
 
-	MAX_RETRY = 1  # Maximum number of retry before panic mode
+	MAX_RETRY = 2  # Maximum number of retry before panic mode
 
 	def __init__(self, getMsg, dest = None):
 		self.c_getMsg = getMsg
@@ -131,9 +128,9 @@ class NetHeartbeat(object):
 			d.addErrback(log.err)
 			d.addBoth(lambda x: agent.disconnect())
 		else:
-			log.warn("Restarting network heartbeat within a second...")
-			self.retry+=1
-			reactor.callLater(1, self._run, self._proto)
+			log.warn("Restarting network heartbeat within a few seconds...")
+			self.retry+=1	# Will be resetted each elections (or panic recovery)
+			reactor.callLater(2, self._run, self._proto)
 
 	def stop(self):
 		if self._call.running:
