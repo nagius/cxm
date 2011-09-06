@@ -66,9 +66,10 @@ class MasterService(Service):
 	ST_PANIC     = "panic"			# "I don't do anything" mode
 
 	# Elections and failover timeouts
-	TM_TALLY	= 1		# Records vote for 1 sec
-	TM_MASTER	= 6		# Re-elect master if no response wihtin 6 sec
-	TM_SLAVE	= 10	# Trigger failover if no response within 10 sec (master + tally + rounding)
+	TM_TALLY	= 1					# Records vote for 1 sec
+	TM_WATCHDOG	= 3					# Check for failure every 3 sec
+	TM_MASTER	= TM_WATCHDOG*2		# Re-elect master if no response wihtin 6 sec
+	TM_SLAVE	= TM_WATCHDOG*3		# Trigger failover if no response within 9 sec (master + tally + rounding)
 
 	def __init__(self):
 		self.role			= MasterService.RL_ALONE		# Current role of this node
@@ -321,7 +322,7 @@ class MasterService(Service):
 			log.emerg("This is an unrecoverable error: FENCE ME !")
 
 		def startSlaveWatchdog():
-			d=self.l_slaveDog.start(1)
+			d=self.l_slaveDog.start(MasterService.TM_WATCHDOG)
 			d.addErrback(slaveWatchdogFailed)
 			d.addErrback(log.err)
 
@@ -349,7 +350,7 @@ class MasterService(Service):
 			self.panic()
 
 		def startMasterWatchdog():
-			d=self.l_masterDog.start(1)
+			d=self.l_masterDog.start(MasterService.TM_WATCHDOG)
 			d.addErrback(masterWatchdogFailed)
 			d.addErrback(log.err)
 
