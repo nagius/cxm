@@ -33,6 +33,7 @@ from twisted.internet.defer import Deferred
 from twisted.internet import defer
 import time
 from twisted.spread import pb
+from sets import Set
 
 from dnscache import DNSCache
 from messages import *
@@ -43,7 +44,6 @@ from node import Node
 from rpc import RPCService, NodeRefusedError, RPCRefusedError
 from diskheartbeat import DiskHeartbeat
 
-# TODO A gérer : perte de connection xenapi / async ?
 # TODO système de reload de la conf sur sighup et localrpc reload
 
 # TODO add check disk nr_node
@@ -110,9 +110,6 @@ class MasterService(Service):
 			# Stop receiving cluster messages
 			self._messagePort.stopListening()
 			self.s_rpc.stopService().addErrback(log.err)
-
-			# Stop slave hearbeats
-			self.s_slaveHb.stopService().addErrback(log.err)
 
 			# Cleanly leave cluster
 			d = self.leaveCluster()
@@ -256,7 +253,7 @@ class MasterService(Service):
 			return
 
 		# Stop heartbeating
-		self.s_slaveHb.stopService().addErrback(log.err)
+		self._stopSlave()
 		if self.role == MasterService.RL_ACTIVE:
 			self._stopMaster()
 
@@ -296,7 +293,7 @@ class MasterService(Service):
 		self.lastTallyDate=int(time.time())
 		self.master=self.ballotBox[max(self.ballotBox.keys())]
 		log.info("New master is %s." % (self.master))
-		self.s_slaveHb.startService()
+		self._startSlave()
 
 		if self.master == DNSCache.getInstance().name:
 			log.info("I'm the new master.")
@@ -304,7 +301,36 @@ class MasterService(Service):
 			self._startMaster()
 		else:
 			self.role=MasterService.RL_PASSIVE
-			
+
+	
+	# Passive master's stuff (slave)
+	###########################################################################
+
+	def _stopSlave(self):
+		self.s_slaveHb.stopService().addErrback(log.err)
+		if self.l_slaveDog.running:
+			self.l_slaveDog.stop()
+
+	def _startSlave(self):
+		def slaveWatchdogFailed(reason):
+			log.emerg("Master Heartbeat checks failed: %s." % (reason.getErrorMessage()))
+			# Stop slave heartbeat to tell master we have a problem, but if we are here, 
+			# there is no more master, and so, we cannot switch into panic mode.
+			# Hope that another node will trigger an election... and fence me.
+			self.s_slaveHb.stopService()  
+			log.emerg("This is an unrecoverable error: FENCE ME !")
+
+		def startSlaveWatchdog():
+			d=self.l_slaveDog.start(1)
+			d.addErrback(slaveWatchdogFailed)
+			d.addErrback(log.err)
+
+		# Start slave heartbeat
+		self.s_slaveHb.startService()
+
+		# Start slave's watchdog for master failover
+		if not self.l_slaveDog.running:
+			reactor.callLater(2, startSlaveWatchdog)
 
 
 	# Active master's stuff
@@ -327,10 +353,12 @@ class MasterService(Service):
 			d.addErrback(masterWatchdogFailed)
 			d.addErrback(log.err)
 
+		# Start master heartbeat
 		self.s_masterHb.startService()
 
 		# Start master's watchdog for slaves failover
-		reactor.callLater(2, startMasterWatchdog)
+		if not self.l_masterDog.running:
+			reactor.callLater(2, startMasterWatchdog)
 		# TODO start LB service
 
 
@@ -443,10 +471,11 @@ class MasterService(Service):
 			d.addBoth(lambda _: rpcConnector.disconnect())
 			return d
 
+		# Stop slave hearbeat and watchdog
+		self._stopSlave()
+
 		previousRole=self.role
 		self.role=MasterService.RL_LEAVING
-		if self.l_slaveDog.running:
-			self.l_slaveDog.stop()
 
 		if previousRole == MasterService.RL_ACTIVE:
 			# Self-delete our own record 
@@ -478,26 +507,13 @@ class MasterService(Service):
 
 	def joinCluster(self):
 
-		def slaveWatchdogFailed(reason):
-			log.emerg("Master Heartbeats' checks failed: %s." % (reason.getErrorMessage()))
-			# Stop slave heartbeat to tell master we have a problem, but if we are here, 
-			# there is no more master, and so, we cannot switch into panic mode.
-			# Hope that another node will trigger an election... and fence me.
-			self.s_slaveHb.stopService()  
-			log.emerg("This is an unrecoverable error: FENCE ME !")
-
 		def startHeartbeats():
-			self.s_slaveHb.startService()
+			self._startSlave()
 			self.s_rpc.startService()
 
 			if self.role == MasterService.RL_ACTIVE:
 				self._startMaster() 
 
-			# Start slave's watchdog for master failover
-			d=self.l_slaveDog.start(1)
-			d.addErrback(slaveWatchdogFailed)
-			d.addErrback(log.err)
-		
 		def joinRefused(reason):
 			reason.trap(NodeRefusedError, RPCRefusedError)
 			log.err("Join to cluster %s failed: Master %s has refused me: %s" % 
