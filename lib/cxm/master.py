@@ -588,6 +588,10 @@ class MasterService(Service):
 		if self.state == MasterService.ST_PANIC:
 			return
 
+		# No failover if we are alone
+		if len(self.status) <= 1:
+			return
+
 		# Check net heartbeat
 		netFailed=list()
 		for name, values in self.status.items():
@@ -613,9 +617,24 @@ class MasterService(Service):
 				log.warn("Disk heartbeat lost for %s." % (name))
 				diskFailed.append(name)
 
+		# Usecase #5: lost all netherbeats (except me)
+		if len(self.status) > 2:
+			if len(Set(netFailed)-Set([self.localNode.get_hostname()])) == len(self.status)-1:
+				log.err("Lost all netheartbeats ! This is a network failure.")
+				log.err("I'm isolated, stopping master...")
+
+				# Just stop master: we may be fenced by others node
+				self._stopMaster()
+				self.role=MasterService.RL_PASSIVE
+
+				# And stop master failover to avoir restarting master...
+				# So, there is no more heartbeats, next master will fence me or will panic
+				self._stopSlave()
+				# TODO: smarter recovery ?
 
 
-		# TODO faire un state revovering/failover ?
+
+		# TODO faire un state revovering/partition ?
 		# TODO comparaison liste node ? cas partition a voir
 		# TODO cas perte baie disque locale
 			# -> timestamps now ?
