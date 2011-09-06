@@ -603,10 +603,17 @@ class MasterService(Service):
 				log.warn("Net heartbeat lost for %s." % (name))
 				netFailed.append(name)
 
+		# Get diskhearbeat timestamps
+		try:
+			tsDisk=self.disk.get_all_ts()
+		except Exception, e:
+			log.err("Diskheartbeat read failed: %s." % (e))
+			raise
+			
 		# Check disk heartbeat
-		log.debug("Diskhearbeat status:", self.disk.get_all_ts())
+		log.debug("Diskhearbeat status:", tsDisk)
 		diskFailed=list()
-		for name, timestamp in self.disk.get_all_ts().items():
+		for name, timestamp in tsDisk.items():
 			if timestamp == 0:
 				# Do nothing if first heartbeat has not been received yet
 				continue
