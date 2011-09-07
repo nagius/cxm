@@ -100,7 +100,8 @@ class MessageMasterHB(Message):
 			raise MessageError("Status must be a dict")
 
 		from master import MasterService
-		if self.state not in [MasterService.ST_NORMAL, MasterService.ST_PANIC, MasterService.ST_PARTITION]:
+		if self.state not in [MasterService.ST_NORMAL, MasterService.ST_PANIC,
+			MasterService.ST_PARTITION, MasterService.ST_RECOVERY]:
 			raise MessageError("Wrong value for state")
 			
 		return self

@@ -30,7 +30,7 @@ from pprint import pprint
 from twisted.application.service import Service
 from twisted.internet import reactor, error
 from twisted.internet.defer import Deferred
-from twisted.internet import defer
+from twisted.internet import defer, threads
 import time
 from twisted.spread import pb
 from sets import Set
@@ -63,6 +63,7 @@ class MasterService(Service):
 	# Possible states, aka error mode (for self.state)
 	ST_NORMAL    = "normal" 		# Normal operations
 	ST_PARTITION = "partition"		# When a network failure separate cluster in two part
+	ST_RECOVERY  = "recovery"		# When a failed node is being recovered
 	ST_PANIC     = "panic"			# "I don't do anything" mode
 
 	# Elections and failover timeouts
@@ -589,6 +590,10 @@ class MasterService(Service):
 		if self.state == MasterService.ST_PANIC:
 			return
 
+		# No more failover if a recovery is running
+		if self.state == MasterService.ST_RECOVERY:
+			return
+
 		# No failover if we are alone
 		if len(self.status) <= 1:
 			return
@@ -649,11 +654,32 @@ class MasterService(Service):
 				# TODO: smarter recovery ?
 				return
 
+		def recoverFailed(reason):
+			log.emerg("Recovery failed:", reason.getErrorMessage())
+			self.panic()
 
+		def recoverEnded(result):
+			# Panic mode could have been engaged during recovery process
+			if self.state != MasterService.ST_PANIC:
+				self.state=MasterService.ST_NORMAL
 
-		# TODO faire un state revovering/partition ?
-		# TODO comparaison liste node ? cas partition a voir
-		pass
+		# Start recovery of failed nodes
+		if len(netFailed)>0 or len(diskFailed)>0:
+			self.state=MasterService.ST_RECOVERY
 
+			ds=list()
+			for name in netFailed|diskFailed:
+				d=threads.deferToThread(self.recoverNode, name, name in netFailed, name in diskFailed)
+				d.addErrback(recoverFailed)
+				ds.append(d)
+
+			dl=defer.DeferredList(ds, consumeErrors=1)
+			dl.addCallback(recoverEnded)
+
+	# TODO comparaison liste node ? cas partition a voir
+
+	def recoverNode(self, name, isNetFailed, isDiskFailed):
+		log.info("Trying to recover", name)
+		print name, isNetFailed, isDiskFailed
 
 # vim: ts=4:sw=4:ai
