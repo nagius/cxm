@@ -625,8 +625,16 @@ class MasterService(Service):
 				log.warn("Disk heartbeat lost for %s." % (name))
 				diskFailed.append(name)
 
-		# Usecase #5: lost all netheartbeats (except me)
+		# If there is more than 2 nodes, we can detect self-failure
 		if len(self.status) > 2:
+
+			# Usecase #6: lost all diskheartbeats (except me)
+			if len(Set(diskFailed)-Set([self.localNode.get_hostname()])) == len(self.status)-1:
+				log.err("Lost all diskheartbeats !")
+				# Just panic
+				raise Exception("Storage failure")
+
+			# Usecase #5: lost all netheartbeats (except me)
 			if len(Set(netFailed)-Set([self.localNode.get_hostname()])) == len(self.status)-1:
 				log.err("Lost all netheartbeats ! This is a network failure.")
 				log.err("I'm isolated, stopping master...")
@@ -639,13 +647,12 @@ class MasterService(Service):
 				# So, there is no more heartbeats, next master will fence me or will panic
 				self._stopSlave()
 				# TODO: smarter recovery ?
+				return
 
 
 
 		# TODO faire un state revovering/partition ?
 		# TODO comparaison liste node ? cas partition a voir
-		# TODO cas perte baie disque locale
-			# -> timestamps now ?
 		pass
 
 
