@@ -621,7 +621,7 @@ class MasterService(Service):
 
 			# Timestamp from diskheartbeat is taken from each node, not relative to the master's time
 			# so we compute the absolute delta, with the time drift between nodes
-			if abs(int(time.time()) - timestamp - self.status[name]['offset']) > MasterService.TM_SLAVE:
+			if abs(int(time.time()) - timestamp - self.status[name]['offset']) >= MasterService.TM_SLAVE:
 				log.warn("Disk heartbeat lost for %s." % (name))
 				diskFailed.append(name)
 
