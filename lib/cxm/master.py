@@ -594,7 +594,7 @@ class MasterService(Service):
 			return
 
 		# Check net heartbeat
-		netFailed=list()
+		netFailed=Set()
 		for name, values in self.status.items():
 			if values['timestamp'] == 0:
 				# Do nothing if first heartbeat has not been received yet
@@ -602,7 +602,7 @@ class MasterService(Service):
 
 			if values['timestamp']+MasterService.TM_SLAVE <= int(time.time()):
 				log.warn("Net heartbeat lost for %s." % (name))
-				netFailed.append(name)
+				netFailed.add(name)
 
 		# Get diskhearbeat timestamps
 		try:
@@ -613,7 +613,7 @@ class MasterService(Service):
 			
 		# Check disk heartbeat
 		log.debug("Diskhearbeat status:", tsDisk)
-		diskFailed=list()
+		diskFailed=Set()
 		for name, timestamp in tsDisk.items():
 			if timestamp == 0:
 				# Do nothing if first heartbeat has not been received yet
@@ -623,19 +623,19 @@ class MasterService(Service):
 			# so we compute the absolute delta, with the time drift between nodes
 			if abs(int(time.time()) - timestamp - self.status[name]['offset']) >= MasterService.TM_SLAVE:
 				log.warn("Disk heartbeat lost for %s." % (name))
-				diskFailed.append(name)
+				diskFailed.add(name)
 
 		# If there is more than 2 nodes, we can detect self-failure
 		if len(self.status) > 2:
 
 			# Usecase #6: lost all diskheartbeats (except me)
-			if len(Set(diskFailed)-Set([self.localNode.get_hostname()])) == len(self.status)-1:
+			if len(diskFailed-Set([self.localNode.get_hostname()])) == len(self.status)-1:
 				log.err("Lost all diskheartbeats !")
 				# Just panic
 				raise Exception("Storage failure")
 
 			# Usecase #5: lost all netheartbeats (except me)
-			if len(Set(netFailed)-Set([self.localNode.get_hostname()])) == len(self.status)-1:
+			if len(netFailed-Set([self.localNode.get_hostname()])) == len(self.status)-1:
 				log.err("Lost all netheartbeats ! This is a network failure.")
 				log.err("I'm isolated, stopping master...")
 
