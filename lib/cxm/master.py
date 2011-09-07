@@ -322,16 +322,16 @@ class MasterService(Service):
 			log.emerg("This is an unrecoverable error: FENCE ME !")
 
 		def startSlaveWatchdog():
-			d=self.l_slaveDog.start(MasterService.TM_WATCHDOG)
-			d.addErrback(slaveWatchdogFailed)
-			d.addErrback(log.err)
+			if not self.l_slaveDog.running:
+				d=self.l_slaveDog.start(MasterService.TM_WATCHDOG)
+				d.addErrback(slaveWatchdogFailed)
+				d.addErrback(log.err)
 
 		# Start slave heartbeat
 		self.s_slaveHb.startService()
 
 		# Start slave's watchdog for master failover
-		if not self.l_slaveDog.running:
-			reactor.callLater(2, startSlaveWatchdog)
+		reactor.callLater(2, startSlaveWatchdog)
 
 
 	# Active master's stuff
@@ -350,16 +350,16 @@ class MasterService(Service):
 			self.panic()
 
 		def startMasterWatchdog():
-			d=self.l_masterDog.start(MasterService.TM_WATCHDOG)
-			d.addErrback(masterWatchdogFailed)
-			d.addErrback(log.err)
+			if not self.l_masterDog.running:
+				d=self.l_masterDog.start(MasterService.TM_WATCHDOG)
+				d.addErrback(masterWatchdogFailed)
+				d.addErrback(log.err)
 
 		# Start master heartbeat
 		self.s_masterHb.startService()
 
 		# Start master's watchdog for slaves failover
-		if not self.l_masterDog.running:
-			reactor.callLater(2, startMasterWatchdog)
+		reactor.callLater(2, startMasterWatchdog)
 		# TODO start LB service
 
 
@@ -625,7 +625,7 @@ class MasterService(Service):
 				log.warn("Disk heartbeat lost for %s." % (name))
 				diskFailed.append(name)
 
-		# Usecase #5: lost all netherbeats (except me)
+		# Usecase #5: lost all netheartbeats (except me)
 		if len(self.status) > 2:
 			if len(Set(netFailed)-Set([self.localNode.get_hostname()])) == len(self.status)-1:
 				log.err("Lost all netheartbeats ! This is a network failure.")
