@@ -61,10 +61,14 @@ class XenCluster:
 		nodes=dict()
 
 		def instantiate(results):
+			failedNodes=dict()
 			for result in results:
 				if not result[0]:
-					raise Exception("Can't connect to %s: %s" % (nodeslist[results.index(result)], 
-						result[1].getErrorMessage()))
+					failedNodes[nodeslist[results.index(result)]]=result[1].getErrorMessage()
+
+			if len(failedNodes)>0:
+				raise InstantiationError(failedNodes)
+
 			return XenCluster(nodes)
 
 		def add_node(result, hostname):
@@ -500,6 +504,15 @@ class ClusterError(Exception):
 
 	def __str__(self):
 		return "Cluster error: %s" % (self.value)
+
+class InstantiationError(ClusterError):
+	"""This class is used when getDeferInstance() fail."""
+
+	def __init__(self, failedNodes={}):
+		self.failedNodes=failedNodes
+
+	def __str__(self):
+		return "Cluster error: Cannot connect to nodes: %s." % (" ".join(self.failedNodes.keys()))
 
 class NotInClusterError(ClusterError):
 	"""This class is used when a node does'nt belong to the cluster."""
