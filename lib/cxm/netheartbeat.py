@@ -135,7 +135,12 @@ class NetHeartbeat(object):
 	def stop(self):
 		if self._call.running:
 			self._call.stop()
-		return defer.maybeDeferred(self._port.stopListening)
+			
+		try:	
+			return defer.maybeDeferred(self._port.stopListening)
+		except AttributeError:
+			# If self._port is not defined
+			return defer.succeed(None)
 
 
 # vim: ts=4:sw=4:ai
