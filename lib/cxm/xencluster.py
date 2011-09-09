@@ -32,6 +32,7 @@ from sets import Set
 from twisted.internet import threads, defer
 
 import core, node, vm, loadbalancer
+import logs as log
 from node import NotEnoughRamError, RunningVmError, NotRunningVmError
 from agent import Agent
 
@@ -494,6 +495,59 @@ class XenCluster:
 				safe=False
 
 		return safe
+
+	def recover(self, name, vm_list, partial_failure):
+		"""
+		Try to recover a node from a failure
+
+		Return True if recover is successfull
+		Return False if recover cannot be done (i.e. service still alive)
+		"""
+
+		log.info("Trying to recover", name, "...")
+		
+		try:
+			# Try to get VM back on alive nodes
+			self.emergency_eject(self.get_node(name))
+			log.info("VM from %s successfully migrated on healthy nodes." % (name))
+
+			# Eject successfull, fence the node
+			try:
+				log.info("Fencing useless node %s ..." % (name))
+				self.get_local_node().fence(name)
+			except Exception, e:
+				# If fencing fail, this is not a big deal, VM are alive
+				log.err("Fencing of %s failed:" % (name), e)
+
+			return True # Succeeded !
+		except NotEnoughRamError:
+			# Engage panic mode
+			raise
+		except NotInClusterError:
+			# Next step of recovery process
+			pass
+		except Exception, e:
+			log.err("Cannnot get the VMs back:", e)
+
+		if partial_failure:
+			# Cannot recover, node still alive
+			return False
+
+		# Check if VM are still alive
+		for node in self.get_nodes():
+			if node.ping(vm_list):
+				log.warn("Some VM on %s are still alive !" % (name))
+				return False
+			
+		log.warn("All VM on %s are dead. Fencing now !" % (name))
+		self.get_local_node().fence(name)
+
+		log.info("Restarting dead VM from %s on healthy nodes..." % (name))
+		# TODO: use a better algorithm
+		for vm in vm_list:
+			self.start_vm(self.get_local_node(), vm, False)
+
+		return True
 
 
 class ClusterError(Exception):

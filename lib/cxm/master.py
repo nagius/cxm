@@ -41,6 +41,7 @@ import logs as log
 from heartbeats import * 
 import core
 from node import Node
+from xencluster import XenCluster, InstantiationError
 from rpc import RPCService, NodeRefusedError, RPCRefusedError
 from diskheartbeat import DiskHeartbeat
 
@@ -658,28 +659,67 @@ class MasterService(Service):
 			log.emerg("Recovery failed:", reason.getErrorMessage())
 			self.panic()
 
-		def recoverEnded(result):
+		def recoverEnded(results):
 			# Panic mode could have been engaged during recovery process
 			if self.state != MasterService.ST_PANIC:
 				self.state=MasterService.ST_NORMAL
 
-		# Start recovery of failed nodes
-		if len(netFailed)>0 or len(diskFailed)>0:
-			self.state=MasterService.ST_RECOVERY
+			# Trigger panic mode if a recovery fail
+			for success, result in results:
+				if not success:
+					recoverFailed(result)
 
+		def recoverSucceeded(result, name):
+			# result is the return code from XenCluster.recover()
+			# If True: success, if False: maybe a partition
+
+			if(result):
+				log.info("Successfully recovered node %s." % (name))
+				self._unregister(name)
+			else:
+				log.err("Partial failure, cannot recover", name)
+
+		def instantiationFailed(reason):
+			reason.trap(InstantiationError)
+
+			failed=reason.value.failedNodes.keys()
+			log.warn("Can't connect to", ", ".join(failed))
+
+			# Delete failed nodes from cluster list
+			running=self.getNodesList()
+			for name in failed:
+				running.remove(name)
+			
+			# Re-instanciate cluster without nodes in error
+			d=XenCluster.getDeferInstance(running)
+			d.addCallbacks(startRecover)
+			return d
+
+		def startRecover(result):
 			ds=list()
 			for name in netFailed|diskFailed:
-				d=threads.deferToThread(self.recoverNode, name, name in netFailed, name in diskFailed)
-				d.addErrback(recoverFailed)
+				bothFailed=name in netFailed and name in diskFailed
+				d=threads.deferToThread(result.recover, name, self.status[name]['vms'], not bothFailed)
+				d.addCallback(recoverSucceeded, name)
 				ds.append(d)
 
 			dl=defer.DeferredList(ds, consumeErrors=1)
 			dl.addCallback(recoverEnded)
+			return dl
+
+
+		# Start recovery of failed nodes
+		if len(netFailed)>0 or len(diskFailed)>0:
+			self.state=MasterService.ST_RECOVERY
+			log.info("Starting recovery process...")
+
+			d=XenCluster.getDeferInstance(self.getNodesList())
+			d.addCallbacks(startRecover, instantiationFailed)
+			d.addErrback(recoverFailed)
+
 
 	# TODO comparaison liste node ? cas partition a voir
+	# TODO cas self failure mais pas les autres +  protection self-recover ?
 
-	def recoverNode(self, name, isNetFailed, isDiskFailed):
-		log.info("Trying to recover", name)
-		print name, isNetFailed, isDiskFailed
 
 # vim: ts=4:sw=4:ai
