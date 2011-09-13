@@ -244,17 +244,24 @@ class Node:
 
 		return list(set(vgs))	# Delete duplicate entries
 	
-	def get_vgs_map(self):
-		"""Return the dict of volumes groups with each associated physicals volumes of this node."""
-		map=dict()
-		for line in self.run("pvs -o pv_name,vg_name --noheading").readlines():
-			(pv, vg)=line.split()
-			if pv.startswith("/dev/"):
-				pv=pv[5:] # Delete '/dev/' prefix, if any
+	def get_vgs_map(self, nocache=False):
+		"""
+		Return the dict of volumes groups with each associated physicals volumes of this node.
+		Result will be cached for 1 hour, unless 'nocache' is True.
+		"""
 
-			map.setdefault(vg, []).append(pv)
+		def _get_vgs_map():
+			map=dict()
+			for line in self.run("pvs -o pv_name,vg_name --noheading").readlines():
+				(pv, vg)=line.split()
+				if pv.startswith("/dev/"):
+					pv=pv[5:] # Delete '/dev/' prefix, if any
 
-		return map
+				map.setdefault(vg, []).append(pv)
+
+			return map
+
+		return self._cache.cache(3600, nocache, _get_vgs_map)
 
 	def refresh_lvm(self,vgs):
 		"""Perform a LVM refresh."""
