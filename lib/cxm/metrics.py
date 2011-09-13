@@ -213,7 +213,9 @@ class Metrics:
 		io=dict()
 		sector_size=512 # This is a world constant (for now)
 
-		devices=[ dev.strip().lstrip("/dev/") for dev in self.node.run("pvs -o pv_name --noheadings").readlines() ]
+		# Get list of unique pvs from vgs_map
+		devices=list(set([ y for x in self.node.get_vgs_map().values() for y in x ]))
+
 		for line in self.node.run('cat /proc/diskstats').readlines():
 			stats=line.strip().split()
 			if stats[2] in devices:

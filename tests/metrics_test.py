@@ -113,17 +113,50 @@ class MetricsTests(MockerTestCase):
 		val = { 'cciss/c0d0p7': {'Read': 9859116032, 'Write': 1083310080}, 
 				'sdc': {'Read': 257978694656, 'Write': 4485101056}, 
 				'sdb': {'Read': 259293510656, 'Write': 2360301056}, 
-				'sda1': {'Read': 257578310656, 'Write': 2923501056}
+				'sda1': {'Read': 257578310656, 'Write': 2923501056},
+				'drbd0': {'Read': 9859225600, 'Write': 1083428864}
 			}
+
+		n = self.mocker.mock()
+		n.get_vgs_map()
+		self.mocker.result({
+			'LVM_XEN': ['cciss/c0d0p7'],
+			'MULTI': ['sdb', 'sdc'],
+			'DRBD': ['drbd0'],
+			'vgrack': ['sda1']
+		})
+		self.mocker.replay()
+		self.node.get_vgs_map=n.get_vgs_map
 
 		result=self.metrics.get_host_pvs_io()
 		self.assertEqual(result, val)
 
 	def test_get_host_vgs_io(self):
 		val = { 'LVM_XEN': {'Read': 9859116032, 'Write': 1083310080}, 
+				'DRBD': {'Read': 9859225600, 'Write': 1083428864},
 				'MULTI': {'Read': 517272205312, 'Write': 6845402112}, 
 				'vgrack': {'Read': 257578310656, 'Write': 2923501056}
 			}
+
+		n = self.mocker.mock()
+		n.get_vgs_map()
+		self.mocker.result({
+			'LVM_XEN': ['cciss/c0d0p7'],
+			'MULTI': ['sdb', 'sdc'],
+			'DRBD': ['drbd0'],
+			'vgrack': ['sda1']
+		})
+		n.get_host_pvs_io()
+		self.mocker.result({
+			'cciss/c0d0p7': {'Read': 9859116032, 'Write': 1083310080}, 
+			'sdc': {'Read': 257978694656, 'Write': 4485101056}, 
+			'sdb': {'Read': 259293510656, 'Write': 2360301056}, 
+			'sda1': {'Read': 257578310656, 'Write': 2923501056},
+			'drbd0': {'Read': 9859225600, 'Write': 1083428864}
+		})
+		self.mocker.replay()
+		self.node.get_vgs_map=n.get_vgs_map
+		self.metrics.get_host_pvs_io=n.get_host_pvs_io
 
 		result=self.metrics.get_host_vgs_io()
 		self.assertEqual(result, val)
