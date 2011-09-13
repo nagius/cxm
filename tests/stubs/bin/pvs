@@ -37,6 +37,7 @@ EOF
 	"-o pv_name,vg_name --noheading")
 		cat <<EOF
   /dev/cciss/c0d0p7 LVM_XEN  
+  /dev/drbd0 	  DRBD  
   /dev/sdb        MULTI
   /dev/sdc        MULTI
   /dev/sda1       vgrack

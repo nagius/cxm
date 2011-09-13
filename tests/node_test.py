@@ -95,6 +95,7 @@ class NodeTests(MockerTestCase):
 	def test_get_vgs_map(self):
 		val = { 'LVM_XEN': ['cciss/c0d0p7'], 
 				 'MULTI': ['sdb', 'sdc'],
+				 'DRBD': ['drbd0'],
 				 'vgrack': ['sda1'] }
 
 		result=self.node.get_vgs_map()

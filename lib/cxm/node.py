@@ -249,7 +249,10 @@ class Node:
 		map=dict()
 		for line in self.run("pvs -o pv_name,vg_name --noheading").readlines():
 			(pv, vg)=line.split()
-			map.setdefault(vg, []).append(pv.lstrip("/dev/"))
+			if pv.startswith("/dev/"):
+				pv=pv[5:] # Delete '/dev/' prefix, if any
+
+			map.setdefault(vg, []).append(pv)
 
 		return map
 
