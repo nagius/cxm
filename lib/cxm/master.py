@@ -45,8 +45,6 @@ from xencluster import XenCluster, InstantiationError
 from rpc import RPCService, NodeRefusedError, RPCRefusedError
 from diskheartbeat import DiskHeartbeat
 
-# TODO système de reload de la conf sur sighup et localrpc reload
-
 # TODO add check disk nr_node
 # TODO gérer cas partition + possibilité d'ajout de node pendant partition ?
 
@@ -412,6 +410,9 @@ class MasterService(Service):
 			self.disk.erase_slot(name)
 		except DiskHeartbeatError, e:
 			log.warn("Cannot erase slot: %s. You may have to reformat hearbeat disk." % (e))
+		except Exception, e:
+			log.err("Diskheartbeat failure: %s." % (e))
+			self.panic()
 
 		DNSCache.getInstance().delete(name)
 		log.info("Node %s has been unregistered." % (name))
