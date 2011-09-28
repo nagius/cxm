@@ -78,6 +78,9 @@ class Agent(object):
 	def getState(self):
 		return self._call("getState")
 
+	def getDump(self):
+		return self._call("getDump")
+
 	def forceElection(self):
 		return self._call("forceElection")
 

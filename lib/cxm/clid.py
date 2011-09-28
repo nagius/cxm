@@ -77,6 +77,18 @@ def ctl_status(*args):
 	
 	return d
 
+def ctl_dump(*args):
+	"""Dump current internal memory."""
+	def success(result):
+		import pprint
+		pprint.pprint(result)
+
+	agent=Agent()
+	d=agent.getDump()
+	d.addCallback(success)
+	
+	return d
+
 def ctl_election(*args):
 	"""Force master to do a new election."""
 	agent=Agent()
@@ -161,6 +173,7 @@ commands = {
 	'ping': ctl_ping,
 	'listnodes': ctl_listnodes,
 	'status': ctl_status,
+	'dump': ctl_dump,
 	'election': ctl_election,
 	'quit': ctl_quit,
 	'format': ctl_format,
@@ -185,7 +198,10 @@ def get_parser():
 						help="List currents nodes in the cluster.")
 	parser.add_option("-s", "--status",
 						action="store_true", dest="status", default=False,
-						help="Print current daemon's status.")
+						help="Print current daemon status.")
+	parser.add_option("-d", "--dump",
+						action="store_true", dest="dump", default=False,
+						help="Dump current internal memory (usefull for debugging).")
 	parser.add_option("-e", "--force-election",
 						action="store_true", dest="election", default=False,
 						help="Force a new master's election.")

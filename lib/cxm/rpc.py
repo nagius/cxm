@@ -71,6 +71,14 @@ class LocalRPC(pb.Root):
 		status['lastTallyDate']=self._master.lastTallyDate
 
 		return status
+	
+	def remote_getDump(self):
+		dump = dict()
+		dump['masterLastSeen']=self._master.masterLastSeen
+		dump['status']=self._master.getStatus()
+		dump['ballotBox']=self._master.ballotBox
+
+		return dump
 
 	def remote_forceElection(self):
 		return self._master.triggerElection()
