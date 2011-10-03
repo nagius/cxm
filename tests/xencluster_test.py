@@ -647,7 +647,358 @@ class XenClusterTests(MockerTestCase):
 		vm1_mocker.verify()
 		vm2_mocker.verify()
 		vm3_mocker.verify()
-		
+
+	def test_start_vms__ok(self):
+
+		n1_mocker = Mocker()
+		n1 = n1_mocker.mock()
+		n1.metrics.get_free_ram(False)
+		n1_mocker.result(150)
+		n1.metrics.get_free_ram()
+		n1_mocker.result(150)
+		n1.metrics.get_free_ram(False)
+		n1_mocker.result(150)
+		n1.metrics.get_free_ram()
+		n1_mocker.result(150)
+		n1.start_vm('test2.home.net')
+		n1.enable_vm_autostart('test2.home.net')
+		n1.get_hostname()
+		n1_mocker.result("node1")
+		n1_mocker.count(0,None)
+		n1_mocker.replay()
+
+		n2_mocker = Mocker()
+		n2 = n2_mocker.mock()
+		n2.metrics.get_free_ram(False)
+		n2_mocker.result(200)
+		n2.metrics.get_free_ram()
+		n2_mocker.result(200)
+		n2.metrics.get_free_ram(False)
+		n2_mocker.result(200)
+		n2.get_hostname()
+		n2_mocker.result("node2")
+		n2_mocker.count(0,None)
+		n2_mocker.replay()
+
+		n3_mocker = Mocker()
+		n3 = n3_mocker.mock()
+		n3.metrics.get_free_ram(False)
+		n3_mocker.result(520)
+		n3.metrics.get_free_ram()
+		n3_mocker.result(520)
+		n3.start_vm('test1.home.net')
+		n3.enable_vm_autostart('test1.home.net')
+		n3.metrics.get_free_ram(False)
+		n3_mocker.result(8)
+		n3.metrics.get_free_ram()
+		n3_mocker.result(8)
+		n3.get_hostname()
+		n3_mocker.result("node3")
+		n3_mocker.count(0,None)
+		n3_mocker.replay()
+
+		cluster = self.mocker.mock()
+		cluster.search_vm_started('test1.home.net')
+		self.mocker.result([])
+		cluster.search_vm_started('test2.home.net')
+		self.mocker.result([])
+		cluster.search_vm_started('testcfg.home.net')
+		self.mocker.result([n2])
+		cluster.activate_vm(n3, 'test1.home.net')
+		cluster.activate_vm(n1, 'test2.home.net')
+		self.mocker.replay()
+		cxm.xencluster.XenCluster.search_vm_started=cluster.search_vm_started
+		cxm.xencluster.XenCluster.activate_vm=cluster.activate_vm
+
+		self.cluster.nodes={'node1': n1, 'node2': n2, 'node3': n3}
+
+		self.cluster.start_vms(['test1.home.net', 'test2.home.net', 'testcfg.home.net'])
+
+		n1_mocker.verify()
+		n2_mocker.verify()
+		n3_mocker.verify()
+
+	def test_start_vms__fail_noram(self):
+
+		n1_mocker = Mocker()
+		n1 = n1_mocker.mock()
+		n1.metrics.get_free_ram(False)
+		n1_mocker.result(150)
+		n1.metrics.get_free_ram()
+		n1_mocker.result(150)
+		n1.get_hostname()
+		n1_mocker.result("node1")
+		n1_mocker.count(0,None)
+		n1_mocker.replay()
+
+		n2_mocker = Mocker()
+		n2 = n2_mocker.mock()
+		n2.metrics.get_free_ram(False)
+		n2_mocker.result(200)
+		n2.metrics.get_free_ram()
+		n2_mocker.result(200)
+		n2.get_hostname()
+		n2_mocker.result("node2")
+		n2_mocker.count(0,None)
+		n2_mocker.replay()
+
+		n3_mocker = Mocker()
+		n3 = n3_mocker.mock()
+		n3.metrics.get_free_ram(False)
+		n3_mocker.result(120)
+		n3.metrics.get_free_ram()
+		n3_mocker.result(120)
+		n3.get_hostname()
+		n3_mocker.result("node3")
+		n3_mocker.count(0,None)
+		n3_mocker.replay()
+
+		cluster = self.mocker.mock()
+		cluster.search_vm_started('test1.home.net')
+		self.mocker.result([])
+		self.mocker.replay()
+		cxm.xencluster.XenCluster.search_vm_started=cluster.search_vm_started
+
+		self.cluster.nodes={'node1': n1, 'node2': n2, 'node3': n3}
+
+		e=self.assertRaises(cxm.xencluster.MultipleError, self.cluster.start_vms, ['test1.home.net'])
+		self.assertTrue(isinstance(e.value['test1.home.net'], cxm.node.NotEnoughRamError))
+
+		n1_mocker.verify()
+		n2_mocker.verify()
+		n3_mocker.verify()
+
+	def test_start_vms__fail_activate(self):
+
+		n1_mocker = Mocker()
+		n1 = n1_mocker.mock()
+		n1.metrics.get_free_ram(False)
+		n1_mocker.result(150)
+		n1.metrics.get_free_ram()
+		n1_mocker.result(150)
+		n1.get_hostname()
+		n1_mocker.result("node1")
+		n1_mocker.count(0,None)
+		n1_mocker.replay()
+
+		n2_mocker = Mocker()
+		n2 = n2_mocker.mock()
+		n2.metrics.get_free_ram(False)
+		n2_mocker.result(200)
+		n2.metrics.get_free_ram()
+		n2_mocker.result(200)
+		n2.get_hostname()
+		n2_mocker.result("node2")
+		n2_mocker.count(0,None)
+		n2_mocker.replay()
+
+		n3_mocker = Mocker()
+		n3 = n3_mocker.mock()
+		n3.metrics.get_free_ram(False)
+		n3_mocker.result(520)
+		n3.metrics.get_free_ram()
+		n3_mocker.result(520)
+		n3.get_hostname()
+		n3_mocker.result("node3")
+		n3_mocker.count(0,None)
+		n3_mocker.replay()
+
+		cluster = self.mocker.mock()
+		cluster.search_vm_started('test1.home.net')
+		self.mocker.result([])
+		cluster.activate_vm(n3, 'test1.home.net')
+		self.mocker.throw(cxm.node.ShellError('node3',"foobar",1))
+		self.mocker.replay()
+		cxm.xencluster.XenCluster.search_vm_started=cluster.search_vm_started
+		cxm.xencluster.XenCluster.activate_vm=cluster.activate_vm
+
+		self.cluster.nodes={'node1': n1, 'node2': n2, 'node3': n3}
+
+		e=self.assertRaises(cxm.xencluster.MultipleError, self.cluster.start_vms, ['test1.home.net'])
+		self.assertTrue(isinstance(e.value['test1.home.net'], cxm.node.ShellError))
+
+		n1_mocker.verify()
+		n2_mocker.verify()
+		n3_mocker.verify()
+
+	def test_start_vms__fail_multiple(self):
+
+		n1_mocker = Mocker()
+		n1 = n1_mocker.mock()
+		n1.metrics.get_free_ram(False)
+		n1_mocker.result(150)
+		n1.metrics.get_free_ram()
+		n1_mocker.result(150)
+		n1.metrics.get_free_ram(False)
+		n1_mocker.result(150)
+		n1.metrics.get_free_ram()
+		n1_mocker.result(150)
+		n1.start_vm('test2.home.net')
+		n1_mocker.throw(IOError("foobar"))
+		n1.deactivate_lv('test2.home.net')
+		n1.get_hostname()
+		n1_mocker.result("node1")
+		n1_mocker.count(0,None)
+		n1_mocker.replay()
+
+		n2_mocker = Mocker()
+		n2 = n2_mocker.mock()
+		n2.metrics.get_free_ram(False)
+		n2_mocker.result(200)
+		n2.metrics.get_free_ram()
+		n2_mocker.result(200)
+		n2.metrics.get_free_ram(False)
+		n2_mocker.result(200)
+		n2.get_hostname()
+		n2_mocker.result("node2")
+		n2_mocker.count(0,None)
+		n2_mocker.replay()
+
+		n3_mocker = Mocker()
+		n3 = n3_mocker.mock()
+		n3.metrics.get_free_ram(False)
+		n3_mocker.result(520)
+		n3.metrics.get_free_ram()
+		n3_mocker.result(520)
+		n3.start_vm('test1.home.net')
+		n3_mocker.throw(SystemExit(1))
+		n3.deactivate_lv('test1.home.net')
+		n3.metrics.get_free_ram(False)
+		n3_mocker.result(520)
+		n3.get_hostname()
+		n3_mocker.result("node3")
+		n3_mocker.count(0,None)
+		n3_mocker.replay()
+
+		cluster = self.mocker.mock()
+		cluster.search_vm_started('test1.home.net')
+		self.mocker.result([])
+		cluster.search_vm_started('test2.home.net')
+		self.mocker.result([])
+		cluster.activate_vm(n3, 'test1.home.net')
+		cluster.activate_vm(n1, 'test2.home.net')
+		self.mocker.replay()
+		cxm.xencluster.XenCluster.search_vm_started=cluster.search_vm_started
+		cxm.xencluster.XenCluster.activate_vm=cluster.activate_vm
+
+		self.cluster.nodes={'node1': n1, 'node2': n2, 'node3': n3}
+
+		e=self.assertRaises(cxm.xencluster.MultipleError, self.cluster.start_vms, ['test1.home.net', 'test2.home.net'])
+
+		n1_mocker.verify()
+		n2_mocker.verify()
+		n3_mocker.verify()
+
+	def test_start_vms__fail_deactivate(self):
+
+		n1_mocker = Mocker()
+		n1 = n1_mocker.mock()
+		n1.metrics.get_free_ram(False)
+		n1_mocker.result(150)
+		n1.metrics.get_free_ram()
+		n1_mocker.result(150)
+		n1.get_hostname()
+		n1_mocker.result("node1")
+		n1_mocker.count(0,None)
+		n1_mocker.replay()
+
+		n2_mocker = Mocker()
+		n2 = n2_mocker.mock()
+		n2.metrics.get_free_ram(False)
+		n2_mocker.result(200)
+		n2.metrics.get_free_ram()
+		n2_mocker.result(200)
+		n2.get_hostname()
+		n2_mocker.result("node2")
+		n2_mocker.count(0,None)
+		n2_mocker.replay()
+
+		n3_mocker = Mocker()
+		n3 = n3_mocker.mock()
+		n3.metrics.get_free_ram(False)
+		n3_mocker.result(520)
+		n3.metrics.get_free_ram()
+		n3_mocker.result(520)
+		n3.start_vm('test1.home.net')
+		n3_mocker.throw(Exception())
+		n3.deactivate_lv('test1.home.net')
+		n3_mocker.throw(cxm.node.SSHError('node3',"foobar",1))
+		n3.get_hostname()
+		n3_mocker.result("node3")
+		n3_mocker.count(0,None)
+		n3_mocker.replay()
+
+		cluster = self.mocker.mock()
+		cluster.search_vm_started('test1.home.net')
+		self.mocker.result([])
+		cluster.activate_vm(n3, 'test1.home.net')
+		self.mocker.replay()
+		cxm.xencluster.XenCluster.search_vm_started=cluster.search_vm_started
+		cxm.xencluster.XenCluster.activate_vm=cluster.activate_vm
+
+		self.cluster.nodes={'node1': n1, 'node2': n2, 'node3': n3}
+
+		e=self.assertRaises(cxm.xencluster.MultipleError, self.cluster.start_vms, ['test1.home.net'])
+		self.assertTrue(isinstance(e.value['test1.home.net'], cxm.node.SSHError))
+
+		n1_mocker.verify()
+		n2_mocker.verify()
+		n3_mocker.verify()
+
+	def test_start_vms__fail_autostartlink(self):
+
+		n1_mocker = Mocker()
+		n1 = n1_mocker.mock()
+		n1.metrics.get_free_ram(False)
+		n1_mocker.result(150)
+		n1.metrics.get_free_ram()
+		n1_mocker.result(150)
+		n1.get_hostname()
+		n1_mocker.result("node1")
+		n1_mocker.count(0,None)
+		n1_mocker.replay()
+
+		n2_mocker = Mocker()
+		n2 = n2_mocker.mock()
+		n2.metrics.get_free_ram(False)
+		n2_mocker.result(200)
+		n2.metrics.get_free_ram()
+		n2_mocker.result(200)
+		n2.get_hostname()
+		n2_mocker.result("node2")
+		n2_mocker.count(0,None)
+		n2_mocker.replay()
+
+		n3_mocker = Mocker()
+		n3 = n3_mocker.mock()
+		n3.metrics.get_free_ram(False)
+		n3_mocker.result(520)
+		n3.metrics.get_free_ram()
+		n3_mocker.result(520)
+		n3.start_vm('test1.home.net')
+		n3.enable_vm_autostart('test1.home.net')
+		n3_mocker.throw(cxm.node.SSHError('node3',"foobar",1))
+		n3.get_hostname()
+		n3_mocker.result("node3")
+		n3_mocker.count(0,None)
+		n3_mocker.replay()
+
+		cluster = self.mocker.mock()
+		cluster.search_vm_started('test1.home.net')
+		self.mocker.result([])
+		cluster.activate_vm(n3, 'test1.home.net')
+		self.mocker.replay()
+		cxm.xencluster.XenCluster.search_vm_started=cluster.search_vm_started
+		cxm.xencluster.XenCluster.activate_vm=cluster.activate_vm
+
+		self.cluster.nodes={'node1': n1, 'node2': n2, 'node3': n3}
+
+		self.cluster.start_vms(['test1.home.net'])
+
+		n1_mocker.verify()
+		n2_mocker.verify()
+		n3_mocker.verify()
+
 if __name__ == "__main__":
 	unittest.main()   
 

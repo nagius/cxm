@@ -667,5 +667,11 @@ class FenceNodeError(ClusterNodeError):
 	def __str__(self):
 		return "Error on %s : Cannot fence %s : %s" % (self.nodename, self.hostname, self.value)
 
+class XenError(ClusterNodeError):
+	"""This class is used when an internal error from Xen is detected."""
+
+	def __str__(self):
+		return "XEN Error on %s : %s" % (self.nodename, self.value)
+
 
 # vim: ts=4:sw=4:ai

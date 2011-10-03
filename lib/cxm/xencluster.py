@@ -31,9 +31,10 @@ import os, socket, time
 from sets import Set
 from twisted.internet import threads, defer
 
-import core, node, vm, loadbalancer
+import core, node, loadbalancer
 import logs as log
-from node import NotEnoughRamError, RunningVmError, NotRunningVmError
+from node import NotEnoughRamError, RunningVmError, NotRunningVmError, XenError
+from vm import VM
 from agent import Agent
 
 class XenCluster:
@@ -250,7 +251,7 @@ class XenCluster:
 		"""
 
 		# Resources checks
-		needed_ram=vm.VM(vmname).get_ram()
+		needed_ram=VM(vmname).get_ram()
 		free_ram=node.metrics.get_free_ram()
 		if needed_ram>free_ram: 
 			# Not enough ram, switching to another node
@@ -496,6 +497,85 @@ class XenCluster:
 
 		return safe
 
+	#########################################################
+	#
+	# Next function are designed to be called from the daemon
+	# and report most messages via log.
+
+	def start_vms(self, vmnames):
+		"""
+		Start the specified list of VM on the cluster, one after the other.
+		Nodes are choosen with a best-fit decreasing algorithm, so the cluster will not 
+		be balanced, but optimized for full-load.
+		This function is error-proof: if a vm start to fail, it will try to start others vms 
+		and report all errors only at the end.
+
+		vmnames - (List of String) VM hostnames 
+
+		Raise a MultipleError if one of many errors are detected.
+		"""
+		
+		assert type(vmnames) == list, "Param 'vmnames' should be a list."
+
+		# Get nodes
+		pool=self.get_nodes()
+
+		# Sort VMs to be started by ram
+		vms=[ VM(name) for name in vmnames ]
+		vms.sort(key=lambda x: x.get_start_ram(), reverse=True)
+		
+		failed=dict()
+		for vm in vms:
+			selected_node=None
+
+			# Check if vm is already started somewhere
+			nodes=self.search_vm_started(vm.name)
+			if(len(nodes)>0):
+				log.info("%s is already started on %s." % (vm.name, ", ".join([n.get_hostname() for n in nodes])))
+				continue
+	
+			# Sort nodes by free ram
+			pool.sort(key=lambda x: x.metrics.get_free_ram(False))
+			for node in pool:
+				if node.metrics.get_free_ram() >= vm.get_start_ram():
+					selected_node=node
+					break # Select first node with enough space
+
+			if selected_node is None:
+				# Not enough room for this one
+				failed[vm.name]=NotEnoughRamError("this cluster", "Cannot start "+vm.name)
+				continue  # Next !
+
+			log.info("Starting",vm.name,"on",selected_node.get_hostname())
+
+			# Start the vm 
+			try:
+				self.activate_vm(node,vm.name)
+
+				try:
+					selected_node.start_vm(vm.name)
+				except SystemExit, e:
+					# SystemExit are raised by Xen when xm_create fail
+					node.deactivate_lv(vm.name)
+					failed[vm.name]=XenError(node.get_hostname(), str(e))
+				except Exception, e:
+					node.deactivate_lv(vm.name)
+					failed[vm.name]=e
+				else:
+					try:
+						selected_node.enable_vm_autostart(vm.name)
+					except Exception, e:
+						# Don't report failure as an error, autostart link is not important
+						log.warn("Cannot enable autostart for %s : %s" % (vm.name, e))
+			except Exception, e:
+				# If activation fail, don't try to deactivate, will surely fail too.
+				# If deactivation fail, don't panic right now and try to start others vm.
+				failed[vm.name]=e
+				
+		# Raise final error after all start attempts
+		if len(failed)>0:
+			raise MultipleError(failed)
+
 	def recover(self, name, vm_list, partial_failure):
 		"""
 		Try to recover a node from a failure
@@ -508,6 +588,8 @@ class XenCluster:
 		
 		try:
 			# Try to get VM back on alive nodes
+			# If a vm is paused, eject will fail
+			# TODO: errors-proof eject
 			self.emergency_eject(self.get_node(name))
 			log.info("VM from %s successfully migrated on healthy nodes." % (name))
 
@@ -542,6 +624,8 @@ class XenCluster:
 		log.warn("All VM on %s are dead. Fencing now !" % (name))
 		self.get_local_node().fence(name)
 
+		# TODO: remove fenced node from current cluster instance
+
 		log.info("Restarting dead VM from %s on healthy nodes..." % (name))
 		# TODO: use a better algorithm
 		for vm in vm_list:
@@ -573,5 +657,15 @@ class NotInClusterError(ClusterError):
 
 	def __str__(self):
 		return "Cluster error: Node %s is not a cluster's member." % (self.value)
+
+class MultipleError(ClusterError):
+	"""This class is used when multiple exceptions are catched."""
+
+	def __str__(self):
+		msg=""
+		for name in self.value.keys():
+			msg = "%s\n - %s: %s" % (msg, name, self.value[name])
+
+		return "Cluster multiple error: %s" % (msg)
 
 # vim: ts=4:sw=4:ai
