@@ -578,10 +578,15 @@ class XenCluster:
 
 	def recover(self, name, vm_list, partial_failure):
 		"""
-		Try to recover a node from a failure
+		Try to recover a node from a failure, by migrating or re-starting vm.
+
+		name - (String) Name of the failed node.
+		vm_list - (List of strings) List of the vm names running on the failed node.
+		partial_failure - (bool) True if contact with failed node is not fully lost.
 
 		Return True if recover is successfull
 		Return False if recover cannot be done (i.e. service still alive)
+		Raise an Excpetion if something goes bad
 		"""
 
 		log.info("Trying to recover", name, "...")
@@ -624,12 +629,12 @@ class XenCluster:
 		log.warn("All VM on %s are dead. Fencing now !" % (name))
 		self.get_local_node().fence(name)
 
-		# TODO: remove fenced node from current cluster instance
+		# Remove fenced node from current cluster instance
+		if name in self.nodes.keys():
+			del self.nodes[name]
 
 		log.info("Restarting dead VM from %s on healthy nodes..." % (name))
-		# TODO: use a better algorithm
-		for vm in vm_list:
-			self.start_vm(self.get_local_node(), vm, False)
+		self.start_vms(vm_list)
 
 		return True
 
