@@ -999,6 +999,207 @@ class XenClusterTests(MockerTestCase):
 		n2_mocker.verify()
 		n3_mocker.verify()
 
+	def test_recover__eject_ok(self):
+
+		n1_mocker = Mocker()
+		n1 = n1_mocker.mock()
+		n1_mocker.replay()
+
+		n2_mocker = Mocker()
+		n2 = n2_mocker.mock()
+		n2.fence('node1')
+		n2_mocker.throw(Exception('foobar'))
+		n2_mocker.replay()
+
+		n3_mocker = Mocker()
+		n3 = n3_mocker.mock()
+		n3_mocker.replay()
+
+		cluster = self.mocker.mock()
+		cluster.emergency_eject(n1)
+		cluster.get_local_node()
+		self.mocker.result(n2)
+		self.mocker.replay()
+		cxm.xencluster.XenCluster.emergency_eject=cluster.emergency_eject
+		cxm.xencluster.XenCluster.get_local_node=cluster.get_local_node
+
+		self.cluster.nodes={'node1': n1, 'node2': n2, 'node3': n3}
+
+		self.assertTrue(self.cluster.recover('node1', ['test1.home.net', 'test2.home.net'], False))
+
+		n1_mocker.verify()
+		n2_mocker.verify()
+		n3_mocker.verify()
+
+	def test_recover__eject_noram(self):
+
+		n1_mocker = Mocker()
+		n1 = n1_mocker.mock()
+		n1_mocker.replay()
+
+		n2_mocker = Mocker()
+		n2 = n2_mocker.mock()
+		n2_mocker.replay()
+
+		n3_mocker = Mocker()
+		n3 = n3_mocker.mock()
+		n3_mocker.replay()
+
+		cluster = self.mocker.mock()
+		cluster.emergency_eject(n1)
+		self.mocker.throw(cxm.node.NotEnoughRamError('node2','foobar'))
+		self.mocker.replay()
+		cxm.xencluster.XenCluster.emergency_eject=cluster.emergency_eject
+
+		self.cluster.nodes={'node1': n1, 'node2': n2, 'node3': n3}
+
+		self.assertRaises(cxm.node.NotEnoughRamError, self.cluster.recover, 'node1', ['test1.home.net', 'test2.home.net'], False)
+
+		n1_mocker.verify()
+		n2_mocker.verify()
+		n3_mocker.verify()
+
+	def test_recover__eject_fail_partial(self):
+
+		n1_mocker = Mocker()
+		n1 = n1_mocker.mock()
+		n1_mocker.replay()
+
+		n2_mocker = Mocker()
+		n2 = n2_mocker.mock()
+		n2_mocker.replay()
+
+		n3_mocker = Mocker()
+		n3 = n3_mocker.mock()
+		n3_mocker.replay()
+
+		cluster = self.mocker.mock()
+		cluster.emergency_eject(n1)
+		self.mocker.throw(Exception('foobar'))
+		self.mocker.replay()
+		cxm.xencluster.XenCluster.emergency_eject=cluster.emergency_eject
+
+		self.cluster.nodes={'node1': n1, 'node2': n2, 'node3': n3}
+
+		self.assertFalse(self.cluster.recover('node1', ['test1.home.net', 'test2.home.net'], True))
+
+		n1_mocker.verify()
+		n2_mocker.verify()
+		n3_mocker.verify()
+
+	def test_recover__eject_fail_ping_ok(self):
+
+		n1_mocker = Mocker()
+		n1 = n1_mocker.mock()
+		n1.ping(['test1.home.net', 'test2.home.net'])
+		n1_mocker.result(False)
+		n1_mocker.replay()
+
+		n2_mocker = Mocker()
+		n2 = n2_mocker.mock()
+		n2.ping(['test1.home.net', 'test2.home.net'])
+		n2_mocker.result(True)
+		n2_mocker.replay()
+
+		n3_mocker = Mocker()
+		n3 = n3_mocker.mock()
+		n3.ping(['test1.home.net', 'test2.home.net'])
+		n3_mocker.result(False)
+		n3_mocker.replay()
+
+		cluster = self.mocker.mock()
+		cluster.emergency_eject(n1)
+		self.mocker.throw(Exception('foobar'))
+		self.mocker.replay()
+		cxm.xencluster.XenCluster.emergency_eject=cluster.emergency_eject
+
+		self.cluster.nodes={'node1': n1, 'node2': n2, 'node3': n3}
+
+		self.assertFalse(self.cluster.recover('node1', ['test1.home.net', 'test2.home.net'], False))
+
+		n1_mocker.verify()
+		n2_mocker.verify()
+		n3_mocker.verify()
+
+	def test_recover__eject_fail_fence_fail(self):
+
+		n1_mocker = Mocker()
+		n1 = n1_mocker.mock()
+		n1.ping(['test1.home.net', 'test2.home.net'])
+		n1_mocker.result(False)
+		n1_mocker.replay()
+
+		n2_mocker = Mocker()
+		n2 = n2_mocker.mock()
+		n2.ping(['test1.home.net', 'test2.home.net'])
+		n2_mocker.result(False)
+		n2.fence('node1')
+		n2_mocker.throw(cxm.node.FenceNodeError('node3',"foobar"))
+		n2_mocker.replay()
+
+		n3_mocker = Mocker()
+		n3 = n3_mocker.mock()
+		n3.ping(['test1.home.net', 'test2.home.net'])
+		n3_mocker.result(False)
+		n3_mocker.replay()
+
+		cluster = self.mocker.mock()
+		cluster.emergency_eject(n1)
+		self.mocker.throw(Exception('foobar'))
+		cluster.get_local_node()
+		self.mocker.result(n2)
+		self.mocker.replay()
+		cxm.xencluster.XenCluster.emergency_eject=cluster.emergency_eject
+		cxm.xencluster.XenCluster.get_local_node=cluster.get_local_node
+
+		self.cluster.nodes={'node1': n1, 'node2': n2, 'node3': n3}
+
+		self.assertRaises(cxm.node.FenceNodeError, self.cluster.recover, 'node1', ['test1.home.net', 'test2.home.net'], False)
+
+		n1_mocker.verify()
+		n2_mocker.verify()
+		n3_mocker.verify()
+
+	def test_recover__eject_fail_fence_ok_start_ok(self):
+
+		n1_mocker = Mocker()
+		n1 = n1_mocker.mock()
+		n1.ping(['test1.home.net', 'test2.home.net'])
+		n1_mocker.result(False)
+		n1_mocker.replay()
+
+		n2_mocker = Mocker()
+		n2 = n2_mocker.mock()
+		n2.ping(['test1.home.net', 'test2.home.net'])
+		n2_mocker.result(False)
+		n2.fence('node1')
+		n2_mocker.replay()
+
+		n3_mocker = Mocker()
+		n3 = n3_mocker.mock()
+		n3.ping(['test1.home.net', 'test2.home.net'])
+		n3_mocker.result(False)
+		n3_mocker.replay()
+
+		cluster = self.mocker.mock()
+		cluster.emergency_eject(n1)
+		self.mocker.throw(Exception('foobar'))
+		cluster.get_local_node()
+		self.mocker.result(n2)
+		start_vms = self.mocker.replace(cxm.xencluster.XenCluster.start_vms)
+		start_vms(['test1.home.net', 'test2.home.net'])
+		self.mocker.replay()
+		cxm.xencluster.XenCluster.emergency_eject=cluster.emergency_eject
+		cxm.xencluster.XenCluster.get_local_node=cluster.get_local_node
+
+		self.cluster.nodes={'node1': n1, 'node2': n2, 'node3': n3}
+
+		self.assertTrue(self.cluster.recover('node1', ['test1.home.net', 'test2.home.net'], False))
+
+		n1_mocker.verify()
+		n2_mocker.verify()
+		n3_mocker.verify()
+
 if __name__ == "__main__":
 	unittest.main()   
 

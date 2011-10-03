@@ -586,8 +586,12 @@ class XenCluster:
 
 		Return True if recover is successfull
 		Return False if recover cannot be done (i.e. service still alive)
-		Raise an Excpetion if something goes bad
+		Raise an Exception if something goes wrong.
 		"""
+
+		assert type(name) == str, "Param 'name' should be a string."
+		assert type(vm_list) == list, "Param 'vm_list' should be a list."
+		assert type(partial_failure) == bool, "Param 'partial_failure' should be a bool."
 
 		log.info("Trying to recover", name, "...")
 		
@@ -614,7 +618,7 @@ class XenCluster:
 			# Next step of recovery process
 			pass
 		except Exception, e:
-			log.err("Cannnot get the VMs back:", e)
+			log.err("Cannot get the VMs back:", e)
 
 		if partial_failure:
 			# Cannot recover, node still alive
