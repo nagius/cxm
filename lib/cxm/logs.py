@@ -29,29 +29,50 @@ from twisted.python import log
 import core
 import syslog
 
+# Flag to remember if init() was called
+open=False
+
 def init(name):
+	global open
 	syslog.openlog(name, syslog.LOG_PID, syslog.LOG_DAEMON)
+	open=True
 
 def info(*args):
-	log.msg(*args)
+	if open:
+		log.msg(*args)
+	else:
+		print " ".join(map(str, args))
 
 def debug(*args):
 	if core.cfg['DAEMON_DEBUG']:
-		log.msg("DEBUG:", *args)
+		msg = "DEBUG: " + " ".join(map(str, args))
+		if open:
+			log.msg(msg)
+		else:
+			print msg
 		
 def warn(*args):
-	message = " ".join(map(str, args))
-	log.msg("Warning: %s" % (message))
-	syslog.syslog(syslog.LOG_WARNING, message)
+	msg = "Warning: " + " ".join(map(str, args))
+	if open:
+		log.msg(msg)
+		syslog.syslog(syslog.LOG_WARNING, msg)
+	else:
+		print msg
 
 def err(*args):
-	message = " ".join(map(str, args))
-	log.err("Error: %s" % (message))
-	syslog.syslog(syslog.LOG_ERR, message)
+	msg = "Error: " + " ".join(map(str, args))
+	if open:
+		log.err(msg)
+		syslog.syslog(syslog.LOG_ERR, msg)
+	else:
+		print msg
 
 def emerg(*args):
-	message = " ".join(map(str, args))
-	log.err("CRITICAL ERROR: %s" % (message))
-	syslog.syslog(syslog.LOG_EMERG, message)
+	msg = "CRITICAL ERROR: " + " ".join(map(str, args))
+	if open:
+		log.err(msg)
+		syslog.syslog(syslog.LOG_EMERG, msg)
+	else:
+		print msg
 
 # vim: ts=4:sw=4:ai
