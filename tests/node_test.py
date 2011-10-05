@@ -213,35 +213,33 @@ class NodeTests(MockerTestCase):
 	def test_deactivate_lv_vm_running(self):
 		vmname="test1.home.net"
 
-		n = self.mocker.mock()
-		n.is_vm_started(vmname)
+		is_vm_started = self.mocker.replace(self.node.is_vm_started)
+		is_vm_started(vmname)
 		self.mocker.result(True)
 		self.mocker.replay()
-		self.node.is_vm_started=n.is_vm_started
 
 		self.assertRaises(cxm.node.RunningVmError,self.node.deactivate_lv,vmname) 
 
 	def test_deactivate_lv_bad_input(self):
 
 		n = self.mocker.mock()
-		n.is_vm_started(ANY)
+		is_vm_started = self.mocker.replace(self.node.is_vm_started)
+		is_vm_started(ANY)
 		self.mocker.result(False)
 		self.mocker.replay()
-		self.node.is_vm_started=n.is_vm_started
 
 		self.assertRaises(IOError,self.node.deactivate_lv,"nonexist") 
 
 	def test_deactivate_all_lv(self):
 		names=['test1.home.net', 'test2.home.net', 'testcfg.home.net']
 
-		n = self.mocker.mock()
+		is_vm_started = self.mocker.replace(self.node.is_vm_started)
+		deactivate_lv = self.mocker.replace(self.node.deactivate_lv)
 		for name in names:
-			n.is_vm_started(name)
+			is_vm_started(name)
 			self.mocker.result(False)
-			n.deactivate_lv(name)
+			deactivate_lv(name)
 		self.mocker.replay()
-		self.node.is_vm_started=n.is_vm_started
-		self.node.deactivate_lv=n.deactivate_lv
 
 		self.node.deactivate_all_lv()
 		
@@ -288,14 +286,13 @@ class NodeTests(MockerTestCase):
 		vmname="test1.home.net"
 
 		n_mocker = Mocker()
-		n = n_mocker.mock()
-		n.is_vm_started(vmname)
+		is_vm_started = n_mocker.replace(self.node.is_vm_started)
+		is_vm_started(vmname)
 		n_mocker.result(True)
-		n.is_vm_started(vmname)
+		is_vm_started(vmname)
 		n_mocker.result(False)
 		n_mocker.count(2)
 		n_mocker.replay()
-		self.node.is_vm_started=n.is_vm_started
 
 		xs = self.mocker.mock()
 		xs.xenapi.VM.get_by_name_label(vmname)
@@ -312,14 +309,13 @@ class NodeTests(MockerTestCase):
 		vmname="test1.home.net"
 
 		n_mocker = Mocker()
-		n = n_mocker.mock()
-		n.is_vm_started(vmname)
+		is_vm_started = n_mocker.replace(self.node.is_vm_started)
+		is_vm_started(vmname)
 		n_mocker.result(True)
-		n.is_vm_started(vmname)
+		is_vm_started(vmname)
 		n_mocker.result(False)
 		n_mocker.count(2)
 		n_mocker.replay()
-		self.node.is_vm_started=n.is_vm_started
 
 		xs = self.mocker.mock()
 		xs.xenapi.VM.get_by_name_label(vmname)
@@ -335,11 +331,10 @@ class NodeTests(MockerTestCase):
 	def test_shutdown__not_running(self):
 		vmname="test1.home.net"
 
-		n = self.mocker.mock()
-		n.is_vm_started(vmname)
+		is_vm_started = self.mocker.replace(self.node.is_vm_started)
+		is_vm_started(vmname)
 		self.mocker.result(False)
 		self.mocker.replay()
-		self.node.is_vm_started=n.is_vm_started
 
 		self.assertRaises(cxm.node.NotRunningVmError,self.node.shutdown,vmname) 
 
@@ -457,44 +452,40 @@ class NodeTests(MockerTestCase):
 
 	def test_check_activated_lvs_ok(self):
 
-		n = self.mocker.mock()
-		n.get_vms()
+		get_vms = self.mocker.replace(self.node.get_vms)
+		get_vms()
 		self.mocker.result([cxm.vm.VM("test1.home.net")])
 		self.mocker.replay()
-		self.node.get_vms=n.get_vms
 		
 		result=self.node.check_activated_lvs()
 		self.assertEqual(result,False)
 
 	def test_check_missing_lvs__ok(self):
 
-		n = self.mocker.mock()
-		n.get_possible_vm_names()
+		get_possible_vm_names = self.mocker.replace(self.node.get_possible_vm_names)
+		get_possible_vm_names()
 		self.mocker.result(["test1.home.net"])
 		self.mocker.replay()
-		self.node.get_possible_vm_names=n.get_possible_vm_names
 		
 		result=self.node.check_missing_lvs()
 		self.assertEqual(result,True)
 
 	def test_check_missing_lvs__nok(self):
 
-		n = self.mocker.mock()
-		n.get_possible_vm_names()
+		get_possible_vm_names = self.mocker.replace(self.node.get_possible_vm_names)
+		get_possible_vm_names()
 		self.mocker.result(["test1.home.net","test2.home.net"])
 		self.mocker.replay()
-		self.node.get_possible_vm_names=n.get_possible_vm_names
 		
 		result=self.node.check_missing_lvs()
 		self.assertEqual(result,False)
 
 	def test_check_autostart(self):
 
-		n = self.mocker.mock()
-		n.get_vms()
+		get_vms = self.mocker.replace(self.node.get_vms)
+		get_vms()
 		self.mocker.result([cxm.vm.VM("test1.home.net")])
 		self.mocker.replay()
-		self.node.get_vms=n.get_vms
 
 		result=self.node.check_autostart()	
 		self.assertEqual(result,False)

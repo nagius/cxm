@@ -410,7 +410,7 @@ class XenClusterTests(MockerTestCase):
 		n2_mocker.result(True)
 		n2_mocker.replay()
 
-		get_local_node = self.mocker.replace(cxm.xencluster.XenCluster.get_local_node)
+		get_local_node = self.mocker.replace(self.cluster.get_local_node)
 		get_local_node()
 		self.mocker.result(n1)
 		self.mocker.replay()
@@ -464,7 +464,7 @@ class XenClusterTests(MockerTestCase):
 		self.assertEqual(self.cluster.check_bridges(),True)
 
 	def test_emergency_eject(self):
-		migrate = self.mocker.replace(cxm.xencluster.XenCluster.migrate)
+		migrate = self.mocker.replace(self.cluster.migrate)
 		migrate('vm1', 'node1', 'node3')
 		migrate('vm3', 'node1', 'node2')
 		self.mocker.replay()
@@ -557,7 +557,7 @@ class XenClusterTests(MockerTestCase):
 	def test_loadbalance(self):
 		cxm.core.cfg['LB_MIN_GAIN']=10
 
-		migrate = self.mocker.replace(cxm.xencluster.XenCluster.migrate)
+		migrate = self.mocker.replace(self.cluster.migrate)
 		migrate('vm1', 'node1', 'node3')
 		self.mocker.replay()
 
@@ -697,18 +697,17 @@ class XenClusterTests(MockerTestCase):
 		n3_mocker.count(0,None)
 		n3_mocker.replay()
 
-		cluster = self.mocker.mock()
-		cluster.search_vm_started('test1.home.net')
+		search_vm_started = self.mocker.replace(self.cluster.search_vm_started)
+		search_vm_started('test1.home.net')
 		self.mocker.result([])
-		cluster.search_vm_started('test2.home.net')
+		search_vm_started('test2.home.net')
 		self.mocker.result([])
-		cluster.search_vm_started('testcfg.home.net')
+		search_vm_started('testcfg.home.net')
 		self.mocker.result([n2])
-		cluster.activate_vm(n3, 'test1.home.net')
-		cluster.activate_vm(n1, 'test2.home.net')
+		activate_vm = self.mocker.replace(self.cluster.activate_vm)
+		activate_vm(n3, 'test1.home.net')
+		activate_vm(n1, 'test2.home.net')
 		self.mocker.replay()
-		cxm.xencluster.XenCluster.search_vm_started=cluster.search_vm_started
-		cxm.xencluster.XenCluster.activate_vm=cluster.activate_vm
 
 		self.cluster.nodes={'node1': n1, 'node2': n2, 'node3': n3}
 
@@ -753,11 +752,10 @@ class XenClusterTests(MockerTestCase):
 		n3_mocker.count(0,None)
 		n3_mocker.replay()
 
-		cluster = self.mocker.mock()
-		cluster.search_vm_started('test1.home.net')
+		search_vm_started = self.mocker.replace(self.cluster.search_vm_started)
+		search_vm_started('test1.home.net')
 		self.mocker.result([])
 		self.mocker.replay()
-		cxm.xencluster.XenCluster.search_vm_started=cluster.search_vm_started
 
 		self.cluster.nodes={'node1': n1, 'node2': n2, 'node3': n3}
 
@@ -803,14 +801,13 @@ class XenClusterTests(MockerTestCase):
 		n3_mocker.count(0,None)
 		n3_mocker.replay()
 
-		cluster = self.mocker.mock()
-		cluster.search_vm_started('test1.home.net')
+		search_vm_started = self.mocker.replace(self.cluster.search_vm_started)
+		search_vm_started('test1.home.net')
 		self.mocker.result([])
-		cluster.activate_vm(n3, 'test1.home.net')
+		activate_vm = self.mocker.replace(self.cluster.activate_vm)
+		activate_vm(n3, 'test1.home.net')
 		self.mocker.throw(cxm.node.ShellError('node3',"foobar",1))
 		self.mocker.replay()
-		cxm.xencluster.XenCluster.search_vm_started=cluster.search_vm_started
-		cxm.xencluster.XenCluster.activate_vm=cluster.activate_vm
 
 		self.cluster.nodes={'node1': n1, 'node2': n2, 'node3': n3}
 
@@ -870,16 +867,15 @@ class XenClusterTests(MockerTestCase):
 		n3_mocker.count(0,None)
 		n3_mocker.replay()
 
-		cluster = self.mocker.mock()
-		cluster.search_vm_started('test1.home.net')
+		search_vm_started = self.mocker.replace(self.cluster.search_vm_started)
+		search_vm_started('test1.home.net')
 		self.mocker.result([])
-		cluster.search_vm_started('test2.home.net')
+		search_vm_started('test2.home.net')
 		self.mocker.result([])
-		cluster.activate_vm(n3, 'test1.home.net')
-		cluster.activate_vm(n1, 'test2.home.net')
+		activate_vm = self.mocker.replace(self.cluster.activate_vm)
+		activate_vm(n3, 'test1.home.net')
+		activate_vm(n1, 'test2.home.net')
 		self.mocker.replay()
-		cxm.xencluster.XenCluster.search_vm_started=cluster.search_vm_started
-		cxm.xencluster.XenCluster.activate_vm=cluster.activate_vm
 
 		self.cluster.nodes={'node1': n1, 'node2': n2, 'node3': n3}
 
@@ -928,13 +924,12 @@ class XenClusterTests(MockerTestCase):
 		n3_mocker.count(0,None)
 		n3_mocker.replay()
 
-		cluster = self.mocker.mock()
-		cluster.search_vm_started('test1.home.net')
+		search_vm_started = self.mocker.replace(self.cluster.search_vm_started)
+		search_vm_started('test1.home.net')
 		self.mocker.result([])
-		cluster.activate_vm(n3, 'test1.home.net')
+		activate_vm = self.mocker.replace(self.cluster.activate_vm)
+		activate_vm(n3, 'test1.home.net')
 		self.mocker.replay()
-		cxm.xencluster.XenCluster.search_vm_started=cluster.search_vm_started
-		cxm.xencluster.XenCluster.activate_vm=cluster.activate_vm
 
 		self.cluster.nodes={'node1': n1, 'node2': n2, 'node3': n3}
 
@@ -983,13 +978,12 @@ class XenClusterTests(MockerTestCase):
 		n3_mocker.count(0,None)
 		n3_mocker.replay()
 
-		cluster = self.mocker.mock()
-		cluster.search_vm_started('test1.home.net')
+		search_vm_started = self.mocker.replace(self.cluster.search_vm_started)
+		search_vm_started('test1.home.net')
 		self.mocker.result([])
-		cluster.activate_vm(n3, 'test1.home.net')
+		activate_vm = self.mocker.replace(self.cluster.activate_vm)
+		activate_vm(n3, 'test1.home.net')
 		self.mocker.replay()
-		cxm.xencluster.XenCluster.search_vm_started=cluster.search_vm_started
-		cxm.xencluster.XenCluster.activate_vm=cluster.activate_vm
 
 		self.cluster.nodes={'node1': n1, 'node2': n2, 'node3': n3}
 
@@ -1015,13 +1009,12 @@ class XenClusterTests(MockerTestCase):
 		n3 = n3_mocker.mock()
 		n3_mocker.replay()
 
-		cluster = self.mocker.mock()
-		cluster.emergency_eject(n1)
-		cluster.get_local_node()
+		emergency_eject = self.mocker.replace(self.cluster.emergency_eject)
+		emergency_eject(n1)
+		get_local_node = self.mocker.replace(self.cluster.get_local_node)
+		get_local_node()
 		self.mocker.result(n2)
 		self.mocker.replay()
-		cxm.xencluster.XenCluster.emergency_eject=cluster.emergency_eject
-		cxm.xencluster.XenCluster.get_local_node=cluster.get_local_node
 
 		self.cluster.nodes={'node1': n1, 'node2': n2, 'node3': n3}
 
@@ -1045,11 +1038,10 @@ class XenClusterTests(MockerTestCase):
 		n3 = n3_mocker.mock()
 		n3_mocker.replay()
 
-		cluster = self.mocker.mock()
-		cluster.emergency_eject(n1)
+		emergency_eject = self.mocker.replace(self.cluster.emergency_eject)
+		emergency_eject(n1)
 		self.mocker.throw(cxm.node.NotEnoughRamError('node2','foobar'))
 		self.mocker.replay()
-		cxm.xencluster.XenCluster.emergency_eject=cluster.emergency_eject
 
 		self.cluster.nodes={'node1': n1, 'node2': n2, 'node3': n3}
 
@@ -1073,11 +1065,10 @@ class XenClusterTests(MockerTestCase):
 		n3 = n3_mocker.mock()
 		n3_mocker.replay()
 
-		cluster = self.mocker.mock()
-		cluster.emergency_eject(n1)
+		emergency_eject = self.mocker.replace(self.cluster.emergency_eject)
+		emergency_eject(n1)
 		self.mocker.throw(Exception('foobar'))
 		self.mocker.replay()
-		cxm.xencluster.XenCluster.emergency_eject=cluster.emergency_eject
 
 		self.cluster.nodes={'node1': n1, 'node2': n2, 'node3': n3}
 
@@ -1107,11 +1098,10 @@ class XenClusterTests(MockerTestCase):
 		n3_mocker.result(False)
 		n3_mocker.replay()
 
-		cluster = self.mocker.mock()
-		cluster.emergency_eject(n1)
+		emergency_eject = self.mocker.replace(self.cluster.emergency_eject)
+		emergency_eject(n1)
 		self.mocker.throw(Exception('foobar'))
 		self.mocker.replay()
-		cxm.xencluster.XenCluster.emergency_eject=cluster.emergency_eject
 
 		self.cluster.nodes={'node1': n1, 'node2': n2, 'node3': n3}
 
@@ -1143,14 +1133,13 @@ class XenClusterTests(MockerTestCase):
 		n3_mocker.result(False)
 		n3_mocker.replay()
 
-		cluster = self.mocker.mock()
-		cluster.emergency_eject(n1)
+		emergency_eject = self.mocker.replace(self.cluster.emergency_eject)
+		emergency_eject(n1)
 		self.mocker.throw(Exception('foobar'))
-		cluster.get_local_node()
+		get_local_node = self.mocker.replace(self.cluster.get_local_node)
+		get_local_node()
 		self.mocker.result(n2)
 		self.mocker.replay()
-		cxm.xencluster.XenCluster.emergency_eject=cluster.emergency_eject
-		cxm.xencluster.XenCluster.get_local_node=cluster.get_local_node
 
 		self.cluster.nodes={'node1': n1, 'node2': n2, 'node3': n3}
 
@@ -1181,16 +1170,15 @@ class XenClusterTests(MockerTestCase):
 		n3_mocker.result(False)
 		n3_mocker.replay()
 
-		cluster = self.mocker.mock()
-		cluster.emergency_eject(n1)
+		emergency_eject = self.mocker.replace(self.cluster.emergency_eject)
+		emergency_eject(n1)
 		self.mocker.throw(Exception('foobar'))
-		cluster.get_local_node()
+		get_local_node = self.mocker.replace(self.cluster.get_local_node)
+		get_local_node()
 		self.mocker.result(n2)
-		start_vms = self.mocker.replace(cxm.xencluster.XenCluster.start_vms)
+		start_vms = self.mocker.replace(self.cluster.start_vms)
 		start_vms(['test1.home.net', 'test2.home.net'])
 		self.mocker.replay()
-		cxm.xencluster.XenCluster.emergency_eject=cluster.emergency_eject
-		cxm.xencluster.XenCluster.get_local_node=cluster.get_local_node
 
 		self.cluster.nodes={'node1': n1, 'node2': n2, 'node3': n3}
 

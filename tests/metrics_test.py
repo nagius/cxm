@@ -117,8 +117,8 @@ class MetricsTests(MockerTestCase):
 				'drbd0': {'Read': 9859225600, 'Write': 1083428864}
 			}
 
-		n = self.mocker.mock()
-		n.get_vgs_map()
+		get_vgs_map = self.mocker.replace(self.node.get_vgs_map)
+		get_vgs_map()
 		self.mocker.result({
 			'LVM_XEN': ['cciss/c0d0p7'],
 			'MULTI': ['sdb', 'sdc'],
@@ -126,7 +126,6 @@ class MetricsTests(MockerTestCase):
 			'vgrack': ['sda1']
 		})
 		self.mocker.replay()
-		self.node.get_vgs_map=n.get_vgs_map
 
 		result=self.metrics.get_host_pvs_io()
 		self.assertEqual(result, val)
@@ -138,15 +137,16 @@ class MetricsTests(MockerTestCase):
 				'vgrack': {'Read': 257578310656, 'Write': 2923501056}
 			}
 
-		n = self.mocker.mock()
-		n.get_vgs_map()
+		get_vgs_map = self.mocker.replace(self.node.get_vgs_map)
+		get_vgs_map()
 		self.mocker.result({
 			'LVM_XEN': ['cciss/c0d0p7'],
 			'MULTI': ['sdb', 'sdc'],
 			'DRBD': ['drbd0'],
 			'vgrack': ['sda1']
 		})
-		n.get_host_pvs_io()
+		get_host_pvs_io = self.mocker.replace(self.metrics.get_host_pvs_io)
+		get_host_pvs_io()
 		self.mocker.result({
 			'cciss/c0d0p7': {'Read': 9859116032, 'Write': 1083310080}, 
 			'sdc': {'Read': 257978694656, 'Write': 4485101056}, 
@@ -155,8 +155,6 @@ class MetricsTests(MockerTestCase):
 			'drbd0': {'Read': 9859225600, 'Write': 1083428864}
 		})
 		self.mocker.replay()
-		self.node.get_vgs_map=n.get_vgs_map
-		self.metrics.get_host_pvs_io=n.get_host_pvs_io
 
 		result=self.metrics.get_host_vgs_io()
 		self.assertEqual(result, val)
@@ -227,14 +225,13 @@ class MetricsTests(MockerTestCase):
 		val= {  'test1.home.net': {'Read': 0, 'Write': 0 }, 
 				'test2.home.net': {'Read': 0, 'Write': 0 }}
 
-		n = self.mocker.mock()
-		n.get_vms_disk_io(ANY)
+		get_vms_disk_io = self.mocker.replace(self.metrics.get_vms_disk_io)
+		get_vms_disk_io(ANY)
 		self.mocker.result({
 			'test2.home.net': {'Read': 9757, 'Write': 87547}, 
 			'test1.home.net': {'Read': 8573, 'Write': 975}
 		})
 		self.mocker.replay()
-		self.metrics.get_vms_disk_io=n.get_vms_disk_io
 		
 		result=self.metrics.get_vms_disk_io_rate()
 		self.assertEqual(result, val)
@@ -343,24 +340,23 @@ class MetricsTests(MockerTestCase):
 				'cpu': 0.0}
 			}
 
-		n = self.mocker.mock()
-		n.get_vms_cpu_usage()
+		get_vms_cpu_usage = self.mocker.replace(self.metrics.get_vms_cpu_usage)
+		get_vms_cpu_usage()
 		self.mocker.result({'test15.home.net': 0.0, 'test22.home.net': 0.0})
-		n.get_vms_net_io(ANY)
+		get_vms_net_io = self.mocker.replace(self.metrics.get_vms_net_io)
+		get_vms_net_io(ANY)
 		self.mocker.result({
 			'test15.home.net': [{'Rx': 7900011, 'Tx': 1010}, {'Rx': 8531582, 'Tx': 384}], 
 			'test22.home.net': []
 		})
-		n.get_vms_disk_io(ANY)
+		get_vms_disk_io = self.mocker.replace(self.metrics.get_vms_disk_io)
+		get_vms_disk_io(ANY)
 		self.mocker.result({
 			'test15.home.net': {'Read': 6, 'Write': 68 },
 			'test22.home.net': {'Read': 1931, 'Write': 2293},
 			'test47.home.net': {'Read': 13, 'Write': 23}
 		})
 		self.mocker.replay()
-		self.metrics.get_vms_cpu_usage=n.get_vms_cpu_usage
-		self.metrics.get_vms_net_io=n.get_vms_net_io
-		self.metrics.get_vms_disk_io=n.get_vms_disk_io
 
 		result=self.metrics.get_vms_record()
 		self.assertEqual(result, val)
