@@ -476,6 +476,7 @@ class XenClusterTests(MockerTestCase):
 		vm1_mocker.count(1,None)
 		vm1.name
 		vm1_mocker.result('vm1')
+		vm1_mocker.count(1,None)
 		vm1_mocker.replay()
 
 		vm2_mocker = Mocker()
@@ -485,6 +486,7 @@ class XenClusterTests(MockerTestCase):
 		vm2_mocker.count(1,None)
 		vm2.name
 		vm2_mocker.result('vm2')
+		vm2_mocker.count(1,None)
 		vm2_mocker.replay()
 
 		n1_mocker = Mocker()
@@ -560,6 +562,7 @@ class XenClusterTests(MockerTestCase):
 		vm2_mocker.count(1,None)
 		vm2.name
 		vm2_mocker.result('vm2')
+		vm2_mocker.count(1,None)
 		vm2_mocker.replay()
 
 		vm3_mocker = Mocker()

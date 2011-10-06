@@ -41,7 +41,8 @@ def info(*args):
 	if open:
 		log.msg(*args)
 	else:
-		print " ".join(map(str, args))
+		if not core.cfg['QUIET']:
+			print " ".join(map(str, args))
 
 def debug(*args):
 	if core.cfg['DAEMON_DEBUG']:

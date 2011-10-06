@@ -361,7 +361,7 @@ class XenCluster:
 				failed[vm.name]=NotEnoughRamError(ejected_node.get_hostname(), "Cannot migrate "+vm.name)
 				continue  # Next !
 
-			if not core.cfg['QUIET']: print "Migrating",vm.name,"to",selected_node.get_hostname()
+			log.info("Migrating", vm.name, "to", selected_node.get_hostname())
 			try:
 				self.migrate(vm.name,ejected_node.get_hostname(),selected_node.get_hostname())
 			except Exception, e:
