@@ -463,10 +463,10 @@ class XenClusterTests(MockerTestCase):
 
 		self.assertEqual(self.cluster.check_bridges(),True)
 
-	def test_emergency_eject(self):
+	def test_emergency_eject__ok(self):
 		migrate = self.mocker.replace(self.cluster.migrate)
 		migrate('vm1', 'node1', 'node3')
-		migrate('vm3', 'node1', 'node2')
+		migrate('vm2', 'node1', 'node2')
 		self.mocker.replay()
 
 		vm1_mocker = Mocker()
@@ -481,7 +481,82 @@ class XenClusterTests(MockerTestCase):
 		vm2_mocker = Mocker()
 		vm2 = vm2_mocker.mock()
 		vm2.get_ram()
-		vm2_mocker.result(256)
+		vm2_mocker.result(128)
+		vm2_mocker.count(1,None)
+		vm2.name
+		vm2_mocker.result('vm2')
+		vm2_mocker.replay()
+
+		n1_mocker = Mocker()
+		n1 = n1_mocker.mock(cxm.node.Node)
+		n1.get_vms()
+		n1_mocker.result([vm1,vm2])
+		n1.get_hostname()
+		n1_mocker.result("node1")
+		n1_mocker.count(1,None)
+		n1_mocker.replay()
+
+		n2_mocker = Mocker()
+		n2 = n2_mocker.mock()
+		n2.metrics.get_free_ram(False)
+		n2_mocker.result(150)
+		n2.metrics.get_free_ram()
+		n2_mocker.result(150)
+		n2.metrics.get_free_ram(False)
+		n2_mocker.result(150)
+		n2.metrics.get_free_ram()
+		n2_mocker.result(150)
+		n2.get_hostname()
+		n2_mocker.result("node2")
+		n2_mocker.count(1,None)
+		n2_mocker.replay()
+
+		n3_mocker = Mocker()
+		n3 = n3_mocker.mock()
+		n3.metrics.get_free_ram(False)
+		n3_mocker.result(520)
+		n3.metrics.get_free_ram()
+		n3_mocker.result(520)
+		n3.metrics.get_free_ram(False)
+		n3_mocker.result(8)
+		n3.metrics.get_free_ram()
+		n3_mocker.result(8)
+		n3.get_hostname()
+		n3_mocker.result("node3")
+		n3_mocker.count(1,None)
+		n3_mocker.replay()
+
+		self.cluster.nodes={'node1': n1, 'node2': n2, 'node3': n3}
+
+		self.cluster.emergency_eject(n1)
+
+		n1_mocker.verify()
+		n2_mocker.verify()
+		n3_mocker.verify()
+		vm1_mocker.verify()
+		vm2_mocker.verify()
+
+	def test_emergency_eject_error(self):
+		migrate = self.mocker.replace(self.cluster.migrate)
+		migrate('vm2', 'node1', 'node3')
+		migrate('vm3', 'node1', 'node2')
+		self.mocker.throw(Exception('foobar'))
+		self.mocker.replay()
+
+		vm1_mocker = Mocker()
+		vm1 = vm1_mocker.mock()
+		vm1.get_ram()
+		vm1_mocker.result(1024)
+		vm1_mocker.count(1,None)
+		vm1.name
+		vm1_mocker.result('vm1')
+		vm1_mocker.count(1,None)
+		vm1_mocker.replay()
+
+		vm2_mocker = Mocker()
+		vm2 = vm2_mocker.mock()
+		vm2.get_ram()
+		vm2_mocker.result(510)
 		vm2_mocker.count(1,None)
 		vm2.name
 		vm2_mocker.result('vm2')
@@ -494,6 +569,7 @@ class XenClusterTests(MockerTestCase):
 		vm3_mocker.count(1,None)
 		vm3.name
 		vm3_mocker.result('vm3')
+		vm3_mocker.count(1,None)
 		vm3_mocker.replay()
 
 		n1_mocker = Mocker()
@@ -531,9 +607,9 @@ class XenClusterTests(MockerTestCase):
 		n3.metrics.get_free_ram()
 		n3_mocker.result(520)
 		n3.metrics.get_free_ram(False)
-		n3_mocker.result(8)
+		n3_mocker.result(520)
 		n3.metrics.get_free_ram()
-		n3_mocker.result(8)
+		n3_mocker.result(520)
 		n3.metrics.get_free_ram(False)
 		n3_mocker.result(8)
 		n3.metrics.get_free_ram()
@@ -545,7 +621,10 @@ class XenClusterTests(MockerTestCase):
 
 		self.cluster.nodes={'node1': n1, 'node2': n2, 'node3': n3}
 
-		self.assertRaises(cxm.node.NotEnoughRamError,self.cluster.emergency_eject,n1)
+		e=self.assertRaises(cxm.xencluster.MultipleError, self.cluster.emergency_eject, n1)
+		self.assertEquals(len(e.value), 2)
+		self.assertTrue(isinstance(e.value['vm1'], cxm.node.NotEnoughRamError))
+		self.assertTrue(isinstance(e.value['vm3'], Exception))
 
 		n1_mocker.verify()
 		n2_mocker.verify()

@@ -345,7 +345,7 @@ class XenCluster:
 		vms=ejected_node.get_vms()
 		vms.sort(key=lambda x: x.get_ram(), reverse=True)
 		
-		failed=list()
+		failed=dict()
 		for vm in vms:
 			selected_node=None
 	
@@ -357,14 +357,19 @@ class XenCluster:
 					break # Select first node with enough space
 
 			if selected_node is None:
-				failed.append(vm) # Not enough room for this one
+				# Not enough room for this one
+				failed[vm.name]=NotEnoughRamError(ejected_node.get_hostname(), "Cannot migrate "+vm.name)
 				continue  # Next !
 
 			if not core.cfg['QUIET']: print "Migrating",vm.name,"to",selected_node.get_hostname()
-			self.migrate(vm.name,ejected_node.get_hostname(),selected_node.get_hostname())
+			try:
+				self.migrate(vm.name,ejected_node.get_hostname(),selected_node.get_hostname())
+			except Exception, e:
+				failed[vm.name]=e
 
+		# Raise final error after all migration attempts
 		if len(failed)>0:
-			raise NotEnoughRamError(ejected_node.get_hostname(), "Cannot migrate "+", ".join([vm.name for vm in failed]))
+			raise MultipleError(failed)
 	
 	def loadbalance(self):
 		"""
@@ -600,7 +605,6 @@ class XenCluster:
 		try:
 			# Try to get VM back on alive nodes
 			# If a vm is paused, eject will fail
-			# TODO: errors-proof eject
 			self.emergency_eject(self.get_node(name))
 			log.info("VM from %s successfully migrated on healthy nodes." % (name))
 
