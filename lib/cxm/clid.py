@@ -31,6 +31,7 @@ This module is the command line interface for managing cxm daemon.
 import sys, os, time
 from optparse import OptionParser, OptionGroup
 from twisted.internet import reactor, defer, threads
+from twisted.internet.error import ConnectError
 import core
 from diskheartbeat import DiskHeartbeat
 from agent import Agent
@@ -271,7 +272,10 @@ def run():
 			if core.cfg['API_DEBUG']:
 				reason.printTraceback()
 			else:
-				print >>sys.stderr, "Error:", reason.getErrorMessage()
+				if reason.check(ConnectError):
+					print "Can't contact cxmd. Is daemon running ?"
+				else:
+					print >>sys.stderr, "Error:", reason.getErrorMessage()
 	
 		reactor.addSystemEventTrigger('after', 'shutdown', os._exit, rc)
 	

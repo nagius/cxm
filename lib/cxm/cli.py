@@ -33,6 +33,7 @@ import sys, os
 from xen.xm.opts import wrap
 from optparse import OptionParser
 from twisted.internet import reactor, threads, defer
+from twisted.internet.error import ConnectError
 import core, xencluster, node
 from agent import Agent
 
@@ -516,7 +517,10 @@ def run():
 			if options.debug:
 				reason.printTraceback()
 			else:
-				print >>sys.stderr, "Error:", reason.getErrorMessage()
+				if reason.check(ConnectError):
+					print "Can't contact cxmd. Is daemon running ?"
+				else:
+					print >>sys.stderr, "Error:", reason.getErrorMessage()
 	
 		# Check argument length according to subcommand
 		if reason.check(TypeError):
