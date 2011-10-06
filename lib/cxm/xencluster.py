@@ -658,15 +658,6 @@ class ClusterError(Exception):
 	def __str__(self):
 		return "Cluster error: %s" % (self.value)
 
-class InstantiationError(ClusterError):
-	"""This class is used when getDeferInstance() fail."""
-
-	def __init__(self, failedNodes={}):
-		self.failedNodes=failedNodes
-
-	def __str__(self):
-		return "Cluster error: Cannot connect to nodes: %s." % (" ".join(self.failedNodes.keys()))
-
 class NotInClusterError(ClusterError):
 	"""This class is used when a node does'nt belong to the cluster."""
 
@@ -676,11 +667,27 @@ class NotInClusterError(ClusterError):
 class MultipleError(ClusterError):
 	"""This class is used when multiple exceptions are catched."""
 
+	def __init__(self, value=dict(), header="Cluster multiple error"):
+
+		assert type(header) == str, "Param 'header' should be a string."
+		assert type(value) == dict, "Param 'value' should be a dict."
+
+		self.header=header
+		self.value=value
+
 	def __str__(self):
 		msg=""
 		for name in self.value.keys():
 			msg = "%s\n - %s: %s" % (msg, name, self.value[name])
 
-		return "Cluster multiple error: %s" % (msg)
+		return "%s: %s" % (self.header, msg)
+
+class InstantiationError(MultipleError):
+	"""This class is used when getDeferInstance() fail."""
+
+	def __init__(self, value):
+		# Why don't use super() ? because python really sucks !
+		# We need to inherit from 'object' to use super() but an exception can't inherit from 'object'...
+		MultipleError.__init__(self, value, "Cluster instantiation failed, Can't connect to nodes")
 
 # vim: ts=4:sw=4:ai
