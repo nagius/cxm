@@ -31,9 +31,9 @@ import os, socket, time
 from sets import Set
 from twisted.internet import threads, defer
 
-import core, node, loadbalancer
+import core, loadbalancer
 import logs as log
-from node import NotEnoughRamError, RunningVmError, NotRunningVmError, XenError
+from node import *
 from vm import VM
 from agent import Agent
 
@@ -334,6 +334,8 @@ class XenCluster:
 		Use best-fit decreasing algorithm to resolve bin packing problem.
 		Need Further optimizations when cluster is nearly full.
 		"""
+
+		assert isinstance(ejected_node, Node), "Param 'ejected_node' should be a Node."
 
 		# Get nodes
 		pool=self.get_nodes()

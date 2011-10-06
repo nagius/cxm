@@ -22,7 +22,7 @@
 #
 ###########################################################################
 
-import cxm.core, cxm.xencluster
+import cxm.core, cxm.xencluster, cxm.node
 import unittest, os, socket
 from mocker import *
 
@@ -497,7 +497,7 @@ class XenClusterTests(MockerTestCase):
 		vm3_mocker.replay()
 
 		n1_mocker = Mocker()
-		n1 = n1_mocker.mock()
+		n1 = n1_mocker.mock(cxm.node.Node)
 		n1.get_vms()
 		n1_mocker.result([vm1,vm2,vm3])
 		n1.get_hostname()
