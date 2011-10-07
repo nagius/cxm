@@ -33,6 +33,7 @@ from sets import Set
 
 from metrics import Metrics
 from vm import VM
+import logs as log
 import core, datacache
 
 
@@ -46,7 +47,7 @@ class Node:
 		This constructor open SSH and XenAPI connections to the node.
 		If the node is not online, this will fail with an uncatched exception from paramiko or XenAPI.
 		"""
-		if not core.cfg['QUIET'] : print "Connecting to "+ hostname + "..."
+		log.info("Connecting to ", hostname, "...")
 		self.hostname=hostname
 
 		# Open SSH channel (localhost use popen2)
@@ -489,7 +490,7 @@ class Node:
 		Perform a check on logicals volumes used by VMs. 
 		Return False if some are missing.
 		"""
-		if not core.cfg['QUIET']: print "Checking for missing LV..." 
+		log.info("Checking for missing LV...")
 		safe=True
 		
 		# Get all LVs used by VMs
@@ -506,7 +507,7 @@ class Node:
 		# Compute missing LVs 
 		missing_lvs = list(Set(used_lvs) - Set(existent_lvs))
 		if len(missing_lvs):
-			print " ** WARNING : Found missing LV :\n\t", "\n\t".join(missing_lvs)
+			log.info(" ** WARNING : Found missing LV :\n\t", "\n\t".join(missing_lvs))
 			safe=False
 
 		return safe
@@ -516,7 +517,7 @@ class Node:
 		Perform a sanity check of the LVM activation on this node.
 		Return False if there is some inconsistencies.
 		"""
-		if not core.cfg['QUIET']: print "Checking LV activation on",self.get_hostname(),"..." 
+		log.info("Checking LV activation on", self.get_hostname(), "...")
 		safe=True
 
 		# Get all active LVs on the node
@@ -543,20 +544,20 @@ class Node:
 		# Compute activated LVs without running vm
 		lvs_without_vm = list(Set(active_and_used_lvs) - Set(running_lvs))
 		if len(lvs_without_vm):
-			print " ** WARNING : Found activated LV without running VM :\n\t", "\n\t".join(lvs_without_vm)
+			log.info(" ** WARNING : Found activated LV without running VM :\n\t", "\n\t".join(lvs_without_vm))
 			safe=False
 
 		# Compute running vm without activated LVs 
 		vm_without_lvs = list(Set(running_lvs) - Set(active_and_used_lvs))
 		if len(vm_without_lvs):
-			print " ** WARNING : Found running VM without activated LV :\n\t", "\n\t".join(vm_without_lvs)
+			log.info(" ** WARNING : Found running VM without activated LV :\n\t", "\n\t".join(vm_without_lvs))
 			safe=False
 
 		return safe
 
 	def check_autostart(self):
 		"""Perform a sanity check of the autostart links."""
-		if not core.cfg['QUIET']: print "Checking autostart links on",self.get_hostname(),"..." 
+		log.info("Checking autostart links on", self.get_hostname(), "...")
 		safe=True
 
 		# Get all autostart links on the node
@@ -570,13 +571,13 @@ class Node:
 		# Compute running vm without autostart link
 		link_without_vm = list(Set(links) - Set(running_vms))
 		if len(link_without_vm):
-			print " ** WARNING : Found autostart link without running VM :\n\t", "\n\t".join(link_without_vm)
+			log.info(" ** WARNING : Found autostart link without running VM :\n\t", "\n\t".join(link_without_vm))
 			safe=False
 
 		# Compute running vm without autostart link
 		vm_without_link = list(Set(running_vms) - Set(links))
 		if len(vm_without_link):
-			print " ** WARNING : Found running VM without autostart link :\n\t", "\n\t".join(vm_without_link)
+			log.info(" ** WARNING : Found running VM without autostart link :\n\t", "\n\t".join(vm_without_link))
 			safe=False
 
 		return safe
@@ -603,8 +604,8 @@ class Node:
 			raise FenceNodeError(self.get_hostname(), "Fencing disabled by configuration")
 
 		if self.get_hostname() == hostname:
-			print " ** WARNING : node is self-fencing !"
-			print "\"Chérie ça va trancher.\""
+			log.warn("Node is self-fencing !")
+			log.warn("\"Chérie ça va trancher.\"")
 
 		try:
 			self.run(core.cfg['FENCE_CMD'] + " " + hostname)

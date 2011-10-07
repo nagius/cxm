@@ -192,6 +192,8 @@ class XenClusterTests(MockerTestCase):
 		node2.activate_lv(vmname)
 		node2.start_vm(vmname)
 		node2.enable_vm_autostart(vmname)
+		node2.get_hostname()
+		n2_mocker.result('host2')
 		n2_mocker.replay()
 
 		self.cluster.nodes={'host2': node2, 'host1': node1}

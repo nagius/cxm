@@ -29,6 +29,7 @@
 
 import re
 import core
+import logs as log
 from xen.util.blkif import blkdev_name_to_number
 
 class VM:
@@ -59,8 +60,7 @@ class VM:
 			try:
 				self.devices[self.diskre.search(disk).group(1)]=self.diskre.search(disk).group(2)
 			except:
-				if not core.cfg['QUIET']:
-					print "Warning: Bad disk input for %s: %s" % (self.name, disk)
+				log.warn("Bad disk input for %s: %s" % (self.name, disk))
 		
 	def __repr__(self):
 		return "<VM Instance: "+ self.name +">"

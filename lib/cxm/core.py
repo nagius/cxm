@@ -55,6 +55,7 @@ informations.
 
 import os, sys
 import meta
+import logs as log
 
 # Default configuration
 cfg = { 
@@ -88,7 +89,7 @@ def load_cfg():
 	try:
 		execfile("/etc/xen/cxm.conf",dict(),cfg)
 	except Exception,e:
-		print "Configuration file error: %s" % e
+		log.err("Configuration file error:", e)
 		sys.exit(3)
 
 	if not cfg['VMCONF_DIR'].endswith("/"):

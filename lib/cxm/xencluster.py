@@ -59,7 +59,7 @@ class XenCluster:
 		If a node is not online, the deferred will fail.
 		"""
 
-		if not core.cfg['QUIET']: print "Loading cluster..."
+		log.info("Loading cluster...")
 		nodes=dict()
 
 		def instantiate(results):
@@ -267,7 +267,7 @@ class XenCluster:
 			if needed_ram>free_ram:
 				raise NotEnoughRamError(node.get_hostname(),"need "+str(needed_ram)+"M, has "+str(free_ram)+"M.")
 
-			if not core.cfg['QUIET']: print " -> Not enough ram, starting it on %s." % node.get_hostname()
+			log.info(" -> Not enough ram, starting it on %s." % node.get_hostname())
 
 		# Start the VM
 		self.activate_vm(node,vmname)
@@ -287,7 +287,7 @@ class XenCluster:
 			if node.is_local_node():
 				node.get_vm(vmname).attach_console()
 			else:
-				print "Warning : cannot attach console when using remote Xen-API."
+				log.warn("Cannot attach console when using remote Xen-API.")
 			
 	def migrate(self, vmname, src_hostname, dst_hostname):
 		"""Live migration of specified VM from src to dst.
@@ -376,7 +376,7 @@ class XenCluster:
 		Run the loadbalancer on the cluster and migrate vm accordingly.
 		See cxm.loadbalancer module for details about algorithm.
 		"""
-		if not core.cfg['QUIET']: print "Recording metrics..."
+		log.info("Recording metrics...")
 
 		current_state={}
 		vm_metrics={}
@@ -406,7 +406,7 @@ class XenCluster:
 		solution=lb.get_solution()
 
 		if not solution:
-			print "No better solution found with a minimal gain of %s%%." % core.cfg['LB_MIN_GAIN']
+			log.info("No better solution found with a minimal gain of %s%%." % core.cfg['LB_MIN_GAIN'])
 		else:
 			# Ask the user for a confirmation
 			if not core.cfg['QUIET'] :
@@ -420,7 +420,7 @@ class XenCluster:
 
 			# Do migrations to put the cluster in the selected state
 			for path in solution.get_path():
-				if not core.cfg['QUIET'] : print "Migrating",path['vm'],"from",path['src'],"to",path['dst'],"..."
+				log.info("Migrating", path['vm'], "from", path['src'], "to", path['dst'], "...")
 				self.migrate(path['vm'], path['src'], path['dst'])
 
 	def check(self):
@@ -428,7 +428,7 @@ class XenCluster:
 
 		Return a corresponding exit code (0=success, 0!=error)
 		"""
-		if not core.cfg['QUIET']: print "Checking for duplicate VM..."
+		log.info("Checking for duplicate VM...")
 		safe=True
 
 		# Get cluster wide VM list
@@ -452,7 +452,7 @@ class XenCluster:
 		# Check duplicate VM
 		for vm, nodes in node_by_vm.items():
 			if len(nodes)>1:
-				print " ** WARNING : " + vm + " is running on " + " and ".join(nodes)
+				log.info(" ** WARNING :", vm, "is running on", " and ".join(nodes))
 				safe=False
 
 		# Check bridges
@@ -480,7 +480,7 @@ class XenCluster:
 
 		Return False if a bridge is missing somewhere.
 		"""
-		if not core.cfg['QUIET']: print "Checking bridges configurations..."
+		log.info("Checking bridges configurations...")
 		safe=True
 
 		# Get a dict with bridges of each nodes
@@ -499,7 +499,7 @@ class XenCluster:
 		# Show missing bridges without duplicates
 		for node in missing.keys():
 			if missing[node]:
-				print " ** WARNING : Missing bridges on %s : %s" % (node,", ".join(list(Set(missing[node]))))
+				log.info(" ** WARNING : Missing bridges on %s : %s" % (node,", ".join(list(Set(missing[node])))))
 				safe=False
 
 		return safe
@@ -553,7 +553,7 @@ class XenCluster:
 				failed[vm.name]=NotEnoughRamError("this cluster", "Cannot start "+vm.name)
 				continue  # Next !
 
-			log.info("Starting",vm.name,"on",selected_node.get_hostname())
+			log.info("Starting", vm.name, "on", selected_node.get_hostname())
 
 			# Start the vm 
 			try:
