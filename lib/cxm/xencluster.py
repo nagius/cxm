@@ -79,7 +79,7 @@ class XenCluster:
 		def create_nodes(result):
 			ds=list()
 			for hostname in result:
-				d=threads.deferToThread(lambda x: node.Node(x), hostname)
+				d=threads.deferToThread(lambda x: Node(x), hostname)
 				d.addCallback(add_node, hostname)
 				ds.append(d)
 
