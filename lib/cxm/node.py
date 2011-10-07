@@ -61,10 +61,10 @@ class Node:
 		if self.is_local_node():
 			# Use unix socket on localhost
 			self.server = XenAPI.Session("httpu:///var/run/xend/xen-api.sock")
-			core.debug("[API]","Using unix socket.")
+			log.debug("[API]","Using unix socket.")
 		else:
 			self.server = XenAPI.Session("http://"+hostname+":9363")
-			core.debug("[API]","Using tcp socket.")
+			log.debug("[API]","Using tcp socket.")
 		self.server.login_with_password("root", "")
 
 		# Prepare connection with legacy API
@@ -101,10 +101,10 @@ class Node:
 		if self.__legacy_server is None:
 			if self.is_local_node():
 				self.__legacy_server=ServerProxy("httpu:///var/run/xend/xmlrpc.sock")
-				core.debug("[Legacy-API]","Using unix socket.")
+				log.debug("[Legacy-API]","Using unix socket.")
 			else:
 				self.__legacy_server=ServerProxy("http://"+self.hostname+":8006")
-				core.debug("[Legacy-API]","Using tcp socket.")
+				log.debug("[Legacy-API]","Using tcp socket.")
 		return self.__legacy_server
 
 	def get_metrics(self):
@@ -139,7 +139,7 @@ class Node:
 			cmd=core.cfg['PATH'] + "/" + cmd
 
 		if(self.is_local_node() and not core.cfg['USESSH']):
-			core.debug("[SHL]", self.hostname, "->", cmd)
+			log.debug("[SHL]", self.hostname, "->", cmd)
 
 			# Create buffers
 			stdout=StringIO.StringIO()
@@ -158,7 +158,7 @@ class Node:
 				msg=stderr.read()
 				raise ShellError(self.hostname,msg, exitcode >> 8)
 		else:
-			core.debug("[SSH]", self.hostname, "->", cmd)
+			log.debug("[SSH]", self.hostname, "->", cmd)
 			stdin, stdout, stderr = self.ssh.exec_command(cmd)
 			# Lock bug workaround : Check exit status before trying to read stderr
 			# Because sometimes, when stdout is big (maybe >65k ?), strderr.read() hand on
@@ -186,7 +186,7 @@ class Node:
 			return False
 		else:
 			vm=self.server.xenapi.VM.get_by_name_label(vmname)
-			core.debug("[API]", self.hostname, "vm=", vm)
+			log.debug("[API]", self.hostname, "vm=", vm)
 			try:
 				return self.server.xenapi.VM.get_power_state(vm[0]) != "Halted"
 			except IndexError:
@@ -418,8 +418,8 @@ class Node:
 			else:
 				dom_recs = self.server.xenapi.VM.get_all_records()
 				dom_metrics_recs = self.server.xenapi.VM_metrics.get_all_records()
-				core.debug("[API]", self.hostname, "dom_recs=", dom_recs)
-				core.debug("[API]", self.hostname, "dom_metrics_recs=", dom_metrics_recs)
+				log.debug("[API]", self.hostname, "dom_recs=", dom_recs)
+				log.debug("[API]", self.hostname, "dom_metrics_recs=", dom_metrics_recs)
 
 				for dom_rec in dom_recs.values():
 					if dom_rec['name_label'] == "Domain-0":
@@ -454,7 +454,7 @@ class Node:
 					vms_names.append(name)
 			else:
 				dom_recs = self.server.xenapi.VM.get_all_records()
-				core.debug("[API]", self.hostname, "dom_recs=", dom_recs)
+				log.debug("[API]", self.hostname, "dom_recs=", dom_recs)
 
 				for dom_rec in dom_recs.values():
 					if dom_rec['name_label'] == "Domain-0":
@@ -535,11 +535,11 @@ class Node:
 
 		# Compute the intersection of the two lists (active and used LVs)
 		active_and_used_lvs = list(Set(active_lvs) & Set(used_lvs))
-		core.debug("[NODE]", self.hostname, "active_and_used_lvs=", active_and_used_lvs)
+		log.debug("[NODE]", self.hostname, "active_and_used_lvs=", active_and_used_lvs)
 
 		# Get all LVs of running VM
 		running_lvs = [ lv for vm in self.get_vms() for lv in vm.get_lvs() ]
-		core.debug("[NODE]", self.hostname, "running_lvs=", running_lvs)
+		log.debug("[NODE]", self.hostname, "running_lvs=", running_lvs)
 
 		# Compute activated LVs without running vm
 		lvs_without_vm = list(Set(active_and_used_lvs) - Set(running_lvs))
@@ -562,11 +562,11 @@ class Node:
 
 		# Get all autostart links on the node
 		links = [ link.strip() for link in self.run("ls /etc/xen/auto/").readlines() ]
-		core.debug("[NODE]", self.hostname, "links=", links)
+		log.debug("[NODE]", self.hostname, "links=", links)
 
 		# Get all running VM
 		running_vms = [ vm.name for vm in self.get_vms() ]
-		core.debug("[NODE]", self.hostname, "running_vms=", running_vms)
+		log.debug("[NODE]", self.hostname, "running_vms=", running_vms)
 
 		# Compute running vm without autostart link
 		link_without_vm = list(Set(links) - Set(running_vms))

@@ -173,7 +173,7 @@ class MasterService(Service):
 
 		try:
 			msg=MessageHelper.get(data, host)
-			log.debug("Received", msg)
+			log.debugd("Received", msg)
 			dispatcher[msg.type()](msg)
 		except (MessageError, KeyError), e:
 			log.err("Bad message from %s : %s , %s" % (host,data,e))
@@ -619,7 +619,7 @@ class MasterService(Service):
 			raise
 			
 		# Check disk heartbeat
-		log.debug("Diskhearbeat status:", tsDisk)
+		log.debugd("Diskhearbeat status:", tsDisk)
 		diskFailed=Set()
 		for name, timestamp in tsDisk.items():
 			if timestamp == 0:

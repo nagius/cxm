@@ -95,9 +95,4 @@ def load_cfg():
 	if not cfg['VMCONF_DIR'].endswith("/"):
 		cfg['VMCONF_DIR']+="/"
 
-def debug(*args):
-	"""Print a debug message, if API_DEBUG is true."""
-	if cfg['API_DEBUG']:
-		print "DEBUG", " ".join(map(str,args))
-
 # vim: ts=4:sw=4:ai

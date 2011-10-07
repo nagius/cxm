@@ -24,7 +24,7 @@
 ###########################################################################
 
 import time
-import core
+import logs as log
 
 class DataCache(object):
 	
@@ -44,7 +44,7 @@ class DataCache(object):
 				'expire': int(time.time())+lifetime,
 				'value': value
 			}
-		core.debug("[CAH]", "ADD", key, lifetime, value)
+		log.debug("[CAH]", "ADD", key, lifetime, value)
 
 	def get(self, key):
 		"""
@@ -56,28 +56,28 @@ class DataCache(object):
 		try:
 			data=self._data[key]
 		except KeyError:
-			core.debug("[CAH]", "MISS", key)
+			log.debug("[CAH]", "MISS", key)
 			raise CacheMissingException(key)
 
 		if data['expire'] <= int(time.time()):
 			self.delete(key)
 			raise CacheExpiredException(key)
 
-		core.debug("[CAH]", "HIT", key, data['value'])
+		log.debug("[CAH]", "HIT", key, data['value'])
 		return data['value']
 			
 	def delete(self, key):
 		"""Delete the value associated with the key."""
 		try:
 			del self._data[key]
-			core.debug("[CAH]", "DEL", key)
+			log.debug("[CAH]", "DEL", key)
 		except KeyError:
 			pass
 		
 	def clear(self):
 		"""Clear the cache: erase all datas."""
 		self._data.clear()
-		core.debug("[CAH]", "Cleared")
+		log.debug("[CAH]", "Cleared")
 
 	def cleanup(self):
 		"""Delete outdated values."""

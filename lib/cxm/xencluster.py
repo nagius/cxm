@@ -436,7 +436,7 @@ class XenCluster:
 		for node in self.get_nodes():
 			vm_by_node[node.get_hostname()]=node.get_vms()
 	
-		core.debug("vm_by_node=",vm_by_node)
+		log.debug("vm_by_node=",vm_by_node)
 	
 		# Invert key/value of the dict
 		node_by_vm=dict()
@@ -447,7 +447,7 @@ class XenCluster:
 				except KeyError:
 					node_by_vm[vm.name]=[node]
 
-		core.debug("node_by_vm=",node_by_vm)
+		log.debug("node_by_vm=",node_by_vm)
 
 		# Check duplicate VM
 		for vm, nodes in node_by_vm.items():
@@ -488,7 +488,7 @@ class XenCluster:
 		for node in self.get_nodes():
 			nodes_bridges[node.get_hostname()]=node.get_bridges()
 
-		core.debug("nodes_bridges=",nodes_bridges)
+		log.debug("nodes_bridges=",nodes_bridges)
 
 		# Compare bridges lists for each nodes
 		missing=dict()

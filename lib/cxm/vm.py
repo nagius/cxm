@@ -53,7 +53,7 @@ class VM:
 			execfile("%s/%s.cfg" % (core.cfg['VMCONF_DIR'],vmname) ,dict(),self.config)
 		except IOError:
 			execfile("%s/%s" % (core.cfg['VMCONF_DIR'],vmname) ,dict(),self.config)
-		core.debug("[VM]", vmname, self.config)
+		log.debug("[VM]", vmname, self.config)
 
 		# Get devices from config file
 		for disk in self.config['disk']:

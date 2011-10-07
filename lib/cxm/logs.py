@@ -44,7 +44,8 @@ def info(*args):
 		if not core.cfg['QUIET']:
 			print " ".join(map(str, args))
 
-def debug(*args):
+def debugd(*args):
+	"""Print or log a debug message from daemon, if DAEMON_DEBUG is true."""
 	if core.cfg['DAEMON_DEBUG']:
 		msg = "DEBUG: " + " ".join(map(str, args))
 		if open:
@@ -52,6 +53,15 @@ def debug(*args):
 		else:
 			print msg
 		
+def debug(*args):
+	"""Print or log a debug message, if API_DEBUG is true."""
+	if core.cfg['API_DEBUG']:
+		msg = "DEBUG: " + " ".join(map(str, args))
+		if open:
+			log.msg(msg)
+		else:
+			print msg
+
 def warn(*args):
 	msg = "Warning: " + " ".join(map(str, args))
 	if open:

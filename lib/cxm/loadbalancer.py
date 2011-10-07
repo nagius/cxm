@@ -28,6 +28,7 @@
 import math
 from copy import deepcopy, copy
 import core
+import logs as log
 
 
 class LoadBalancer:
@@ -89,9 +90,9 @@ class LoadBalancer:
 		# Finalize initialisation
 		self.root.compute_score(self.vm_metrics)
 
-		core.debug(" [LB]", "vm_metrics=", vm_metrics)
-		core.debug(" [LB]", "node_metrics=", node_metrics)
-		core.debug(" [LB]", "current_state=", self.root)
+		log.debug(" [LB]", "vm_metrics=", vm_metrics)
+		log.debug(" [LB]", "node_metrics=", node_metrics)
+		log.debug(" [LB]", "current_state=", self.root)
 
 
 	def create_layer(self, root, layer):
@@ -155,12 +156,12 @@ class LoadBalancer:
 
 			# Compare initial solution to the best solution of this layer
 			if best_solution.score < self.root.score:
-				core.debug(" [LB]", "Found", best_solution)
+				log.debug(" [LB]", "Found", best_solution)
 
 				# Compute the gain (in percetage) of this solution
 				gain = ((self.root.score-best_solution.score)*100)/self.root.score
 				if gain >= core.cfg['LB_MIN_GAIN']:
-					core.debug(" [LB]", "Pickup this one, migration plan:", best_solution.path)
+					log.debug(" [LB]", "Pickup this one, migration plan:", best_solution.path)
 					return best_solution
 			
 			layer+=1 # No better solution found in this layer, going a step further.

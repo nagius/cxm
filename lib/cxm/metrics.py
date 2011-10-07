@@ -28,6 +28,7 @@
 import time
 from xen.xm import main
 import node, core, datacache
+import logs as log
 
 class Metrics:
 
@@ -62,13 +63,13 @@ class Metrics:
 	def get_host_nr_cpus(self):
 		"""Return the number (int) of CPU on the host."""
 		host_record = self.server.xenapi.host.get_record(self.server.xenapi.session.get_this_host(self.server.getSession()))
-		core.debug("[API]", self.node.get_hostname(), "host_record=", host_record)
+		log.debug("[API]", self.node.get_hostname(), "host_record=", host_record)
 		return int(host_record['cpu_configuration']['nr_cpus'])
 
 	def get_dom0_nr_cpus(self):
 		"""Return the number (int) of VCPU for the Domain-0."""
 		dom0_record = self.server.xenapi.VM.get_record('00000000-0000-0000-0000-000000000000')
-		core.debug("[API]", self.node.get_hostname(), "dom0_record=", dom0_record)
+		log.debug("[API]", self.node.get_hostname(), "dom0_record=", dom0_record)
 		return int(dom0_record['VCPUs_max'])
 
 	def get_vms_cpu_usage(self):
@@ -86,7 +87,7 @@ class Metrics:
 
 		# Get domains' infos
 		doms=self.node.legacy_server.xend.domains(True)
-		core.debug("[Legacy-API]", self.node.get_hostname(), "doms=", doms)
+		log.debug("[Legacy-API]", self.node.get_hostname(), "doms=", doms)
 
 		# Timestamp used to compute CPU percentage
 		timestamp=time.time()
@@ -177,7 +178,7 @@ class Metrics:
 		if not dom_recs: dom_recs = self.server.xenapi.VM.get_all_records()
 
 		vif_metrics_recs = self.server.xenapi.VIF_metrics.get_all_records()
-		core.debug("[API]", self.node.get_hostname(), "vif_metrics_recs=", vif_metrics_recs)
+		log.debug("[API]", self.node.get_hostname(), "vif_metrics_recs=", vif_metrics_recs)
 
 		vifs_doms_metrics=dict()
 		for dom_rec in dom_recs.values():
@@ -265,7 +266,7 @@ class Metrics:
 			Net: Bytes
 		"""
 		dom_recs = self.server.xenapi.VM.get_all_records()
-		core.debug("[API]", self.node.get_hostname(), "dom_recs=", dom_recs)
+		log.debug("[API]", self.node.get_hostname(), "dom_recs=", dom_recs)
 		
 		# Fetch all datas once
 		vms_cpu=self.get_vms_cpu_usage()
@@ -317,7 +318,7 @@ class Metrics:
 			else:
 				host_record = self.server.xenapi.host.get_record(self.server.xenapi.session.get_this_host(self.server.getSession()))
 				host_metrics_record = self.server.xenapi.host_metrics.get_record(host_record["metrics"])
-				core.debug("[API]", self.node.get_hostname(), "host_metrics_record=", host_metrics_record)
+				log.debug("[API]", self.node.get_hostname(), "host_metrics_record=", host_metrics_record)
 
 				total=int(host_metrics_record["memory_total"])/1024/1024
 				free=int(host_metrics_record["memory_free"])/1024/1024
