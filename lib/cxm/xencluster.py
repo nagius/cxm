@@ -323,7 +323,7 @@ class XenCluster:
 
 		# Take care of proper migration
 		dst_node.activate_lv(vmname)
-		src_node.migrate(vmname,dst_node)
+		src_node.migrate(vmname,dst_node) # Could raise xen.xm.XenAPI.Failure (not SystemExit)
 		src_node.deactivate_lv(vmname)
 		src_node.disable_vm_autostart(vmname)
 		dst_node.enable_vm_autostart(vmname)
