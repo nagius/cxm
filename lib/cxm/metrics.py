@@ -76,8 +76,8 @@ class Metrics:
 		"""
 		Return a dict with the computed CPU usage for all runing VMs.
 
-		The result is a percetage relative to one CPU (eg. 2 full-used CPU -> 200%)
-		Warning: paused VM will not be present in result.
+		The result is a percetage relative to one CPU (eg. 2 fully-used CPU -> 200%)
+		Warning: paused VM will be reported with zero values. 
 
 		Values are floats with 16 digit of precision (python standard's binary float)
 		If you want a string with less precision, you can use "%.1f" % round(xxx).
@@ -91,6 +91,11 @@ class Metrics:
 
 		# Timestamp used to compute CPU percentage
 		timestamp=time.time()
+
+		# Initialize result with 0 for all vm
+		# This is because legacy api do not report paused vm
+		for vm in self.node.get_vms(): # 5s of cache is ok, this func is designed to be run every 60s
+			cpu[vm.name]=0
 
 		for dom in doms:
 			dom_info=main.parse_doms_info(dom)
@@ -258,7 +263,6 @@ class Metrics:
 	def get_vms_record(self):
 		"""
 		Return a tree with CPU, disks'IO and network IO for all running VMs.
-		Warning: paused VM will not be present in result.
 
 		Units: 
 			CPU: Percetage

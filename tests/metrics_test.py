@@ -308,19 +308,46 @@ class MetricsTests(MockerTestCase):
 
 
 	def test_get_vms_cpu_usage(self):
-		val = {'test15.home.net': 0.0, 'test22.home.net': 0.0}
+		val = {'vm1': 0, 'vm3': 0, 'vm2': 0}
+
+		vm1_mocker = Mocker()
+		vm1 = vm1_mocker.mock()
+		vm1.name
+		vm1_mocker.result('vm1')
+		vm1_mocker.count(1,None)
+		vm1_mocker.replay()
+
+		vm2_mocker = Mocker()
+		vm2 = vm2_mocker.mock()
+		vm2.name
+		vm2_mocker.result('vm2')
+		vm2_mocker.count(1,None)
+		vm2_mocker.replay()
+
+		vm3_mocker = Mocker()
+		vm3 = vm3_mocker.mock()
+		vm3.name
+		vm3_mocker.result('vm3')
+		vm3_mocker.count(1,None)
+		vm3_mocker.replay()
+
+		get_vms = self.mocker.replace(self.node.get_vms)
+		get_vms()
+		self.mocker.result([vm1, vm2, vm3])
+		self.mocker.replay()
 
 		xenlegacy_mock = Mocker()
 		xenlegacy=xenlegacy_mock.mock()
 		xenlegacy.xend.domains(True)
 		xenlegacy_mock.result(
 			[['domain',
-			  ['name', 'test15.home.net'],
+			  ['name', 'vm1'],
 			  ['cpu_time', 159.379459621]],
 			 ['domain',
-			  ['name', 'test22.home.net'],
+			  ['name', 'vm2'],
 			  ['cpu_time', 146.65212068700001],
 			 ]]
+			# vm3 is paused
 		)
 		xenlegacy_mock.replay()
 		self.node.legacy_server=xenlegacy
