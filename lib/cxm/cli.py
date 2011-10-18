@@ -340,6 +340,41 @@ def cxm_eject(cluster, options):
 	if not core.cfg['QUIET'] : print "Ejecting all running VM from",node.get_hostname(),"..."
 	cluster.emergency_eject(node)
 
+def cxm_fence(cluster, options, node_name):
+	"""Fence node from cluster."""
+
+	def success(result):
+		if not core.cfg['QUIET']: 
+			print "Node", node_name, "successfully killed."
+
+	# Flag use to kill node if it belong to the cluster
+	in_cluster=True
+
+	if not core.cfg['QUIET']: print "Fencing", node_name ,"..."
+
+	try:
+		node=cluster.get_node(node_name)
+		vms=node.get_vms_names()
+		if(len(vms)>0):
+			print "** WARNING : Some VM are running on this node :"
+			print "**  ->  " + ", ".join(vms)
+	except xencluster.NotInClusterError:
+		if not core.cfg['QUIET']: print "Node not found in cluster."
+		in_cluster=False
+
+	# No confirm if quiet is on.
+	if not core.cfg['QUIET']: 
+		if(raw_input("Are you really sure ? [y/N]:").upper() != "Y"):
+			print "Aborded by user."
+			return
+
+	cluster.get_local_node().fence(node_name)
+	if in_cluster:
+		agent=Agent()
+		d=agent.kill(node_name)
+		d.addCallback(success)
+		return d
+
 def cxm_loadbalance(cluster, options):
 	"""Trigger the loadbalancer."""
 
@@ -394,6 +429,7 @@ commands = {
     "deactivate": cxm_deactivate,
     "check": cxm_check,
     "eject": cxm_eject,
+    "fence": cxm_fence,
     "init": cxm_init,
 }
 
@@ -437,6 +473,9 @@ SUBCOMMAND_HELP = {
 		'Miss-activation or missing VM are reported.'),
 	'eject'			: ('', 
 		'Migrate all running VM on this node to others nodes.'),
+	'fence'			: ('<node>', 
+		'Fence the specified node from the cluster.',
+		'If VM are running on this node, they will be killed.'),
 }
 
 
