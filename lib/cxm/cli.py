@@ -24,6 +24,7 @@
 #
 ###########################################################################
 
+# Note that some part of code came from xen/xm
 
 """
 This module is the command line interface of cxm.
@@ -450,6 +451,12 @@ def get_help(cmd=None):
 		return help
 
 	if cmd:
+		if not SUBCOMMAND_HELP.has_key(cmd):
+			for fc in SUBCOMMAND_HELP.keys():
+				if fc[:len(cmd)] == cmd:
+					cmd = fc
+					break
+
 		try:
 			return wrapped_help(cmd)
 		except KeyError:
