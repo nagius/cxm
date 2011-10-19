@@ -611,6 +611,25 @@ def run():
       **********************
 		  """
 
+		if result['state']=="recovery":
+			print """
+                ** 
+              ******
+             ***  ***
+            ***    ***        
+           ***  **  ***                    WARNING    
+          ***   **   *** 
+         ***    **    ***          ************************
+        ***     **     ***         * RECOVERY IN PROGRESS *
+       ***      **      ***        ************************
+      ***                ***     
+     ***        **        ***   You should watch logs and wait
+    ***         **         ***    the end of process before 
+   ***                      ***        doing someting.
+    **************************  
+      **********************
+		  """
+
 	if cmd:
 		agent=Agent()
 
