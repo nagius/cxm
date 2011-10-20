@@ -683,7 +683,7 @@ class MasterService(Service):
 		def instantiationFailed(reason):
 			reason.trap(InstantiationError)
 
-			failed=reason.value.failedNodes.keys()
+			failed=reason.value.value.keys()
 			log.warn("Can't connect to", ", ".join(failed))
 
 			# Delete failed nodes from cluster list
