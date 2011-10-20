@@ -343,9 +343,10 @@ def cxm_eject(cluster, options):
 def cxm_fence(cluster, options, node_name):
 	"""Fence node from cluster."""
 
-	def success(result):
+	def fence(result):
+		cluster.get_local_node().fence(node_name)
 		if not core.cfg['QUIET']: 
-			print "Node", node_name, "successfully killed."
+			print "Node", node_name, "successfully fenced."
 
 	# Flag use to kill node if it belong to the cluster
 	in_cluster=True
@@ -368,12 +369,15 @@ def cxm_fence(cluster, options, node_name):
 			print "Aborded by user."
 			return
 
-	cluster.get_local_node().fence(node_name)
 	if in_cluster:
+		# Remove node from cluster (kill) before fencing it to avoid failover
 		agent=Agent()
 		d=agent.kill(node_name)
-		d.addCallback(success)
+		# Fence only in case of kill success, that way, you can't fence master
+		d.addCallback(fence)
 		return d
+	else:
+		fence(None)
 
 def cxm_loadbalance(cluster, options):
 	"""Trigger the loadbalancer."""
