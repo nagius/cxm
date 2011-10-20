@@ -717,6 +717,7 @@ class MasterService(Service):
 			d=XenCluster.getDeferInstance(self.getNodesList())
 			d.addCallbacks(startRecover, instantiationFailed)
 			d.addErrback(recoverFailed)
+			d.addErrback(log.err)
 
 
 	# TODO comparaison liste node ? cas partition a voir
