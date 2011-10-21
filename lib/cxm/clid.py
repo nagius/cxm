@@ -111,12 +111,26 @@ def ctl_election(*args):
 
 def ctl_quit(*args):
 	"""Shutdown local daemon."""
+	agent=Agent()
+
 	def success(result):
 		print "Daemon shutdown requested..."
 
-	agent=Agent()
-	d=agent.quit()
-	d.addCallback(success)
+	def checkState(result):
+		if result['state']=="recovery" and result['role']=="active":
+			print "Warning: Local node is the master and a recovery process is running."
+			print "This is not a good idea to shutdown master now. You may loose some VM."
+			if(raw_input("Proceed anyway ? [y/N]:").upper() != "Y"):
+				print "Aborded by user."
+				raise SystemExit(0)
+
+		d=agent.quit()
+		d.addCallback(success)
+		return d
+		
+	# Get cluster state
+	d=agent.getState()
+	d.addCallback(checkState)
 	
 	return d
 
