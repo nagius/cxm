@@ -159,9 +159,14 @@ def ctl_recover(*args):
 	return d
 
 def ctl_kill(hostname):
-	"""Ask master to recover from panic mode."""
+	"""Ask master to kill the specified node."""
 	def success(result):
 		print "Node", hostname, "successfully killed."
+
+	print "Node", hostname, "will be removed from cluster without care."
+	if(raw_input("Are you sure ? [y/N]:").upper() != "Y"):
+		print "Aborded by user."
+		raise SystemExit(0)
 
 	agent=Agent()
 	d=agent.kill(hostname)
