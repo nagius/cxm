@@ -338,7 +338,13 @@ class MasterService(Service):
 	###########################################################################
 
 	def _stopMaster(self):
-		self.s_masterHb.forcePulse() # Send a last hearbeat before stopping
+
+		if self.state == MasterService.ST_RECOVERY:
+			# Recovery will be re-run by next master (VM on current host may be lost)
+			log.warn("Stopping master during a recovery process !")
+
+		# Send a last heartbeat before stopping
+		self.s_masterHb.forcePulse() 
 		self.s_masterHb.stopService().addErrback(log.err)
 		if self.l_masterDog.running:
 			self.l_masterDog.stop()
@@ -357,6 +363,12 @@ class MasterService(Service):
 
 		# Start master heartbeat
 		self.s_masterHb.startService()
+
+		# Check state of previous master
+		if self.state == MasterService.ST_RECOVERY:
+			log.warn("Previous master was recovering something: re-enabling failover.")
+			# Force normal mode to re-run failover
+			self.state=MasterService.ST_NORMAL
 
 		# Start master's watchdog for slaves failover
 		reactor.callLater(2, startMasterWatchdog)
@@ -482,6 +494,7 @@ class MasterService(Service):
 		self.role=MasterService.RL_LEAVING
 
 		if previousRole == MasterService.RL_ACTIVE:
+
 			# Self-delete our own record 
 			self._unregister(DNSCache.getInstance().name)
 
@@ -504,6 +517,7 @@ class MasterService(Service):
 			if previousRole == MasterService.RL_VOTING:
 				# Others nodes will re-trigger an election if we win this one
 				log.warn("Quitting cluster during election stage !")
+
 			d=defer.succeed(None)
 		
 		return d
