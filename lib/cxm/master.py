@@ -24,9 +24,6 @@
 ###########################################################################
 
 
-
-from pprint import pprint
-
 from twisted.application.service import Service
 from twisted.internet import reactor, error
 from twisted.internet.defer import Deferred
@@ -44,6 +41,7 @@ from node import Node
 from xencluster import XenCluster, InstantiationError
 from rpc import RPCService, NodeRefusedError, RPCRefusedError
 from diskheartbeat import DiskHeartbeat
+from agent import Agent
 
 # TODO add check disk nr_node
 # TODO gérer cas partition + possibilité d'ajout de node pendant partition ?
@@ -121,19 +119,33 @@ class MasterService(Service):
 			return defer.succeed(None)
 	
 	def panic(self):
-		# Engage panic mode
-		if self.role != MasterService.RL_ACTIVE:
-			log.warn("I'm not master. Cannot engage panic mode.")
-			raise RPCRefusedError("Not master")
+		""" Engage panic mode. """
 
-		log.emerg("SYSTEM FAILURE: Panic mode engaged.")
-		log.emerg("This is a critical error. You should bring your ass over here, right now.")
-		log.emerg("Please check logs and be sure of what you're doing before re-engaging normal mode.")
-		self.state=MasterService.ST_PANIC
+		if self.role == MasterService.RL_VOTING:
+			# No master during election stage: waiting next master
+			log.warn("Panic mode requested during election stage: delaying.")
+			# TODO 
 
-		# TODO + stop LB
-		if self.l_masterDog.running:
-			self.l_masterDog.stop()
+		elif self.role == MasterService.RL_PASSIVE:
+			log.warn("I'm slave: asking master to engage panic mode...")
+
+			agent=Agent()
+			d=agent.panic()
+			d.addErrback(log.err)
+
+		elif self.role == MasterService.RL_ACTIVE:
+			log.emerg("SYSTEM FAILURE: Panic mode engaged.")
+			log.emerg("This is a critical error. You should bring your ass over here, right now.")
+			log.emerg("Please check logs and be sure of what you're doing before re-engaging normal mode.")
+			self.state=MasterService.ST_PANIC
+
+			# TODO + stop LB
+			if self.l_masterDog.running:
+				self.l_masterDog.stop()
+
+		else: # RL_ALONE or RL_JOINING or RL_LEAVING
+			log.warn("I'm not in a running state (master or slave). Cannot engage panic mode.")
+			raise RPCRefusedError("Not in running state")
 
 
 	# Properties accessors
