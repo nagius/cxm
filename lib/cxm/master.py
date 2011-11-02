@@ -90,6 +90,7 @@ class MasterService(Service):
 		self.currentElection	= None		# Election name, none if no pending election
 		self.f_tally			= None		# IDelayedCall used to trigger countVotes()
 		self.lastTallyDate		= 0			# Timestamp for debbuging elections
+		self.panicRequested		= False		# True if panic is requested during election
 
 	def startService(self):
 		Service.startService(self)
@@ -118,22 +119,17 @@ class MasterService(Service):
 		else:
 			return defer.succeed(None)
 	
-	def panic(self):
-		""" Engage panic mode. """
+	def panic(self, noCheck=False):
+		""" 
+		Engage panic mode.
+		Use noCheck=True if you want to panic whatever the cluster role.
+		"""
 
-		if self.role == MasterService.RL_VOTING:
-			# No master during election stage: waiting next master
-			log.warn("Panic mode requested during election stage: delaying.")
-			# TODO 
+		def panicFailed(reason):
+			log.emerg("Panic query failed: %s." % (reason.getErrorMessage()))
+			self.panic(True)
 
-		elif self.role == MasterService.RL_PASSIVE:
-			log.warn("I'm slave: asking master to engage panic mode...")
-
-			agent=Agent()
-			d=agent.panic()
-			d.addErrback(log.err)
-
-		elif self.role == MasterService.RL_ACTIVE:
+		if self.role == MasterService.RL_ACTIVE or noCheck:
 			log.emerg("SYSTEM FAILURE: Panic mode engaged.")
 			log.emerg("This is a critical error. You should bring your ass over here, right now.")
 			log.emerg("Please check logs and be sure of what you're doing before re-engaging normal mode.")
@@ -142,6 +138,19 @@ class MasterService(Service):
 			# TODO + stop LB
 			if self.l_masterDog.running:
 				self.l_masterDog.stop()
+
+		elif self.role == MasterService.RL_VOTING:
+			# No master during election stage: waiting next master
+			log.warn("Panic mode requested during election stage: delaying.")
+			self.panicRequested=True
+
+		elif self.role == MasterService.RL_PASSIVE:
+			log.warn("I'm slave: asking master to engage panic mode...")
+
+			agent=Agent()
+			d=agent.panic()
+			d.addErrback(panicFailed)
+			d.addErrback(log.err)
 
 		else: # RL_ALONE or RL_JOINING or RL_LEAVING
 			log.warn("I'm not in a running state (master or slave). Cannot engage panic mode.")
@@ -299,9 +308,10 @@ class MasterService(Service):
 
 		if type(self.ballotBox) != dict or len(self.ballotBox) == 0:
 			log.emerg("No vote received ! There is a critical network failure.")
-			self.panic()
+			self.panic(True) # noCheck=True because role is not consistent
 			return
 
+		# Select election winner
 		self.currentElection=None
 		self.lastTallyDate=int(time.time())
 		self.master=self.ballotBox[max(self.ballotBox.keys())]
@@ -314,7 +324,11 @@ class MasterService(Service):
 			self._startMaster()
 		else:
 			self.role=MasterService.RL_PASSIVE
-
+		
+		if self.panicRequested:
+			log.warn("Engaging panic mode requested during election stage.")
+			self.panicRequested=False
+			self.panic()
 	
 	# Passive master's stuff (slave)
 	###########################################################################
@@ -328,10 +342,11 @@ class MasterService(Service):
 		def slaveWatchdogFailed(reason):
 			log.emerg("Master Heartbeat checks failed: %s." % (reason.getErrorMessage()))
 			# Stop slave heartbeat to tell master we have a problem, but if we are here, 
-			# there is no more master, and so, we cannot switch into panic mode.
+			# there is no more master, and so, we cannot ensure that panic mode will be propagated.
 			# Hope that another node will trigger an election... and fence me.
 			self.s_slaveHb.stopService()  
 			log.emerg("This is an unrecoverable error: FENCE ME !")
+			self.panic(True) # noCheck because there is no master
 
 		def startSlaveWatchdog():
 			if not self.l_slaveDog.running:
