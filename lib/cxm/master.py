@@ -212,6 +212,7 @@ class MasterService(Service):
 				log.warn("Received slave heartbeat from %s while we're not master." % (msg.node))
 			return
 
+		# Check origin of message
 		if msg.node not in self.status:
 			log.warn("Received slave heartbeat from unknown node %s." % (msg.node))
 			return
@@ -224,6 +225,11 @@ class MasterService(Service):
 		if self.master is None:
 			self.master=msg.node
 			log.info("Found master at %s." % (self.master))
+		else:
+			# Check origin of message if we known the cluster members
+			if msg.node not in self.status:
+				log.warn("Received master heartbeat from unknown node %s." % (msg.node))
+				return
 
 		# Active master's checks 
 		if self.role == MasterService.RL_ACTIVE:
@@ -261,6 +267,11 @@ class MasterService(Service):
 			result.sendMessage()
 			port.stopListening()
 
+		# Check origin of message
+		if msg.node not in self.status:
+			log.warn("Received vote request from unknown node %s." % (msg.node))
+			return
+
 		# Discard current election if there is a new one
 		if self.role == MasterService.RL_VOTING:
 			log.warn("Previous election aborded: new vote request received.")
@@ -294,6 +305,11 @@ class MasterService(Service):
 		d.addErrback(log.err)
 
 	def recordVote(self, msg):
+		# Check origin of message
+		if msg.node not in self.status:
+			log.warn("Vote received from unknown node %s." % (msg.node))
+			return
+
 		if self.role != MasterService.RL_VOTING:
 			log.warn("Vote received from %s but it's not election time !" % (msg.node))
 			return
