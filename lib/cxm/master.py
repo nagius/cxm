@@ -129,7 +129,10 @@ class MasterService(Service):
 			log.emerg("Panic query failed: %s." % (reason.getErrorMessage()))
 			self.panic(True)
 
-		if self.role == MasterService.RL_ACTIVE or noCheck:
+		if self.state == MasterService.ST_PANIC:
+			log.emerg("Panic mode already engaged.")
+
+		elif self.role == MasterService.RL_ACTIVE or noCheck:
 			log.emerg("SYSTEM FAILURE: Panic mode engaged.")
 			log.emerg("This is a critical error. You should bring your ass over here, right now.")
 			log.emerg("Please check logs and be sure of what you're doing before re-engaging normal mode.")
