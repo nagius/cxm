@@ -506,6 +506,9 @@ class NodeTests(MockerTestCase):
 	def test_ping__baddns(self):
 		self.assertFalse(self.node.ping("non-exist"))
 
+	def test_ping__empty(self):
+		self.assertFalse(self.node.ping([]))
+
 	def test_fence_ok(self):
 		self.assertEqual(self.node.fence("node1"),None)
 

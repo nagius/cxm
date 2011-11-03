@@ -588,6 +588,9 @@ class Node:
 		if not isinstance(hostnames, list):
 			hostnames=[hostnames]
 
+		if len(hostnames)==0:
+			return False
+
 		# TODO: handle DNS failure and missing command ?
 		return "alive" in self.run("fping -r1 " + " ".join(hostnames) + "|| true").read()
 
