@@ -43,7 +43,6 @@ from rpc import RPCService, NodeRefusedError, RPCRefusedError
 from diskheartbeat import DiskHeartbeat
 from agent import Agent
 
-# TODO add check disk nr_node
 # TODO gérer cas partition + possibilité d'ajout de node pendant partition ?
 
 
@@ -681,6 +680,13 @@ class MasterService(Service):
 			log.err("Diskheartbeat read failed: %s." % (e))
 			raise
 			
+		# Compare node lists from net and disk hearbeat
+		# Use Set's symmetric_difference
+		if len(Set(tsDisk.keys()) ^ Set(self.status.keys())) != 0:
+			log.err("Node list is inconsistent between net and disk heartbeat !")
+			self.panic()
+			return
+
 		# Check disk heartbeat
 		log.debugd("Diskhearbeat status:", tsDisk)
 		diskFailed=Set()
