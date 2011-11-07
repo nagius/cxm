@@ -236,6 +236,7 @@ class MasterService(Service):
 			if self.master == msg.node:
 				return		# Discard our own master heartbeat
 			else:
+				# Usecase #8: partition ended with many master
 				log.warn("Received another master's heartbeat from %s ! Trying to recover from partition..." % (msg.node))
 				self.triggerElection().addErrback(log.err) 
 
@@ -633,11 +634,13 @@ class MasterService(Service):
 	###########################################################################
 
 	def checkMasterHeartbeat(self):
+		# Master failover is still possible even if in panic mode
+
 		# Master failover only if we are a slave
 		if self.role != MasterService.RL_PASSIVE:
 			return 
 
-		# Master failover still possible even if in panic mode
+		# Usecase #7: master lost
 		if self.masterLastSeen+MasterService.TM_MASTER <= int(time.time()):
 			log.warn("Broadcast heartbeat lost, master has disappeared.")
 			return self.triggerElection()
@@ -769,7 +772,7 @@ class MasterService(Service):
 			return dl
 
 
-		# Start recovery of failed nodes
+		# Usecase #4: Start recovery of failed nodes
 		if len(netFailed)>0 or len(diskFailed)>0:
 			self.state=MasterService.ST_RECOVERY
 			log.info("Starting recovery process...")
@@ -779,9 +782,6 @@ class MasterService(Service):
 			d.addErrback(recoverFailed)
 			d.addErrback(log.err)
 
-
-	# TODO comparaison liste node ? cas partition a voir
-	# TODO cas self failure mais pas les autres +  protection self-recover ?
 
 
 # vim: ts=4:sw=4:ai
