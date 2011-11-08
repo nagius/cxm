@@ -43,8 +43,6 @@ from rpc import RPCService, NodeRefusedError, RPCRefusedError
 from diskheartbeat import DiskHeartbeat
 from agent import Agent
 
-# TODO gérer cas partition + possibilité d'ajout de node pendant partition ?
-
 
 class MasterService(Service):
 
@@ -58,7 +56,6 @@ class MasterService(Service):
 
 	# Possible states, aka error mode (for self.state)
 	ST_NORMAL    = "normal" 		# Normal operations
-	ST_PARTITION = "partition"		# When a network failure separate cluster in two part
 	ST_RECOVERY  = "recovery"		# When a failed node is being recovered
 	ST_PANIC     = "panic"			# "I don't do anything" mode
 

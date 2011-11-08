@@ -101,7 +101,7 @@ class MessageMasterHB(Message):
 
 		from master import MasterService
 		if self.state not in [MasterService.ST_NORMAL, MasterService.ST_PANIC,
-			MasterService.ST_PARTITION, MasterService.ST_RECOVERY]:
+			MasterService.ST_RECOVERY]:
 			raise MessageError("Wrong value for state")
 			
 		return self
