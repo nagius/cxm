@@ -17,6 +17,9 @@ TAC_FILE=$(python -c "import cxm, os; print os.path.dirname(cxm.__file__)")/${pr
 LOG_DIR=/var/log/cxm/
 SVN_REPO="/etc/xen/vm"
 
+# used by svn to get password recorded in ~/.subversion
+export HOME="/root"
+
 # check for required files
 if [ ! -x /usr/bin/twistd ]; then
 	echo -n "$0: /usr/bin/twistd not found !"
