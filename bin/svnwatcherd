@@ -47,6 +47,14 @@ case "$1" in
 			exit 2
 		fi		
 
+		# Leave cxmd 4 seconds max to start
+		COUNTER=4
+		while [ "$(cxmd_ctl --ping 2>/dev/null)" != "OK" -a $COUNTER -gt 0 ]; do
+			echo -n "."
+			let COUNTER-=1
+			sleep 1
+		done
+
 		/usr/bin/twistd -y $TAC_FILE --pidfile=$PID_FILE --logfile=$LOG_DIR/$prog.log
 		RETVAL=$?
 		[ "$RETVAL" = 0 ] && success || failure
