@@ -384,6 +384,7 @@ class MasterService(Service):
 
 		if self.state == MasterService.ST_RECOVERY:
 			# Recovery will be re-run by next master (VM on current host may be lost)
+			# but first recovery may be still running (cannot kill threads)
 			log.warn("Stopping master during a recovery process !")
 
 		# Send a last heartbeat before stopping
