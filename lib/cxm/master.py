@@ -707,13 +707,13 @@ class MasterService(Service):
 		if len(self.status) > 2:
 
 			# Usecase #6: lost all diskheartbeats (except me)
-			if len(diskFailed-Set([self.localNode.get_hostname()])) == len(self.status)-1:
+			if len(diskFailed-Set([self.localNode.get_hostname()])) >= len(self.status)-1:
 				log.err("Lost all diskheartbeats !")
 				# Just panic
 				raise Exception("Storage failure")
 
 			# Usecase #5: lost all netheartbeats (except me)
-			if len(netFailed-Set([self.localNode.get_hostname()])) == len(self.status)-1:
+			if len(netFailed-Set([self.localNode.get_hostname()])) >= len(self.status)-1:
 				log.err("Lost all netheartbeats ! This is a network failure.")
 				log.err("I'm isolated, stopping master...")
 
