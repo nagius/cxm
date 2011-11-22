@@ -680,9 +680,8 @@ class MasterService(Service):
 		# Compare node lists from net and disk hearbeat
 		# Use Set's symmetric_difference
 		if len(Set(tsDisk.keys()) ^ Set(self.status.keys())) != 0:
-			log.err("Node list is inconsistent between net and disk heartbeat !")
-			self.panic()
-			return
+			log.err("Node list is inconsistent between net and disk heartbeats !")
+			raise Exception("Inconsistent internal data")
 
 		# Check disk heartbeat
 		log.debugd("Diskhearbeat status:", tsDisk)
