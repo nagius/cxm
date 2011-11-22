@@ -698,6 +698,11 @@ class MasterService(Service):
 				log.warn("Disk heartbeat lost for %s." % (name))
 				diskFailed.add(name)
 
+		# If we loose all heartbeats including master, there is a problem on localhost
+		if len(diskFailed) >= len(self.status) or len(netFailed) >= len(self.status):
+			log.err("Lost all heartbeats including me ! Maybe a clock screwed up ?")
+			raise Exception("Master failure")
+
 		# If there is more than 2 nodes, we can detect self-failure
 		if len(self.status) > 2:
 
