@@ -726,6 +726,11 @@ class MasterService(Service):
 				# TODO: smarter recovery ?
 				return
 
+		# Prevent master from fencing itself
+		if DNSCache.getInstance().name in netFailed|diskFailed:
+			log.err("Localhost failure detected ! I can't fence myself.")
+			raise Exception("Localhost failure")
+
 		def recoverFailed(reason):
 			log.emerg("Recovery failed:", reason.getErrorMessage())
 			self.panic()
