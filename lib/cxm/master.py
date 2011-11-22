@@ -36,7 +36,7 @@ from dnscache import DNSCache
 from messages import *
 import logs as log
 from heartbeats import * 
-import core
+import core, meta
 from node import Node
 from xencluster import XenCluster, InstantiationError
 from rpc import RPCService, NodeRefusedError, RPCRefusedError
@@ -90,6 +90,9 @@ class MasterService(Service):
 
 	def startService(self):
 		Service.startService(self)
+		
+		# Print welcome message
+		log.info("Starting cxmd version", meta.version)
 
 		self._messagePort=reactor.listenUDP(core.cfg['UDP_PORT'], UDPListener(self.dispatchMessage))
 		reactor.callLater(2, self.joinCluster)
