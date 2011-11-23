@@ -56,11 +56,14 @@ class VM:
 		log.debug("[VM]", vmname, self.config)
 
 		# Get devices from config file
-		for disk in self.config['disk']:
-			try:
-				self.devices[self.diskre.search(disk).group(1)]=self.diskre.search(disk).group(2)
-			except:
-				log.warn("Bad disk input for %s: %s" % (self.name, disk))
+		try:
+			for disk in self.config['disk']:
+				try:
+					self.devices[self.diskre.search(disk).group(1)]=self.diskre.search(disk).group(2)
+				except:
+					log.warn("Bad disk input for %s: %s" % (self.name, disk))
+		except KeyError:
+			pass
 		
 	def __repr__(self):
 		return "<VM Instance: "+ self.name +">"
