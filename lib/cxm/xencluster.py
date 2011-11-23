@@ -476,7 +476,7 @@ class XenCluster:
 		return safe
 
 	def check_bridges(self):
-		"""Perform a check on briges' configurations.
+		"""Perform a check on briges configurations.
 
 		Return False if a bridge is missing somewhere.
 		"""
@@ -500,6 +500,35 @@ class XenCluster:
 		for node in missing.keys():
 			if missing[node]:
 				log.info(" ** WARNING : Missing bridges on %s : %s" % (node,", ".join(list(Set(missing[node])))))
+				safe=False
+
+		return safe
+
+	def check_cfg(self):
+		"""Perform a check on configuration files.
+
+		Return False if a file is missing somewhere.
+		"""
+		log.info("Checking synchronization of configuration files...")
+		safe=True
+
+		# Get a dict with config files of each nodes
+		nodes_cfg=dict()
+		for node in self.get_nodes():
+			nodes_cfg[node.get_hostname()]=node.get_possible_vm_names()
+
+		log.debug("nodes_cfg=",nodes_cfg)
+
+		# Compare file lists for each nodes
+		missing=dict()
+		for node in nodes_cfg.keys():
+			for cfg in nodes_cfg.values():
+				missing.setdefault(node,[]).extend(list(Set(cfg) - Set(nodes_cfg[node])))
+
+		# Show missing files without duplicates
+		for node in missing.keys():
+			if missing[node]:
+				log.info(" ** WARNING : Missing configuration files on %s : %s" % (node,", ".join(list(Set(missing[node])))))
 				safe=False
 
 		return safe

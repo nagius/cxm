@@ -465,6 +465,50 @@ class XenClusterTests(MockerTestCase):
 
 		self.assertEqual(self.cluster.check_bridges(),True)
 
+	def test_check_cfg__nok(self):
+
+		n1_mocker = Mocker()
+		n1 = n1_mocker.mock()
+		n1.get_hostname()
+		n1_mocker.result("node1")
+		n1.get_possible_vm_names()
+		n1_mocker.result(['vm1','vm2','vm3'])
+		n1_mocker.replay()
+
+		n2_mocker = Mocker()
+		n2 = n2_mocker.mock()
+		n2.get_hostname()
+		n2_mocker.result('node2')
+		n2.get_possible_vm_names()
+		n2_mocker.result(['vm4','vm2'])
+		n2_mocker.replay()
+
+		self.cluster.nodes={'node1': n1, 'node2': n2}
+
+		self.assertEqual(self.cluster.check_cfg(),False)
+
+	def test_check_cfg__ok(self):
+
+		n1_mocker = Mocker()
+		n1 = n1_mocker.mock()
+		n1.get_hostname()
+		n1_mocker.result("node1")
+		n1.get_possible_vm_names()
+		n1_mocker.result(['vm2','vm1'])
+		n1_mocker.replay()
+
+		n2_mocker = Mocker()
+		n2 = n2_mocker.mock()
+		n2.get_hostname()
+		n2_mocker.result('node2')
+		n2.get_possible_vm_names()
+		n2_mocker.result(['vm1','vm2'])
+		n2_mocker.replay()
+
+		self.cluster.nodes={'node1': n1, 'node2': n2}
+
+		self.assertEqual(self.cluster.check_cfg(),True)
+
 	def test_emergency_eject__ok(self):
 		migrate = self.mocker.replace(self.cluster.migrate)
 		migrate('vm1', 'node1', 'node3')
