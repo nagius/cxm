@@ -459,6 +459,10 @@ class XenCluster:
 		if not self.check_bridges():
 			safe=False
 
+		# Check synchronization of configuration files
+		if not self.check_cfg():
+			safe=False
+
 		# Check existence of used logicals volumes
 		if not self.get_local_node().check_missing_lvs():
 			safe=False
