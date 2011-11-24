@@ -245,12 +245,12 @@ def cxm_search(cluster, options, vm):
 
 	try:
 		names = cluster.get_local_node().get_possible_vm_names(vm)
-		vm=names[0] # Should have at least one value, if not, it's a ShellError
+		vm=names[0] # IndexError if empty list
 
 		if(len(names)>1):
 			print "Possible names are %s: be more specific." % (", ".join(names))
 			return
-	except node.ShellError, IndexError:
+	except (node.ShellError, IndexError):
 		print "** WARNING: configuration file not found for %s" % (vm)
 	
 	if not core.cfg['QUIET'] : print "Searching", vm, "..."

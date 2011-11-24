@@ -475,11 +475,11 @@ class Node:
 		"""
 		Return the list of possible vm name, based on file's names in the configuration directory.
 		You can use globbing (bash syntax) to match names.
-		If there is no match, raise a ShellError.
+		If there is no match, return an empty list.
 		"""
 
 		names=list()
-		for file in self.run("ls %s/%s*" % (core.cfg['VMCONF_DIR'], name)).readlines():
+		for file in self.run("ls %s/%s* || true" % (core.cfg['VMCONF_DIR'], name)).readlines():
 			name=os.path.basename(file.strip()).rsplit(".cfg",1)[0]
 			names.append(name)
 

@@ -448,7 +448,8 @@ class NodeTests(MockerTestCase):
 		self.assertEqual(result, names)
 
 	def test_get_possible_vm_names__none(self):
-		self.assertRaises(cxm.node.ShellError, self.node.get_possible_vm_names, "non-exist")
+		result=self.node.get_possible_vm_names("non-exist")
+		self.assertEqual(result, list())
 
 	def test_check_activated_lvs_ok(self):
 
