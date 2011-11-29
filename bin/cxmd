@@ -2,7 +2,7 @@
 #
 # Init file for cxm daemon
 #
-# chkconfig: 345 98 00
+# chkconfig: 345 98 01
 # description: cxm daemon
 #
 
