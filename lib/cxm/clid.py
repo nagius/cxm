@@ -282,12 +282,17 @@ def run():
 		if not reactor._stopped:
 			reactor.stop()
 
+	def exitWithCode(returnCode):
+		sys.stdout.flush()
+		sys.stderr.flush()
+		os._exit(returnCode)
+
 	def fail(reason):
 		# Handle exit code
 		if reason.check(SystemExit):
-			rc=int(reason.getErrorMessage())
+			returnCode=int(reason.getErrorMessage())
 		else:
-			rc=1
+			returnCode=1
 			if core.cfg['API_DEBUG']:
 				reason.printTraceback()
 			else:
@@ -296,7 +301,7 @@ def run():
 				else:
 					print >>sys.stderr, "Error:", reason.getErrorMessage()
 	
-		reactor.addSystemEventTrigger('after', 'shutdown', os._exit, rc)
+		reactor.addSystemEventTrigger('after', 'shutdown', exitWithCode, returnCode)
 	
 	# Call specified command
 	try:

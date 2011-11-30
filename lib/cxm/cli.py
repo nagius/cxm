@@ -558,12 +558,17 @@ def run():
 	# Get the subcommand
 	cmd = cxm_lookup_cmd(args[0])
 
+	def exitWithCode(returnCode):
+		sys.stdout.flush()
+		sys.stderr.flush()
+		os._exit(returnCode)
+
 	def fail(reason):
 		# Handle exit code
 		if reason.check(SystemExit):
-			rc=int(reason.getErrorMessage())
+			returnCode=int(reason.getErrorMessage())
 		else:
-			rc=1
+			returnCode=1
 			if options.debug:
 				reason.printTraceback()
 			else:
@@ -576,9 +581,9 @@ def run():
 		if reason.check(TypeError):
 			print "Usage :"
 			print get_help(args[0]),
-			rc=3 
+			returnCode=3 
 
-		reactor.addSystemEventTrigger('after', 'shutdown', os._exit, rc)
+		reactor.addSystemEventTrigger('after', 'shutdown', exitWithCode, returnCode)
 		if not reactor._stopped:
 			reactor.stop()
 
