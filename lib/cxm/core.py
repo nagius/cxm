@@ -80,6 +80,28 @@ cfg = {
 	'HB_DISK': None,			# (string) Mandatory for cxmd
 	}
 
+# Types for configuration entries
+cfg_type = { 
+	'VMCONF_DIR': 			str,
+	'PATH': 				str,
+	'NOREFRESH': 			bool,
+	'API_DEBUG': 			bool,
+	'DAEMON_DEBUG': 		bool,
+	'QUIET': 				bool,
+	'USESSH': 				bool,
+	'LB_MAX_VM_PER_NODE': 	int,
+	'LB_MAX_LAYER': 		int,
+	'LB_MIN_GAIN': 			int,
+	'FENCE_CMD': 			str,
+	'DISABLE_FENCING': 		bool,
+	'CLUSTER_NAME': 		str,
+	'ALLOWED_NODES': 		list,
+	'UDP_PORT': 			int,
+	'TCP_PORT': 			int,
+	'TIMER': 				int,
+	'UNIX_PORT': 			str,
+	'HB_DISK': 				str,
+	}
 
 def get_api_version():
 	"""Return the version number of this API."""
@@ -87,11 +109,24 @@ def get_api_version():
 
 def load_cfg():
 	"""Load the global configuration file into the cfg dict."""
+
+	type_map = {
+		str:  "a string",
+		bool: "a boolean",
+		int:  "an integer",
+		list: "a list",
+	}
+
 	try:
 		execfile("/etc/xen/cxm.conf",dict(),cfg)
+
+		# Check type of configuration entries
+		for key in cfg_type.keys():
+			assert type(cfg[key]) == cfg_type[key], "%s should be %s." % (key, type_map[cfg_type[key]])
+
 	except Exception,e:
 		log.err("Configuration file error:", e)
-		sys.exit(3)
+		sys.exit(e)
 
 	if not cfg['VMCONF_DIR'].endswith("/"):
 		cfg['VMCONF_DIR']+="/"
