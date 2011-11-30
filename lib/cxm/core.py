@@ -75,6 +75,7 @@ cfg = {
 	'ALLOWED_NODES': [],
 	'UDP_PORT': 1255,
 	'TCP_PORT': 1255,
+	'TIMER': 3,					# Main timer for failover, in seconds (3 is good)
 	'UNIX_PORT': "/var/run/cxmd.socket",
 	'HB_DISK': None,			# (string) Mandatory for cxmd
 	}

@@ -61,7 +61,7 @@ class MasterService(Service):
 
 	# Elections and failover timeouts
 	TM_TALLY	= 1					# Records vote for 1 sec
-	TM_WATCHDOG	= 3					# Check for failure every 3 sec
+	TM_WATCHDOG	= core.cfg['TIMER']	# Check for failure every 3 sec
 	TM_MASTER	= TM_WATCHDOG*2		# Re-elect master if no response wihtin 6 sec
 	TM_SLAVE	= TM_WATCHDOG*3		# Trigger failover if no response within 9 sec (master + tally + rounding)
 
