@@ -61,7 +61,8 @@ class VM:
 				try:
 					self.devices[self.diskre.search(disk).group(1)]=self.diskre.search(disk).group(2)
 				except:
-					log.warn("Bad disk input for %s: %s" % (self.name, disk))
+					if not core.cfg['QUIET']:
+						log.warn("Bad disk input for %s: %s" % (self.name, disk))
 		except KeyError:
 			pass
 		
