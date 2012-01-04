@@ -53,6 +53,7 @@ class DNSCache(object):
 	def _feedCache(self, ip, name):
 		self._resolve[ip]=name
 		self._reverse[name]=ip
+		return ip # for result of get_by_name()
 
 	def add(self, name): 
 		d=reactor.resolve(name)
