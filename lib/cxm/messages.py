@@ -190,7 +190,7 @@ class MessageHelper(object):
 
 	@staticmethod
 	def type(msg):
-		if msg['type'] in Messages.map:
+		if msg['type'] in MessageHelper.map:
 			return msg['type']
 		else:
 			raise MessageError("bad type")
