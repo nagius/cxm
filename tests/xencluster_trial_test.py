@@ -1,7 +1,7 @@
 #!/usr/bin/python
 
 # cxm - Clustered Xen Management API and tools
-# Copyleft 2011 - Nicolas AGIUS <nagius@astek.fr>
+# Copyleft 2011-2012 - Nicolas AGIUS <nicolas.agius@lps-it.fr>
 
 ###########################################################################
 #

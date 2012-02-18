@@ -1,7 +1,7 @@
 #-*- coding:Utf-8 -*-
 
 # cxm - Clustered Xen Management API and tools
-# Copyleft 2010 - Nicolas AGIUS <nagius@astek.fr>
+# Copyleft 2010-2012 - Nicolas AGIUS <nicolas.agius@lps-it.fr>
 # $Id:$
 
 ###########################################################################
@@ -30,7 +30,7 @@ name = "cxm"
 version = "0.9.0"
 update_date = "November 2011"
 license = "GPL"
-authors = [("Nicolas Agius","nagius@astek.fr")]
+authors = [("Nicolas Agius","nicolas.agius@lps-it.fr")]
 url = "https://github.com/nagius/cxm"
 description = "Clustered Xen Management API and tools"
 manbook = description
