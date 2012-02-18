@@ -1,4 +1,6 @@
 #!/usr/bin/env python
+# -*- coding:Utf-8 -*-
+
 # cxm - Clustered Xen Management API and tools
 # Copyleft 2010-2012 - Nicolas AGIUS <nicolas.agius@lps-it.fr>
 # $Id:$

@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env python
 # -*- coding:Utf-8 -*-
 
 # cxm - Clustered Xen Management API and tools

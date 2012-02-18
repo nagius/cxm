@@ -1,5 +1,4 @@
-#!/usr/bin/python
-#-*- coding:Utf-8 -*-
+# -*- coding:Utf-8 -*-
 
 # cxm - Clustered Xen Management API and tools
 # Copyleft 2010-2012 - Nicolas AGIUS <nicolas.agius@lps-it.fr>
@@ -307,9 +306,5 @@ class Solution:
 
 	def __repr__(self):
 		return "<Solution: state=%s,score=%s>" % (self.state, self.score)
-
-
-if __name__ == "__main__":
-    pass
 
 # vim: ts=4:sw=4:ai

@@ -1,4 +1,5 @@
-#!/usr/bin/python -u
+#!/usr/bin/env python -u
+# -*- coding:Utf-8 -*-
 # Option -u is needed for communication with snmpd
 
 # cxm - Clustered Xen Management API and tools
