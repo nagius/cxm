@@ -24,9 +24,6 @@
 ###########################################################################
 
 
-
-from pprint import pprint
-
 from twisted.application.service import Service
 from twisted.internet import defer, task
 from dnscache import DNSCache
@@ -55,7 +52,9 @@ class SlaveHearbeatService(Service):
 		self._hb = NetHeartbeat(self.forgeSlaveHeartbeat, self._master.getActiveMaster())
 		self._hb.start()
 		self._call = task.LoopingCall(self._master.disk.write_ts, DNSCache.getInstance().name)
-		self._call.start(1).addErrback(heartbeatFailed)
+		d=self._call.start(1)
+		d.addErrback(heartbeatFailed)
+		return d
 	
 	def stopService(self):
 		if self.running:
