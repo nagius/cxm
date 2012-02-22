@@ -136,23 +136,23 @@ class InotifyTests(unittest.TestCase, MockerTestCase):
 
 		# Empty line
 		pp.outReceived("\n\n\n")
-		self.assertEqual(pp.toAdd, [])
-		self.assertEqual(pp.toDel, [])
+		self.assertEqual(pp.added, [])
+		self.assertEqual(pp.deleted, [])
 
 		# Single line
 		pp.outReceived("/ DELETE file1\n")
-		self.assertEqual(pp.toAdd, [])
-		self.assertEqual(pp.toDel, ['file1'])
+		self.assertEqual(pp.added, [])
+		self.assertEqual(pp.deleted, ['file1'])
 
 		# Multiple line
 		pp.outReceived("/ CREATE file2\n / DELETE file3\n\n")
-		self.assertEqual(pp.toAdd, ['file2'])
-		self.assertEqual(pp.toDel, ['file1', 'file3'])
+		self.assertEqual(pp.added, ['file2'])
+		self.assertEqual(pp.deleted, ['file1', 'file3'])
 
 		# Blaclisted file
 		pp.outReceived("/ CREATE tempfile.tmp\n")
-		self.assertEqual(pp.toAdd, ['file2'])
-		self.assertEqual(pp.toDel, ['file1', 'file3'])
+		self.assertEqual(pp.added, ['file2'])
+		self.assertEqual(pp.deleted, ['file1', 'file3'])
 
 		# Cleanup reactor
 		pp._call.cancel()
@@ -171,8 +171,8 @@ class InotifyTests(unittest.TestCase, MockerTestCase):
 
 		pp=InotifyPP(node)
 
-		pp.toAdd = ['file1', 'file2']
-		pp.toDel = ['file3', 'file4']
+		pp.added = ['file1', 'file2']
+		pp.deleted = ['file3', 'file4']
 
 		pp.doCommit()
 		# TODO test with error

@@ -40,8 +40,8 @@ class InotifyPP(protocol.ProcessProtocol):
 	blacklist=['tempfile.tmp']
 
 	def __init__(self, node, agent=None):
-		self.toAdd=list()
-		self.toDel=list()
+		self.added=list()
+		self.deleted=list()
 		self._call=None
 		self.node=node
 		self.agent=agent
@@ -64,12 +64,12 @@ class InotifyPP(protocol.ProcessProtocol):
 			if info[2] in self.blacklist:
 				continue
 			if info[1] == "CREATE":
-				self.toAdd.append(info[2])
+				self.added.append(info[2])
 			elif info[1] == "DELETE":
-				self.toDel.append(info[2])
+				self.deleted.append(info[2])
 		
 		# Don't commit if there is no files
-		if len(self.toAdd) <= 0 and len(self.toDel) <= 0:
+		if len(self.added) <= 0 and len(self.deleted) <= 0:
 			return
 
 		if isinstance(self._call, DelayedCall) and self._call.active():
@@ -78,17 +78,17 @@ class InotifyPP(protocol.ProcessProtocol):
 			self._call=reactor.callLater(self.delay, self.doCommit)
 
 	def doCommit(self):
-		toAdd=deepcopy(self.toAdd)
-		self.toAdd=list()
-		toDel=deepcopy(self.toDel)
-		self.toDel=list()
+		added=deepcopy(self.added)
+		self.added=list()
+		deleted=deepcopy(self.deleted)
+		self.deleted=list()
 
-		log.info("Committing for "+", ".join(toAdd)+", ".join(toDel))
+		log.info("Committing for "+", ".join(added)+", ".join(deleted))
 		try:
-			if len(toAdd) > 0:
-				self.node.run("svn add " + " ".join(map(lambda x: core.cfg['VMCONF_DIR']+x, toAdd)))
-			if len(toDel) > 0:
-				self.node.run("svn delete " + " ".join(map(lambda x: core.cfg['VMCONF_DIR']+x, toDel)))
+			if len(added) > 0:
+				self.node.run("svn add " + " ".join(map(lambda x: core.cfg['VMCONF_DIR']+x, added)))
+			if len(deleted) > 0:
+				self.node.run("svn delete " + " ".join(map(lambda x: core.cfg['VMCONF_DIR']+x, deleted)))
 			self.node.run("svn --non-interactive commit -m 'svnwatcher autocommit' "+core.cfg['VMCONF_DIR'])
 			self.doUpdate()
 		except Exception, e:
