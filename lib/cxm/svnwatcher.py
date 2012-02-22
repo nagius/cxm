@@ -96,11 +96,13 @@ class InotifyPP(protocol.ProcessProtocol):
 			d=XenCluster.getDeferInstance(result)
 			d.addCallback(doClusterUpdate)
 			d.addErrback(log.err)
+			return d
 
 		if self.agent:
 			d=self.agent.getNodesList()
 			d.addCallback(getCluster)
 			d.addErrback(log.err)
+			return d
 		else:
 			self.node.run("svn update "+ core.cfg['VMCONF_DIR'])
 			
@@ -137,6 +139,7 @@ class SvnwatcherService(Service):
 		d.addCallbacks(cluster, standalone)
 		d.addBoth(lambda _: self.spawnInotify())
 		d.addErrback(log.err)
+		return d
 	
 	def stopService(self):
 		if self.running:

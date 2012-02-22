@@ -29,7 +29,7 @@ from cxm.xencluster import XenCluster
 import cxm, socket
 from twisted.trial import unittest
 from twisted.python.failure import Failure
-from twisted.internet import error, reactor, defer
+from twisted.internet import error, defer
 from mocker import *
 
 # Argh, multiple inheritance in diamond is really bad ! But there is no other way to mock twisted...
