@@ -149,6 +149,11 @@ class InotifyTests(unittest.TestCase, MockerTestCase):
 		self.assertEqual(pp.toAdd, ['file2'])
 		self.assertEqual(pp.toDel, ['file1', 'file3'])
 
+		# Blaclisted file
+		pp.outReceived("/ CREATE tempfile.tmp\n")
+		self.assertEqual(pp.toAdd, ['file2'])
+		self.assertEqual(pp.toDel, ['file1', 'file3'])
+
 		# Cleanup reactor
 		pp._call.cancel()
 

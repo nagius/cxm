@@ -36,6 +36,9 @@ import logs as log
 
 class InotifyPP(protocol.ProcessProtocol):
 	
+	# List of filenames ignored by commit
+	blacklist=['tempfile.tmp']
+
 	def __init__(self, node, agent=None):
 		self.toAdd=list()
 		self.toDel=list()
@@ -58,11 +61,17 @@ class InotifyPP(protocol.ProcessProtocol):
 			if len(line) <= 0:
 				continue
 			info=line.split()
+			if info[2] in self.blacklist:
+				continue
 			if info[1] == "CREATE":
 				self.toAdd.append(info[2])
 			elif info[1] == "DELETE":
 				self.toDel.append(info[2])
 		
+		# Don't commit if there is no files
+		if len(self.toAdd) <= 0 and len(self.toDel) <= 0:
+			return
+
 		if isinstance(self._call, DelayedCall) and self._call.active():
 			self._call.reset(self.delay)
 		else:
