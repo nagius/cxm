@@ -47,11 +47,11 @@ class InotifyPP(protocol.ProcessProtocol):
 		self.agent=agent
 
 		if self.agent:
-			# Short delay to quickly propagate modifications to others nodes
+			# Short delay to quickly propagate modifications to others nodes (in seconds)
 			self.delay=0.5
 		else:
 			# We wait more longer before autocommit if we are standalone
-			self.delay=10
+			self.delay=5
 
 	def connectionMade(self):
 		log.info("Inotify started.")
@@ -107,6 +107,7 @@ class InotifyPP(protocol.ProcessProtocol):
 			d.addErrback(log.err)
 			return d
 
+		# Use local agent to avoir opening a new connection
 		if self.agent:
 			d=self.agent.getNodesList()
 			d.addCallback(getCluster)
