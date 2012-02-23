@@ -42,6 +42,7 @@ class InotifyPP(protocol.ProcessProtocol):
 	def __init__(self, node, agent=None):
 		self.added=list()
 		self.deleted=list()
+		self.updated=list()
 		self._call=None
 		self.node=node
 		self.agent=agent
@@ -62,30 +63,37 @@ class InotifyPP(protocol.ProcessProtocol):
 		for line in data.split('\n'):
 			if len(line) <= 0:
 				continue
+
 			info=line.split()
 			if info[2] in self.blacklist:
 				continue
+
 			if info[1] == "CREATE":
 				self.added.append(info[2])
 			elif info[1] == "DELETE":
 				self.deleted.append(info[2])
+			elif info[1] == "MODIFY":
+				self.updated.append(info[2])
 		
-		# Don't commit if there is no files
-		if len(self.added) <= 0 and len(self.deleted) <= 0:
-			return
-
 		if isinstance(self._call, DelayedCall) and self._call.active():
 			self._call.reset(self.delay)
 		else:
 			self._call=reactor.callLater(self.delay, self.doCommit)
 
 	def doCommit(self):
-		added=deepcopy(self.added)
-		self.added=list()
-		deleted=deepcopy(self.deleted)
-		self.deleted=list()
+		# Don't commit if there is no files
+		if (len(self.added)+len(self.deleted)+len(self.updated)) <= 0:
+			return
 
-		log.info("Committing for "+", ".join(added)+", ".join(deleted))
+		# Get a local copy for thread's work
+		added=deepcopy(self.added)
+		deleted=deepcopy(self.deleted)
+		updated=deepcopy(self.updated)
+		self.added=list()
+		self.deleted=list()
+		self.updated=list()
+
+		log.info("Committing for "+", ".join(set(added+deleted+updated)))
 		try:
 			if len(added) > 0:
 				self.node.run("svn add " + " ".join(map(lambda x: core.cfg['VMCONF_DIR']+x, added)))

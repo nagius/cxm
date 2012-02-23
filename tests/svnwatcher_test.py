@@ -144,6 +144,10 @@ class InotifyTests(unittest.TestCase, MockerTestCase):
 		self.assertEqual(pp.added, [])
 		self.assertEqual(pp.deleted, ['file1'])
 
+		# Modified file 
+		pp.outReceived("/ MODIFY file1\n")
+		self.assertEqual(pp.updated, ['file1'])
+
 		# Multiple line
 		pp.outReceived("/ CREATE file2\n / DELETE file3\n\n")
 		self.assertEqual(pp.added, ['file2'])
