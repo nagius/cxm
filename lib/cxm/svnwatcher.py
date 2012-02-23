@@ -57,6 +57,8 @@ class InotifyPP(protocol.ProcessProtocol):
 		log.info("Inotify started.")
 
 	def outReceived(self, data):
+		log.debugd("Received:", data)
+
 		for line in data.split('\n'):
 			if len(line) <= 0:
 				continue
