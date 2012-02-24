@@ -64,16 +64,31 @@ class InotifyPP(protocol.ProcessProtocol):
 			if len(line) <= 0:
 				continue
 
-			info=line.split()
-			if info[2] in self.blacklist:
+			(path, action, file)=line.split()
+
+			if file in self.blacklist:
 				continue
 
-			if info[1] == "CREATE":
-				self.added.append(info[2])
-			elif info[1] == "DELETE":
-				self.deleted.append(info[2])
-			elif info[1] == "MODIFY":
-				self.updated.append(info[2])
+			if action == "CREATE":
+				if file in self.deleted:		# Usecase DELETE+CREATE
+					self.deleted.remove(file)
+					self.updated.append(file)
+				else:
+					self.added.append(file)
+			elif action == "DELETE":
+				if file in self.added: 			# Usecase CREATE+DELETE
+					self.added.remove(file)
+				else:
+					self.deleted.append(file)
+				if file in self.updated:		# Usecase MODIFY+DELETE
+					self.updated.remove(file)
+			elif action == "MODIFY":
+				self.updated.append(file)
+
+			# Remove duplicate entries
+			self.added=list(set(self.added))
+			self.deleted=list(set(self.deleted))
+			self.updated=list(set(self.updated))
 		
 		if isinstance(self._call, DelayedCall) and self._call.active():
 			self._call.reset(self.delay)
@@ -81,8 +96,8 @@ class InotifyPP(protocol.ProcessProtocol):
 			self._call=reactor.callLater(self.delay, self.doCommit)
 
 	def doCommit(self):
-		# Don't commit if there is no files
-		if (len(self.added)+len(self.deleted)+len(self.updated)) <= 0:
+		# Don't commit if there is no updates
+		if len(self.added+self.deleted+self.updated) <= 0:
 			return
 
 		# Get a local copy for thread's work

@@ -139,6 +139,8 @@ class InotifyTests(unittest.TestCase, MockerTestCase):
 		self.assertEqual(pp.added, [])
 		self.assertEqual(pp.deleted, [])
 
+
+
 		# Single line
 		pp.outReceived("/ DELETE file1\n")
 		self.assertEqual(pp.added, [])
@@ -148,15 +150,44 @@ class InotifyTests(unittest.TestCase, MockerTestCase):
 		pp.outReceived("/ MODIFY file1\n")
 		self.assertEqual(pp.updated, ['file1'])
 
-		# Multiple line
+		# Multiples lines
 		pp.outReceived("/ CREATE file2\n / DELETE file3\n\n")
 		self.assertEqual(pp.added, ['file2'])
-		self.assertEqual(pp.deleted, ['file1', 'file3'])
+		self.assertEqual(pp.deleted, ['file3', 'file1'])
 
 		# Blaclisted file
 		pp.outReceived("/ CREATE tempfile.tmp\n")
 		self.assertEqual(pp.added, ['file2'])
-		self.assertEqual(pp.deleted, ['file1', 'file3'])
+		self.assertEqual(pp.deleted, ['file3', 'file1'])
+
+		# Usecase CREATE DELETE
+		pp.outReceived("/ CREATE file4\n / DELETE file4\n")
+		self.assertEqual(pp.added, ['file2'])
+		self.assertEqual(pp.deleted, ['file3', 'file1'])
+
+		# Usecase CREATE CREATE DELETE
+		pp.outReceived("/ CREATE file4\n / CREATE file4\n / DELETE file4\n")
+		self.assertEqual(pp.added, ['file2'])
+		self.assertEqual(pp.deleted, ['file3', 'file1'])
+
+		# Usecase DELETE CREATE
+		pp.outReceived("/ DELETE file4\n / CREATE file4\n")
+		self.assertEqual(pp.added, ['file2'])
+		self.assertEqual(pp.deleted, ['file3', 'file1'])
+		self.assertEqual(pp.updated, ['file1', 'file4'])
+
+		# Usecase MODIFY DELETE
+		pp.outReceived("/ MODIFY file4\n / DELETE file4\n")
+		self.assertEqual(pp.added, ['file2'])
+		self.assertEqual(pp.deleted, ['file3', 'file1', 'file4'])
+		self.assertEqual(pp.updated, ['file1'])
+
+		# Usecase CREATE MODIFY DELETE
+		pp.outReceived("/ CREATE file5\n / MODIFY file5\n / DELETE file5\n")
+		self.assertEqual(pp.added, ['file2'])
+		self.assertEqual(pp.deleted, ['file3', 'file1', 'file4'])
+		self.assertEqual(pp.updated, ['file1'])
+
 
 		# Cleanup reactor
 		pp._call.cancel()
