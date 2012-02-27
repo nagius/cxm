@@ -30,11 +30,9 @@ from twisted.trial import unittest
 from twisted.python.failure import Failure
 from twisted.internet import error, reactor, defer
 from mocker import *
+from mockito import *
 import cxm
 
-# TODO: rewrite this with another mocking tool
-
-# Argh, multiple inheritance in diamond is really bad ! But there is no other way to mock twisted...
 class SvnwatcherTests(unittest.TestCase, MockerTestCase):
 
 	def setUp(self):
@@ -49,20 +47,23 @@ class SvnwatcherTests(unittest.TestCase, MockerTestCase):
 		node_mocker.result("notclean")
 		node_mocker.replay()
 
-		staticnode_mocker = Mocker()
-		staticnode = staticnode_mocker.mock()
-		staticnode.getLocalInstance()
-		staticnode_mocker.result(node)
-		staticnode_mocker.replay()
-		# Doing mock with this ugly way because mocker can't replace static func	
-		cxm.node.Node=staticnode
+		static_mocker = Mocker()
+		static = static_mocker.replace("cxm.node.Node")
+		static.getLocalInstance()
+		static_mocker.result(node)
+		static_mocker.replay()
 
-		a=self.mocker.replace("cxm.agent.Agent.__init__")
+		agent_mocker = Mocker()
+		a=agent_mocker.replace("cxm.agent.Agent.__init__")
 		a()
-		self.mocker.replay()
+		agent_mocker.replay()
 
 		ss=SvnwatcherService()
 		self.assertRaises(Exception,ss.startService)
+
+		node_mocker.verify()
+		agent_mocker.verify()
+		static_mocker.verify()
 
 	def test_startService__standalone(self):
 		node_mocker = Mocker()
@@ -71,13 +72,11 @@ class SvnwatcherTests(unittest.TestCase, MockerTestCase):
 		node_mocker.result("")
 		node_mocker.replay()
 
-		staticnode_mocker = Mocker()
-		staticnode = staticnode_mocker.mock()
-		staticnode.getLocalInstance()
-		staticnode_mocker.result(node)
-		staticnode_mocker.replay()
-		# Doing mock with this ugly way because mocker can't replace static func	
-		cxm.node.Node=staticnode
+		static_mocker = Mocker()
+		static = static_mocker.replace("cxm.node.Node")
+		static.getLocalInstance()
+		static_mocker.result(node)
+		static_mocker.replay()
 
 		a=self.mocker.replace("cxm.agent.Agent.__init__")
 		a()
@@ -91,7 +90,13 @@ class SvnwatcherTests(unittest.TestCase, MockerTestCase):
 
 		ss=SvnwatcherService()
 		d=ss.startService()
-		self.assertEquals(ss.agent, None)
+
+		def verifyCalls(dummy):
+			self.assertEquals(ss.agent, None)
+			node_mocker.verify()
+			static_mocker.verify()
+
+		d.addCallback(verifyCalls)
 		return d
 
 	def test_startService__cluster(self):
@@ -101,13 +106,11 @@ class SvnwatcherTests(unittest.TestCase, MockerTestCase):
 		node_mocker.result("")
 		node_mocker.replay()
 
-		staticnode_mocker = Mocker()
-		staticnode = staticnode_mocker.mock()
-		staticnode.getLocalInstance()
-		staticnode_mocker.result(node)
-		staticnode_mocker.replay()
-		# Doing mock with this ugly way because mocker can't replace static func	
-		cxm.node.Node=staticnode
+		static_mocker = Mocker()
+		static = static_mocker.replace("cxm.node.Node")
+		static.getLocalInstance()
+		static_mocker.result(node)
+		static_mocker.replay()
 
 		a=self.mocker.replace("cxm.agent.Agent.__init__")
 		a()
@@ -121,108 +124,194 @@ class SvnwatcherTests(unittest.TestCase, MockerTestCase):
 
 		ss=SvnwatcherService()
 		d=ss.startService()
-		self.assertIsInstance(ss.agent, cxm.agent.Agent)
+
+		def verifyCalls(dummy):
+			self.assertIsInstance(ss.agent, cxm.agent.Agent)
+			node_mocker.verify()
+			static_mocker.verify()
+
+		d.addCallback(verifyCalls)
 		return d
 
-class InotifyTests(unittest.TestCase, MockerTestCase):
+# I've got problems running Mocker with twisted threads, so using Mockito here
+class InotifyTests(unittest.TestCase):
 
 	def setUp(self):
 		cxm.core.cfg['PATH'] = "tests/stubs/bin/"
 		cxm.core.cfg['VMCONF_DIR'] = "tests/stubs/cfg/"
 		cxm.core.cfg['QUIET']=True
 
-	def test_outReceived(self):
-		pp=InotifyPP(None)
-
-		# Empty line
-		pp.outReceived("\n\n\n")
-		self.assertEqual(pp.added, [])
-		self.assertEqual(pp.deleted, [])
-
-
-
-		# Single line
-		pp.outReceived("/ DELETE file1\n")
-		self.assertEqual(pp.added, [])
-		self.assertEqual(pp.deleted, ['file1'])
-
-		# Modified file 
-		pp.outReceived("/ MODIFY file1\n")
-		self.assertEqual(pp.updated, ['file1'])
-
-		# Multiples lines
-		pp.outReceived("/ CREATE file2\n / DELETE file3\n\n")
-		self.assertEqual(pp.added, ['file2'])
-		self.assertEqual(pp.deleted, ['file3', 'file1'])
-
-		# Blaclisted file
-		pp.outReceived("/ CREATE tempfile.tmp\n")
-		self.assertEqual(pp.added, ['file2'])
-		self.assertEqual(pp.deleted, ['file3', 'file1'])
-
-		# Usecase CREATE DELETE
-		pp.outReceived("/ CREATE file4\n / DELETE file4\n")
-		self.assertEqual(pp.added, ['file2'])
-		self.assertEqual(pp.deleted, ['file3', 'file1'])
-
-		# Usecase CREATE CREATE DELETE
-		pp.outReceived("/ CREATE file4\n / CREATE file4\n / DELETE file4\n")
-		self.assertEqual(pp.added, ['file2'])
-		self.assertEqual(pp.deleted, ['file3', 'file1'])
-
-		# Usecase DELETE CREATE
-		pp.outReceived("/ DELETE file4\n / CREATE file4\n")
-		self.assertEqual(pp.added, ['file2'])
-		self.assertEqual(pp.deleted, ['file3', 'file1'])
-		self.assertEqual(pp.updated, ['file1', 'file4'])
-
-		# Usecase MODIFY DELETE
-		pp.outReceived("/ MODIFY file4\n / DELETE file4\n")
-		self.assertEqual(pp.added, ['file2'])
-		self.assertEqual(pp.deleted, ['file3', 'file1', 'file4'])
-		self.assertEqual(pp.updated, ['file1'])
-
-		# Usecase CREATE MODIFY DELETE
-		pp.outReceived("/ CREATE file5\n / MODIFY file5\n / DELETE file5\n")
-		self.assertEqual(pp.added, ['file2'])
-		self.assertEqual(pp.deleted, ['file3', 'file1', 'file4'])
-		self.assertEqual(pp.updated, ['file1'])
-
-
-		# Cleanup reactor
-		pp._call.cancel()
-
-	def test_doCommit__ok(self):
-		
-		node=self.mocker.mock()
-		node.run("svn add tests/stubs/cfg/file1 tests/stubs/cfg/file2")
-		node.run("svn delete tests/stubs/cfg/file3 tests/stubs/cfg/file4")
-		node.run("svn --non-interactive commit -m 'svnwatcher autocommit' tests/stubs/cfg/")
-
-		doUpdate=self.mocker.replace("cxm.svnwatcher.InotifyPP.doUpdate")
-		doUpdate()
-
-		self.mocker.replay()
-
+	def test_outReceived__emptyLine(self):
+		node=mock()
 		pp=InotifyPP(node)
+		pp.delay=0 # To trigger delayedCall just now
 
-		pp.added = ['file1', 'file2']
-		pp.deleted = ['file3', 'file4']
+		pp.outReceived("\n\n\n")
 
-		pp.doCommit()
-		# TODO test with error
+		def verifyCalls():
+			verifyZeroInteractions(node)
 
+		reactor.callLater(0, verifyCalls)
+		
+	def test_outReceived__delete(self):
+		node=mock()
+		pp=InotifyPP(node)
+		pp.delay=0 # To trigger delayedCall just now
+
+		pp.outReceived("/ DELETE file1\n")
+
+		def verifyCalls():
+			verify(node).run('svn delete tests/stubs/cfg/file1')
+			verify(node).run("svn --non-interactive commit -m 'svnwatcher autocommit' tests/stubs/cfg/")
+			verify(node).run('svn update tests/stubs/cfg/')
+			verifyNoMoreInteractions(node)
+
+		reactor.callLater(0, verifyCalls)
+
+	def test_outReceived__modify(self):
+		node=mock()
+		pp=InotifyPP(node)
+		pp.delay=0 # To trigger delayedCall just now
+
+		pp.outReceived("/ MODIFY file1\n")
+
+		def verifyCalls():
+			verify(node).run("svn --non-interactive commit -m 'svnwatcher autocommit' tests/stubs/cfg/")
+			verify(node).run('svn update tests/stubs/cfg/')
+			verifyNoMoreInteractions(node)
+
+		reactor.callLater(0, verifyCalls)
+
+	def test_outReceived__multipleLine(self):
+		node=mock()
+		pp=InotifyPP(node)
+		pp.delay=0 # To trigger delayedCall just now
+
+		pp.outReceived("/ CREATE file2\n / DELETE file3\n\n")
+
+		def verifyCalls():
+			verify(node).run('svn delete tests/stubs/cfg/file3')
+			verify(node).run('svn add tests/stubs/cfg/file2')
+			verify(node).run("svn --non-interactive commit -m 'svnwatcher autocommit' tests/stubs/cfg/")
+			verify(node).run('svn update tests/stubs/cfg/')
+			verifyNoMoreInteractions(node)
+
+		reactor.callLater(0, verifyCalls)
+
+	def test_outReceived__blacklisted(self):
+		node=mock()
+		pp=InotifyPP(node)
+		pp.delay=0 # To trigger delayedCall just now
+
+		pp.outReceived("/ CREATE tempfile.tmp\n")
+
+		def verifyCalls():
+			verifyZeroInteractions(node)
+
+		reactor.callLater(0, verifyCalls)
+		
+	def test_outReceived__createDelete(self):
+		node=mock()
+		pp=InotifyPP(node)
+		pp.delay=0 # To trigger delayedCall just now
+
+		pp.outReceived("/ CREATE file4\n / DELETE file4\n")
+
+		def verifyCalls():
+			verifyZeroInteractions(node)
+
+		reactor.callLater(0, verifyCalls)
+
+	def test_outReceived__multipleCreateDelete(self):
+		node=mock()
+		pp=InotifyPP(node)
+		pp.delay=0 # To trigger delayedCall just now
+
+		pp.outReceived("/ CREATE file4\n / CREATE file4\n / DELETE file4\n")
+
+		def verifyCalls():
+			verifyZeroInteractions(node)
+
+		reactor.callLater(0, verifyCalls)
+
+	def test_outReceived__deleteCreate(self):
+		node=mock()
+		pp=InotifyPP(node)
+		pp.delay=0 # To trigger delayedCall just now
+
+		pp.outReceived("/ DELETE file4\n / CREATE file4\n")
+
+		def verifyCalls():
+			verify(node).run("svn --non-interactive commit -m 'svnwatcher autocommit' tests/stubs/cfg/")
+			verify(node).run('svn update tests/stubs/cfg/')
+			verifyNoMoreInteractions(node)
+
+		reactor.callLater(0, verifyCalls)
+
+	def test_outReceived__modifyDelete(self):
+		node=mock()
+		pp=InotifyPP(node)
+		pp.delay=0 # To trigger delayedCall just now
+
+		pp.outReceived("/ MODIFY file4\n / DELETE file4\n")
+
+		def verifyCalls():
+			verify(node).run('svn delete tests/stubs/cfg/file4')
+			verify(node).run("svn --non-interactive commit -m 'svnwatcher autocommit' tests/stubs/cfg/")
+			verify(node).run('svn update tests/stubs/cfg/')
+			verifyNoMoreInteractions(node)
+
+		reactor.callLater(0, verifyCalls)
+
+	def test_outReceived__createModifyDelete(self):
+		node=mock()
+		pp=InotifyPP(node)
+		pp.delay=0 # To trigger delayedCall just now
+
+		pp.outReceived("/ CREATE file5\n / MODIFY file5\n / DELETE file5\n")
+
+		def verifyCalls():
+			verifyZeroInteractions(node)
+
+		reactor.callLater(0, verifyCalls)
 
 	def test_doUpdate__standalone(self):
-		node=self.mocker.mock()
-		node.run("svn update tests/stubs/cfg/")
-		self.mocker.replay()
-		
+		node=mock()
 		pp=InotifyPP(node)
-		pp.doUpdate()
+		d=pp.doUpdate()
 
-# Doesn't work with mocker, see svnwatcher_mockito_test.py
-#	def test_doUpdate__cluster(self):
+		def verifyCalls(dummy):
+			verify(node).run("svn update tests/stubs/cfg/")
+			verifyNoMoreInteractions(node)
+
+		d.addCallback(verifyCalls)
+		return d
+
+	def test_doUpdate__cluster(self):
+		agent=mock()
+		when(agent).getNodesList().thenReturn(defer.succeed(["node1", "node2"]))
+
+		n1=mock()
+		n2=mock()
+		cluster=mock()
+		when(cluster).get_nodes().thenReturn([n1, n2])
+
+		when(cxm.xencluster.XenCluster).getDeferInstance(["node1", "node2"]).thenReturn(defer.succeed(cluster))
+
+		pp=InotifyPP(None, agent)
+		d=pp.doUpdate()
+
+		def verifyCalls(dummy):
+			verify(agent).getNodesList()
+			verifyNoMoreInteractions(agent)
+			verify(cxm.xencluster.XenCluster).getDeferInstance(["node1", "node2"])
+			verify(cluster).get_nodes()
+			verifyNoMoreInteractions(cluster)
+#			verify(n1).run("svn update tests/stubs/cfg/")
+#			verify(n2).run("svn update tests/stubs/cfg/")
+
+		d.addCallback(verifyCalls)
+		return d
 
 
 # vim: ts=4:sw=4:ai

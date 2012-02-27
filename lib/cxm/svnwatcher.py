@@ -23,7 +23,7 @@
 #
 ###########################################################################
 
-from twisted.internet import protocol, reactor, threads
+from twisted.internet import protocol, reactor, threads, defer
 from twisted.application.service import Service
 from twisted.internet.base import DelayedCall
 
@@ -140,6 +140,7 @@ class InotifyPP(protocol.ProcessProtocol):
 			return d
 		else:
 			self.node.run("svn update "+ core.cfg['VMCONF_DIR'])
+			return defer.succeed(None)
 			
 	def processEnded(self, reason):
 		log.warn("Inotify has died: %s" % (reason.value))
