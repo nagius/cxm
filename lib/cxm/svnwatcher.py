@@ -108,39 +108,62 @@ class InotifyPP(protocol.ProcessProtocol):
 		self.deleted=list()
 		self.updated=list()
 
-		log.info("Committing for "+", ".join(set(added+deleted+updated)))
-		try:
+		def commit():
 			if len(added) > 0:
 				self.node.run("svn add " + " ".join(map(lambda x: core.cfg['VMCONF_DIR']+x, added)))
 			if len(deleted) > 0:
 				self.node.run("svn delete " + " ".join(map(lambda x: core.cfg['VMCONF_DIR']+x, deleted)))
 			self.node.run("svn --non-interactive commit -m 'svnwatcher autocommit' "+core.cfg['VMCONF_DIR'])
-			self.doUpdate()
-		except Exception, e:
-			log.err("SVN failed: %s" % (e))
-			reactor.stop()
+
+		def commitEnded(result):
+			if self.agent:
+				log.info("Cluster updated.")
+			else:
+				log.info("Local node updated.")
+				
+		def commitFailed(reason):
+			log.err("SVN failed: %s" % reason.getErrorMessage())
+
+		log.info("Committing for "+", ".join(set(added+deleted+updated)))
+		d=threads.deferToThread(commit)
+		d.addCallback(lambda _: self.doUpdate())
+		d.addCallbacks(commitEnded, commitFailed)
+		return d
 		
 	def doUpdate(self):
+		def doNodeUpdate(node):
+			d=threads.deferToThread(node.run, "svn update "+ core.cfg['VMCONF_DIR'])
+			return d
+
+		# This is used to fire a mono-Failure in the parent deferred
+		def checkErrors(results):
+			for result in results:
+				if not result[0]:
+					raise Exception(result[1].getErrorMessage())
+
 		def doClusterUpdate(result):
+			ds=list()
 			for node in result.get_nodes():
-				d=threads.deferToThread(node.run, "svn update "+ core.cfg['VMCONF_DIR'])
-				d.addErrback(log.err)
+				d=doNodeUpdate(node)
+				ds.append(d)
+
+			dl=defer.DeferredList(ds, consumeErrors=1)
+			dl.addCallback(checkErrors)
+			return dl
 
 		def getCluster(result):
 			d=XenCluster.getDeferInstance(result)
 			d.addCallback(doClusterUpdate)
-			d.addErrback(log.err)
 			return d
 
 		# Use local agent to avoir opening a new connection
 		if self.agent:
 			d=self.agent.getNodesList()
 			d.addCallback(getCluster)
-			d.addErrback(log.err)
 			return d
 		else:
-			self.node.run("svn update "+ core.cfg['VMCONF_DIR'])
-			return defer.succeed(None)
+			d=doNodeUpdate(self.node)
+			return d
 			
 	def processEnded(self, reason):
 		log.warn("Inotify has died: %s" % (reason.value))
@@ -193,10 +216,19 @@ class SvnwatcherService(Service):
 
 	def forceUpdate(self):
 		log.info("SIGHUP received: updating all repos.")
-		try:
-			self.pp.doUpdate()
-		except:
-			pass
+
+		def commitEnded(result):
+			if self.agent:
+				log.info("Cluster updated.")
+			else:
+				log.info("Local node updated.")
+				
+		def commitFailed(reason):
+			log.err("SVN failed: %s" % reason.getErrorMessage())
+
+		# This is a manual entry-point for recovery : no locks handled
+		d=self.pp.doUpdate()
+		d.addCallbacks(commitEnded, commitFailed)
 
 	def spawnInotify(self):
 		# We use this ugly way because Pyinotify and Twisted's INotify require Python 2.6

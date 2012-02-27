@@ -29,6 +29,8 @@ from cxm.svnwatcher import *
 from twisted.trial import unittest
 from twisted.python.failure import Failure
 from twisted.internet import error, reactor, defer
+from twisted.internet.task import Clock
+
 from mocker import *
 from mockito import *
 import cxm
@@ -140,11 +142,11 @@ class InotifyTests(unittest.TestCase):
 		cxm.core.cfg['PATH'] = "tests/stubs/bin/"
 		cxm.core.cfg['VMCONF_DIR'] = "tests/stubs/cfg/"
 		cxm.core.cfg['QUIET']=True
+		reactor.callLater = Clock().callLater
 
 	def test_outReceived__emptyLine(self):
 		node=mock()
 		pp=InotifyPP(node)
-		pp.delay=0 # To trigger delayedCall just now
 
 		pp.outReceived("\n\n\n")
 
@@ -156,7 +158,6 @@ class InotifyTests(unittest.TestCase):
 	def test_outReceived__delete(self):
 		node=mock()
 		pp=InotifyPP(node)
-		pp.delay=0 # To trigger delayedCall just now
 
 		pp.outReceived("/ DELETE file1\n")
 
@@ -171,7 +172,6 @@ class InotifyTests(unittest.TestCase):
 	def test_outReceived__modify(self):
 		node=mock()
 		pp=InotifyPP(node)
-		pp.delay=0 # To trigger delayedCall just now
 
 		pp.outReceived("/ MODIFY file1\n")
 
@@ -185,7 +185,6 @@ class InotifyTests(unittest.TestCase):
 	def test_outReceived__multipleLine(self):
 		node=mock()
 		pp=InotifyPP(node)
-		pp.delay=0 # To trigger delayedCall just now
 
 		pp.outReceived("/ CREATE file2\n / DELETE file3\n\n")
 
@@ -201,7 +200,6 @@ class InotifyTests(unittest.TestCase):
 	def test_outReceived__blacklisted(self):
 		node=mock()
 		pp=InotifyPP(node)
-		pp.delay=0 # To trigger delayedCall just now
 
 		pp.outReceived("/ CREATE tempfile.tmp\n")
 
@@ -213,7 +211,6 @@ class InotifyTests(unittest.TestCase):
 	def test_outReceived__createDelete(self):
 		node=mock()
 		pp=InotifyPP(node)
-		pp.delay=0 # To trigger delayedCall just now
 
 		pp.outReceived("/ CREATE file4\n / DELETE file4\n")
 
@@ -225,7 +222,6 @@ class InotifyTests(unittest.TestCase):
 	def test_outReceived__multipleCreateDelete(self):
 		node=mock()
 		pp=InotifyPP(node)
-		pp.delay=0 # To trigger delayedCall just now
 
 		pp.outReceived("/ CREATE file4\n / CREATE file4\n / DELETE file4\n")
 
@@ -237,7 +233,6 @@ class InotifyTests(unittest.TestCase):
 	def test_outReceived__deleteCreate(self):
 		node=mock()
 		pp=InotifyPP(node)
-		pp.delay=0 # To trigger delayedCall just now
 
 		pp.outReceived("/ DELETE file4\n / CREATE file4\n")
 
@@ -251,7 +246,6 @@ class InotifyTests(unittest.TestCase):
 	def test_outReceived__modifyDelete(self):
 		node=mock()
 		pp=InotifyPP(node)
-		pp.delay=0 # To trigger delayedCall just now
 
 		pp.outReceived("/ MODIFY file4\n / DELETE file4\n")
 
@@ -266,7 +260,6 @@ class InotifyTests(unittest.TestCase):
 	def test_outReceived__createModifyDelete(self):
 		node=mock()
 		pp=InotifyPP(node)
-		pp.delay=0 # To trigger delayedCall just now
 
 		pp.outReceived("/ CREATE file5\n / MODIFY file5\n / DELETE file5\n")
 
@@ -307,8 +300,8 @@ class InotifyTests(unittest.TestCase):
 			verify(cxm.xencluster.XenCluster).getDeferInstance(["node1", "node2"])
 			verify(cluster).get_nodes()
 			verifyNoMoreInteractions(cluster)
-#			verify(n1).run("svn update tests/stubs/cfg/")
-#			verify(n2).run("svn update tests/stubs/cfg/")
+			verify(n1).run("svn update tests/stubs/cfg/")
+			verify(n2).run("svn update tests/stubs/cfg/")
 
 		d.addCallback(verifyCalls)
 		return d
