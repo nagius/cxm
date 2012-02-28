@@ -27,8 +27,6 @@ from twisted.internet import protocol, reactor, threads, defer
 from twisted.application.service import Service
 from twisted.internet.base import DelayedCall
 
-from copy import deepcopy
-
 from agent import Agent
 from xencluster import XenCluster
 import node, core
@@ -39,6 +37,9 @@ class InotifyPP(protocol.ProcessProtocol):
 	# List of filenames ignored by commit
 	blacklist=['tempfile.tmp']
 
+	# Name of the global lock
+	LOCK="SVNWATCHER"
+
 	def __init__(self, node, agent=None):
 		self.added=list()
 		self.deleted=list()
@@ -46,13 +47,14 @@ class InotifyPP(protocol.ProcessProtocol):
 		self._call=None
 		self.node=node
 		self.agent=agent
+		self.commitRunning=False   # Local lock system
 
 		if self.agent:
 			# Short delay to quickly propagate modifications to others nodes (in seconds)
 			self.delay=0.5
 		else:
 			# We wait more longer before autocommit if we are standalone
-			self.delay=5
+			self.delay=5     
 
 	def connectionMade(self):
 		log.info("Inotify started.")
@@ -89,24 +91,20 @@ class InotifyPP(protocol.ProcessProtocol):
 			self.added=list(set(self.added))
 			self.deleted=list(set(self.deleted))
 			self.updated=list(set(self.updated))
-		
+
+		self.rescheduleCommit()
+
+	def rescheduleCommit(self):
 		if isinstance(self._call, DelayedCall) and self._call.active():
 			self._call.reset(self.delay)
 		else:
 			self._call=reactor.callLater(self.delay, self.doCommit)
 
 	def doCommit(self):
-		# Don't commit if there is no updates
-		if len(self.added+self.deleted+self.updated) <= 0:
-			return
-
-		# Get a local copy for thread's work
-		added=deepcopy(self.added)
-		deleted=deepcopy(self.deleted)
-		updated=deepcopy(self.updated)
-		self.added=list()
-		self.deleted=list()
-		self.updated=list()
+		# Semi-global variables used by inner functions
+		added=list()
+		deleted=list()
+		updated=list()
 
 		def commit():
 			if len(added) > 0:
@@ -124,10 +122,51 @@ class InotifyPP(protocol.ProcessProtocol):
 		def commitFailed(reason):
 			log.err("SVN failed: %s" % reason.getErrorMessage())
 
-		log.info("Committing for "+", ".join(set(added+deleted+updated)))
-		d=threads.deferToThread(commit)
-		d.addCallback(lambda _: self.doUpdate())
-		d.addCallbacks(commitEnded, commitFailed)
+		def releaseLock(result):
+			self.commitRunning=False
+			if self.agent:
+				self.agent.releaseLock(self.LOCK)	
+
+		def checkLock(result):
+			# If result is true, no commit running (lock successfully grabbed)
+			if result:
+				# Get a local copy for thread's work
+				# Use .extend insted of = due to scope restriction (vars are in the parent function)
+				added.extend(self.added)
+				deleted.extend(self.deleted)
+				updated.extend(self.updated)
+				self.added=list()
+				self.deleted=list()
+				self.updated=list()
+
+				log.info("Committing for "+", ".join(set(added+deleted+updated)))
+				self.commitRunning=True
+
+				d=threads.deferToThread(commit)
+				d.addCallback(lambda _: self.doUpdate())
+				d.addCallbacks(commitEnded, commitFailed)
+				d.addCallback(releaseLock)
+				return d
+			else:
+				log.debugd("Commit already running: rescheduling.")
+				self.rescheduleCommit()
+				return defer.succeed(None)
+
+		# Don't commit if there is no updates
+		log.debugd("Trigger commit: ADD%s DEL%s UP%s" % (self.added, self.deleted, self.updated))
+		if len(self.added+self.deleted+self.updated) <= 0:
+			return defer.succeed(None)
+
+		# Check for locks of a previous commit still running
+		if self.agent:
+			# Cluster mode 
+			d=self.agent.grabLock(self.LOCK)
+			d.addCallback(checkLock)
+		else:
+			# Standalone mode
+			d=checkLock(not self.commitRunning)
+
+		d.addErrback(log.err)
 		return d
 		
 	def doUpdate(self):
