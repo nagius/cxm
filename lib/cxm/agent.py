@@ -44,9 +44,13 @@ class Agent(object):
 
 	def _callMaster(self, action, *args, **kw):
 		def connectMaster(result):
+			def disconnectMaster(result):
+				rpcConnector.disconnect()
+				return result
+
 			def masterConnected(obj):
 				d = obj.callRemote(action, *args, **kw)
-				d.addCallback(lambda _: rpcConnector.disconnect())
+				d.addCallback(disconnectMaster)
 				return d
 
 			rpcFactory = pb.PBClientFactory()
@@ -92,5 +96,11 @@ class Agent(object):
 
 	def panic(self):
 		return self._callMaster("panic")
+
+	def grabLock(self, name):
+		return self._callMaster("grabLock",name)
+
+	def releaseLock(self, name):
+		return self._callMaster("releaseLock",name)
 
 # vim: ts=4:sw=4:ai

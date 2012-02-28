@@ -26,6 +26,7 @@
 
 from twisted.application.service import Service
 from twisted.internet import reactor, error, defer
+from twisted.internet.base import DelayedCall
 import logs as log
 from twisted.spread import pb
 import os
@@ -34,8 +35,11 @@ import core
 
 class RemoteRPC(pb.Root):
 
+	LOCK_TMOUT = 30 # Force to release a lock after 30 seconds
+
 	def __init__(self, master):
 		self._master=master
+		self._locks=dict()
 
 	def remote_register(self, name):
 		return self._master.registerNode(name)
@@ -46,6 +50,40 @@ class RemoteRPC(pb.Root):
 	def remote_panic(self):
 		return self._master.panic()
 
+	def remote_grabLock(self, name):
+		"""
+		This RPC is a centralised lock system.
+		WARNING: These locks are not propaged if the master change.
+		
+		Return True if the lock is successfully grabbed
+		Return False if the lock is already grabbed
+		"""
+		def grabLock():
+			log.info("Grabbing new lock %s." % (name))
+			self._locks[name]=reactor.callLater(self.LOCK_TMOUT, self.remote_releaseLock, name)
+			return True
+			
+		try: 
+			if isinstance(self._locks[name], DelayedCall):
+				log.info("Lock %s refused: already grabbed." % (name))
+				return False
+			else:
+				return grabLock()
+		except:
+			return grabLock()
+		
+	def remote_releaseLock(self, name):
+		try:
+			self._locks[name].cancel()
+		except:
+			pass
+
+		try:
+			del self._locks[name]
+			log.info("Lock %s released." % (name))
+		except:
+			pass
+		
 class LocalRPC(pb.Root):
 
 	def __init__(self, master):
