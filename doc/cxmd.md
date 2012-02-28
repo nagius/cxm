@@ -119,18 +119,13 @@ It must be a partition or a logical volume on the shared storage, and all nodes 
 
 The command cxmd_ctl --format will initialize it with the following struture :
 
- 0               x               2x
- +---------------+----------------+
- | Magic number  | Number of node |
- +---------------+----------------+
- | Node name 1   | Timestamp      |
- +---------------+----------------+
- | Node name 2   | Timestamp      |
- +---------------+----------------+
- | Node name X   | Timestamp      |
- +---------------+----------------+
- | 0             |                |
- +---------------+----------------+
+Block 1       | Block 2        |
+--------------|----------------|
+Magic number  | Number of node |
+Node name 1   | Timestamp      |
+Node name 2   | Timestamp      |
+Node name X   | Timestamp      |
+0             | 0              |
 
 Each cell is a 4k-block.
 

@@ -10,19 +10,17 @@ In case of rollback or other corrections on the local repopsitory, you will have
 Runtime:
 --------
 
-If an error occurs during SVNWatcher execution, it will automatically shutdown itself to prevent more damages.
-In case of uncommitted modifications, you will have to resynchronize the repository with the following procedure:
-
+If an error occurs during SVNWatcher execution, or if there is any uncommitted modifications, you will have to resynchronize the repository with the following procedure:
 
   - Shutdown SVNWatcher
-        /etc/init.d/svnwatcherd stop
+>`/etc/init.d/svnwatcherd stop`
 
   - Recover your SVN repository and clean it
-        svn status # Should not return anything
+>`svn status # Should not return anything`
 
   - Start SVNWatcher
-        /etc/init.d/svnwatcherd start
+>`/etc/init.d/svnwatcherd start`
 
   - Force an update to propagate "un-watched" modifications to other nodes
-        /etc/init.d/svnwatcherd update
+>`/etc/init.d/svnwatcherd update`
 
