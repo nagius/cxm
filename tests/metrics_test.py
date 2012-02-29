@@ -309,8 +309,6 @@ class MetricsTests(MockerTestCase):
 
 
 	def test_get_vms_cpu_usage(self):
-		val = {'vm1': 0, 'vm3': 0, 'vm2': 0}
-
 		vm1_mocker = Mocker()
 		vm1 = vm1_mocker.mock()
 		vm1.name
@@ -334,6 +332,7 @@ class MetricsTests(MockerTestCase):
 
 		get_vms = self.mocker.replace(self.node.get_vms)
 		get_vms()
+		self.mocker.count(1,None)
 		self.mocker.result([vm1, vm2, vm3])
 		self.mocker.replay()
 
@@ -350,11 +349,50 @@ class MetricsTests(MockerTestCase):
 			 ]]
 			# vm3 is paused
 		)
+		xenlegacy.xend.domains(True)
+		xenlegacy_mock.result(
+			[['domain',
+			  ['name', 'vm1'],
+			  ['cpu_time', 159.379560060]],
+			 ['domain',
+			  ['name', 'vm2'],
+			  ['cpu_time', 146.65222428],
+			 ]]
+			# vm3 is paused
+		)
+		# Reboot 
+		xenlegacy.xend.domains(True)
+		xenlegacy_mock.result(
+			[['domain',
+			  ['name', 'vm1'],
+			  ['cpu_time', 2.27645]],
+			 ['domain',
+			  ['name', 'vm2'],
+			  ['cpu_time', 71.75132],
+			 ]]
+			# vm3 is paused
+		)
 		xenlegacy_mock.replay()
 		self.node.legacy_server=xenlegacy
 
+		# First call (init)
 		result=self.metrics.get_vms_cpu_usage()
-		self.assertEqual(result, val)
+		self.assertEqual(result, {'vm1': 0, 'vm3': 0, 'vm2': 0})
+
+		# Second call
+		result=self.metrics.get_vms_cpu_usage()
+		self.assertEqual(type(result['vm1']), float)
+		self.assertEqual(type(result['vm2']), float)
+		self.assertEqual(result['vm3'], 0)
+
+		# Third call with vm rebooted
+		result=self.metrics.get_vms_cpu_usage()
+		self.assertEqual(result, {'vm1': 0, 'vm3': 0, 'vm2': 0})
+
+		xenlegacy_mock.verify()
+		vm1_mocker.verify()
+		vm2_mocker.verify()
+		vm3_mocker.verify()
 
 	def test_get_vms_record(self):
 		val =  {

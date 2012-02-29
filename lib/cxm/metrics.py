@@ -112,6 +112,10 @@ class Metrics:
 			except ZeroDivisionError:
 				cpu[dom_info['name']]=0
 
+			# In case of reboot, remove negative values
+			if cpu[dom_info['name']] < 0:
+				cpu[dom_info['name']]=0
+
 			# Update cpu_cache with the new value
 			self.cpu_cache[dom_info['name']]=dom_info['cpu_time']
 
