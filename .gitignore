@@ -1,3 +1,5 @@
 *.pyc
 doc/cxm.1
 doc/cxmd_ctl.8
+_trial_temp/
+tests/_trial_temp/
