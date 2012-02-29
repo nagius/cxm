@@ -34,7 +34,7 @@ class CoreTests(unittest.TestCase):
 		cxm.core.cfg['PATH'] = "tests/stubs/bin/"
 
 	def test_api_version(self):
-		version = "0.9.0"
+		version = "0.9.1"
 
 		result=cxm.core.get_api_version()
 		self.assertEqual(result, version)

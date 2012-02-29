@@ -27,8 +27,8 @@
 """ program meta-information """
 
 name = "cxm"
-version = "0.9.0"
-update_date = "November 2011"
+version = "0.9.1"
+update_date = "February 2012"
 license = "GPL"
 authors = [("Nicolas Agius","nicolas.agius@lps-it.fr")]
 url = "https://github.com/nagius/cxm"
