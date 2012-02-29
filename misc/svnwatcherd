@@ -1,0 +1,16 @@
+# /etc/sysconfig/svnwatcherd
+# Configuration file for /etc/init.d/svnwatcherd
+
+## Type: string
+## Default: standalone
+#
+# This variable determines if SVNWatcher must run in cluster mode or
+# in standalone mode. 
+#
+#  - If requested mode is "cluster" but cxmd is not running, daemon will 
+# not start.
+#  - If requested mode is "standalone" but cxmd is running, daemon will
+# automatically switch in cluster mode.
+#
+START_MODE="cluster"
+

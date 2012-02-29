@@ -12,13 +12,17 @@
 prog="svnwatcherd"
 RETVAL=0
 
-PID_FILE=/var/run/${prog}.pid
+PID_FILE="/var/run/${prog}.pid"
 TAC_FILE=$(python -c "import cxm, os; print os.path.dirname(cxm.__file__)")/${prog}.tac
-LOG_DIR=/var/log/cxm/
+LOG_DIR="/var/log/cxm/"
 SVN_REPO="/etc/xen/vm"
+START_MODE="standalone"  # "standalone" or "cluster"
 
 # used by svn to get password recorded in ~/.subversion
 export HOME="/root"
+
+# Read system specific configuration
+[ -r /etc/sysconfig/svnwatcherd ] && source /etc/sysconfig/svnwatcherd
 
 # check for required files
 if [ ! -x /usr/bin/twistd ]; then
@@ -41,20 +45,28 @@ case "$1" in
 
 		if [ -n "$(svn status $SVN_REPO)" ]; then
 			echo 
-			echo "Svn repository $SVN_REPO is not clean."
+			echo -n "Svn repository $SVN_REPO is not clean."
 			failure
 			echo
 			exit 2
 		fi		
 
-		# Leave cxmd 4 seconds max to start
-		COUNTER=4
-		while [ "$(cxmd_ctl --ping 2>/dev/null)" != "OK" -a $COUNTER -gt 0 ]; do
-			echo -n "."
-			let COUNTER-=1
-			sleep 1
-		done
-
+		if [ "$START_MODE" == "cluster" ]; then
+			# Leave cxmd 5 seconds max to start
+			COUNTER=5
+			while [ "$(cxmd_ctl --ping 2>/dev/null)" != "OK" -a $COUNTER -gt 0 ]; do
+				echo -n "."
+				let COUNTER-=1
+				sleep 1
+			done
+			if [ "$(cxmd_ctl --ping 2>/dev/null)" != "OK" ]; then
+				echo -n " cxmd daemon is not running !"
+				failure
+				echo
+				exit 2
+			fi
+		fi
+		
 		/usr/bin/twistd -y $TAC_FILE --pidfile=$PID_FILE --logfile=$LOG_DIR/$prog.log
 		RETVAL=$?
 		[ "$RETVAL" = 0 ] && success || failure
