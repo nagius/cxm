@@ -148,7 +148,7 @@ class InotifyPP(protocol.ProcessProtocol):
 				d.addCallback(releaseLock)
 				return d
 			else:
-				log.debugd("Commit already running: rescheduling.")
+				log.info("Commit already running: rescheduling.")
 				self.rescheduleCommit()
 				return defer.succeed(None)
 
