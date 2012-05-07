@@ -215,9 +215,17 @@ def cxm_infos(cluster, options):
 		dl.addCallback(printTotals)
 		return dl
 
-	def printNodeMetrics(node):
+	def printNodeMetrics(results):
+		for success, result in results:
+			if not success:
+				raise result
+
+		for line in sorted([result[1] for result in results]):
+			print line
+		
+	def getNodeMetrics(node):
 		metrics=node.get_metrics()
-		print '%-40s %3d  %3d  %8d  %3d%%' % (node.get_hostname(),node.get_vm_started(),
+		return '%-40s %3d  %3d  %8d  %3d%%' % (node.get_hostname(),node.get_vm_started(),
 			metrics.get_used_irq(),metrics.get_free_ram(),metrics.get_load())
 
 	if not core.cfg['QUIET']:
@@ -226,11 +234,12 @@ def cxm_infos(cluster, options):
 
 	ds=list()
 	for node in cluster.get_nodes():
-		d=threads.deferToThread(printNodeMetrics, node)
+		d=threads.deferToThread(getNodeMetrics, node)
 		d.addErrback(fail)
 		ds.append(d)
 
 	dl=defer.DeferredList(ds)
+	dl.addCallback(printNodeMetrics)
 	if not core.cfg['QUIET']:
 		dl.addCallback(getTotals)
 
