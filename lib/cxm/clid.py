@@ -28,7 +28,7 @@
 This module is the command line interface for managing cxm daemon.
 """
 
-import sys, os, time
+import sys, os, time, socket
 from optparse import OptionParser, OptionGroup
 from twisted.internet import reactor, defer, threads
 from twisted.internet.error import ConnectError
@@ -67,16 +67,26 @@ def ctl_listnodes(*args):
 
 def ctl_status(*args):
 	"""Print status of the local daemon."""
-	def success(result):
+
+	agent=Agent()
+
+	def checkMembership(result):
+		if not socket.gethostname() in result:
+			print "Warning: Local node is not a cluster member !"
+
+	def printStatus(result):
 		print "Role:", result['role']
 		print "Master:", result['master']
 		print "Since:", time.strftime("%a, %d %b %Y %H:%M:%S", time.localtime(result['lastTallyDate']))
 		print "State:", result['state']
 
-	agent=Agent()
+		d=agent.getNodesList()
+		d.addCallback(checkMembership)
+		return d
+
 	d=agent.getState()
-	d.addCallback(success)
-	
+	d.addCallback(printStatus)
+
 	return d
 
 def ctl_dump(*args):
