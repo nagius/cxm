@@ -77,7 +77,7 @@ class XenClusterTests(MockerTestCase):
 	def test_get_node__ko(self):
 		self.assertRaises(cxm.xencluster.NotInClusterError,self.cluster.get_node,"non-exist")
 
-	def test_get_local_node(self):
+	def test_get_local_node__ok(self):
 		node = self.mocker.mock()
 		node.get_hostname()
 		self.mocker.result(socket.gethostname())
@@ -85,6 +85,11 @@ class XenClusterTests(MockerTestCase):
 		self.cluster.nodes={socket.gethostname(): node}
 
 		self.assertEqual(self.cluster.get_local_node().get_hostname(),socket.gethostname())
+
+	def test_get_local_node__ko(self):
+		self.cluster.nodes={}
+
+		self.assertRaises(cxm.xencluster.NotInClusterError, self.cluster.get_local_node)
 
 	def test_is_in_cluster(self):
 		self.assertEqual(self.cluster.is_in_cluster(socket.gethostname()), True)

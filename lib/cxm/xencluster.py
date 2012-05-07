@@ -121,8 +121,11 @@ class XenCluster:
 			raise NotInClusterError(hostname)
 
 	def get_local_node(self):
-		"""Return the Node object of the local node."""
-		return self.nodes[socket.gethostname()]
+		"""Return the Node object of the local node.
+		
+		Raise a NotInClusterError if the local node is not a clusters's node.
+		"""
+		return self.get_node(socket.gethostname())
 
 	def get_load(self):
 		"""
