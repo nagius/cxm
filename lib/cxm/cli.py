@@ -281,6 +281,11 @@ def cxm_search(cluster, options, vm):
 		
 def cxm_list(cluster, options):
 	"""List started VM on all nodes."""
+	def fail(reason):
+		if options.debug:
+			reason.printTraceback()
+		else:
+			print >>sys.stderr, "Error:", reason.getErrorMessage()
 
 	def getList(node):
 		if core.cfg['QUIET']: 
@@ -294,17 +299,15 @@ def cxm_list(cluster, options):
 			for vm in sorted(node.get_vms(),key=lambda x: x.name):
 				msg += '    %-40s %4d  %5d  %6s\n' % (vm.name, vm.ram, vm.vcpu, vm.state)
 
-		return msg
+		return (node.get_hostname(), msg)
 
 	def printList(results):
 		for success, result in results:
-			if success:
-				print result, # No carriage return
-			else:
-				if options.debug:
-					result.printTraceback()
-				else:
-					print >>sys.stderr, "Error:", result.getErrorMessage()
+			if not success:
+				raise result
+
+		for msg in sorted([result[1] for result in results], key=lambda x: x[0]):
+			print msg[1], # No carriage return
 				
 	if options.node:
 		nodes=[cluster.get_node(options.node)]
@@ -314,9 +317,10 @@ def cxm_list(cluster, options):
 	ds=list()
 	for node in nodes:
 		d=threads.deferToThread(getList, node)
+		d.addErrback(fail)
 		ds.append(d)
 
-	dl=defer.DeferredList(ds, consumeErrors=True)
+	dl=defer.DeferredList(ds)
 	dl.addCallback(printList)
 	return dl
 		
