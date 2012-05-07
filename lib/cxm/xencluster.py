@@ -199,7 +199,7 @@ class XenCluster:
 		return dl
 
 	def is_in_cluster(self, hostname):
-		"""Return True if the specified hostname is a node of the cluser."""
+		"""Return True if the specified hostname is a node of the cluster."""
 		return hostname in self.nodes
 
 	def search_vm_started(self,vmname):
