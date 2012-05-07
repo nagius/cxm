@@ -29,7 +29,7 @@
 This module is the command line interface of cxm.
 """
 
-import sys, os
+import sys, os, socket
 from xen.xm.opts import wrap
 from optparse import OptionParser
 from twisted.internet import reactor, threads, defer
@@ -594,6 +594,28 @@ def run():
 
 	def getCluster(result):
 		# result is the list of nodes
+
+		# Check if local node is in cluster
+		if not socket.gethostname() in result:
+			print """
+                ** 
+              ******
+             ***  ***
+            ***    ***        
+           ***  **  ***                   WARNING    
+          ***   **   *** 
+         ***    **    ***          ***********************
+        ***     **     ***         * NODE NOT IN CLUSTER *
+       ***      **      ***        ***********************
+      ***                ***   
+     ***        **        ***   The node you are working on is 
+    ***         **         ***       not a cluster member.
+   ***                      ***
+    **************************  
+      **********************
+			"""
+		
+		# Instanciate cluster
 		d=xencluster.XenCluster.getDeferInstance(result)
 		d.addCallback(runCmd)
 		d.addCallback(lambda _: reactor.stop())
