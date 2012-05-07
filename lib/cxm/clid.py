@@ -56,7 +56,7 @@ def ctl_listnodes(*args):
 	"""List current connected nodes."""
 	def success(result):
 		assert type(result) == list, "Result should be a list"
-		for node in result:
+		for node in sorted(result):
 			print node
 
 	agent=Agent()
