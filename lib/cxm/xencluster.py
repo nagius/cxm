@@ -666,12 +666,15 @@ class XenCluster:
 			return False
 
 		# Check if VM are still alive
-		for node in self.get_nodes():
-			if node.ping(vm_list):
-				log.warn("Some VM on %s are still alive !" % (name))
-				return False
-			
-		log.warn("All VM on %s are dead. Fencing now !" % (name))
+		if len(vm_list)>0:
+			for node in self.get_nodes():
+				if node.ping(vm_list):
+					log.warn("Some VM on %s are still alive !" % (name))
+					return False
+				
+			log.warn("All VM on %s are dead. Fencing now !" % (name))
+		else:
+			log.warn("No VM running on %s. Fencing now !" % (name))
 		self.get_local_node().fence(name)
 
 		# Remove fenced node from current cluster instance

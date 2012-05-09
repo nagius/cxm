@@ -1324,6 +1324,38 @@ class XenClusterTests(MockerTestCase):
 		n2_mocker.verify()
 		n3_mocker.verify()
 
+	def test_recover__eject_fail_fence_ok_novm(self):
+
+		n1_mocker = Mocker()
+		n1 = n1_mocker.mock()
+		n1_mocker.replay()
+
+		n2_mocker = Mocker()
+		n2 = n2_mocker.mock()
+		n2.fence('node1')
+		n2_mocker.replay()
+
+		n3_mocker = Mocker()
+		n3 = n3_mocker.mock()
+		n3_mocker.replay()
+
+		emergency_eject = self.mocker.replace(self.cluster.emergency_eject)
+		emergency_eject(n1)
+		self.mocker.throw(Exception('foobar'))
+		get_local_node = self.mocker.replace(self.cluster.get_local_node)
+		get_local_node()
+		self.mocker.result(n2)
+		start_vms = self.mocker.replace(self.cluster.start_vms)
+		start_vms([])
+		self.mocker.replay()
+
+		self.cluster.nodes={'node1': n1, 'node2': n2, 'node3': n3}
+
+		self.assertTrue(self.cluster.recover('node1', [], False))
+
+		n1_mocker.verify()
+		n2_mocker.verify()
+		n3_mocker.verify()
 if __name__ == "__main__":
 	unittest.main()   
 
