@@ -604,7 +604,7 @@ class Node:
 		Raise a FenceNodeError if the fence fail of if DISABLE_FENCING is True.
 		"""
 		if core.cfg['DISABLE_FENCING']:
-			raise FenceNodeError(self.get_hostname(), "Fencing disabled by configuration")
+			raise FenceNodeError(self.get_hostname(), "Fencing disabled by configuration", hostname)
 
 		if self.get_hostname() == hostname:
 			log.warn("Node is self-fencing !")
