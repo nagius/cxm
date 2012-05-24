@@ -1,4 +1,4 @@
-#!/usr/bin/env python -u
+#!/usr/bin/python -u
 # -*- coding:Utf-8 -*-
 # Option -u is needed for communication with snmpd
 
