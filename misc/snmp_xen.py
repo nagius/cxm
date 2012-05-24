@@ -104,6 +104,8 @@ nr_cpu=None
       |  +-- -R-- Counter   XenStatsHostVmDiskWrite(7)	(Requests)
       |  +-- -R-- Counter   XenStatsHostVmNetRx(8)		(Bytes)
       |  +-- -R-- Counter   XenStatsHostVmNetTx(9)		(Bytes)
+      |
+      +-- -R-- Gauge     XenStatsHostCpuUsage(10)    (Percentage*100: 0-10000) 
 
 
 Shell command to walk through this tree :
@@ -179,6 +181,8 @@ def update_data():
 	pp.add_int('1.9.2.'+oid,0)
 	pp.add_gau('1.9.3.'+oid,"%d" % (round(vms_stat['Domain-0']['cpu']/nr_cpu,2)*100))
 	pp.add_gau('1.9.4.'+oid,node.metrics.get_dom0_nr_cpus()) 
+	# CPU Percentage relative to the host capacity and *100 to pass decimal through snmpd
+	pp.add_gau('1.10.0',"%d" % (round(sum(v['cpu'] for v in vms_stat.values())/nr_cpu,2)*100)) 
 
 
 def main():
