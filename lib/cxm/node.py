@@ -355,21 +355,15 @@ class Node:
 		"""
 		MAX_TIMOUT=50	# Time waiting for VM shutdown 
 
-		if core.cfg['USESSH']:
-			if clean:
-				self.run("xm shutdown " + vmname)
-			else:
-				self.run("xm destroy " + vmname)
+		if not self.is_vm_started(vmname):
+			raise NotRunningVmError(self.get_hostname(),vmname)
+
+		vm=self.server.xenapi.VM.get_by_name_label(vmname)[0]
+
+		if clean:
+			self.server.xenapi.VM.clean_shutdown(vm)
 		else:
-			if not self.is_vm_started(vmname):
-				raise NotRunningVmError(self.get_hostname(),vmname)
-
-			vm=self.server.xenapi.VM.get_by_name_label(vmname)[0]
-
-			if clean:
-				self.server.xenapi.VM.clean_shutdown(vm)
-			else:
-				self.server.xenapi.VM.hard_shutdown(vm)
+			self.server.xenapi.VM.hard_shutdown(vm)
 
 		# Wait until VM is down
 		time.sleep(1)
