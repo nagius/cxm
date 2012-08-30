@@ -325,7 +325,7 @@ class NodeTests(MockerTestCase):
 		self.mocker.replay()
 		self.node.server=xs
 		
-		self.node.shutdown(vmname, False)		
+		self.node.shutdown(vmname, True)		
 
 		n_mocker.verify()
 

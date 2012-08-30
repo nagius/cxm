@@ -125,7 +125,7 @@ def cxm_shutdown(cluster, options, vm):
 	node=select_node_by_vm(cluster, vm, options)
 
 	if not core.cfg['QUIET'] : print "Shutting down",vm,"on",node.get_hostname(),"..."
-	node.shutdown(vm, True)
+	node.shutdown(vm)
 
 def cxm_destroy(cluster, options, vm):
 	"""Terminate the specified VM immediately. 
@@ -142,7 +142,7 @@ def cxm_destroy(cluster, options, vm):
 			print "Aborded by user."
 			return
 
-	node.shutdown(vm, False)
+	node.shutdown(vm, True)
 
 def cxm_console(cluster, options, vm):
 	"""Attach local console to the given VM."""

@@ -347,10 +347,10 @@ class Node:
 		"""Delete the autostart link for the specified vm."""
 		self.run("rm -f /etc/xen/auto/"+vmname)
 		
-	def shutdown(self, vmname, clean=True):
+	def shutdown(self, vmname, hard=False):
 		"""Shutdown the specified vm.
 
-		If 'clean' is false, do a hard shutdown (destroy).
+		If 'hard' is True, do a hard shutdown (destroy).
 		Raise a NotRunningVmError if the vm is not running.
 		"""
 		MAX_TIMOUT=50	# Time waiting for VM shutdown 
@@ -360,10 +360,10 @@ class Node:
 
 		vm=self.server.xenapi.VM.get_by_name_label(vmname)[0]
 
-		if clean:
-			self.server.xenapi.VM.clean_shutdown(vm)
-		else:
+		if hard:
 			self.server.xenapi.VM.hard_shutdown(vm)
+		else:
+			self.server.xenapi.VM.clean_shutdown(vm)
 
 		# Wait until VM is down
 		time.sleep(1)
