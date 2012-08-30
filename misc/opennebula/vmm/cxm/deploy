@@ -1,0 +1,54 @@
+#!/bin/bash 
+
+# vmm/cxm - OpenNebula virtual machine manager for cxm
+# Copyleft 2012 - Nicolas AGIUS <nicolas.agius@lps-it.fr>
+#
+# Some part of code are inspired from OpenNebula 
+# Copyright 2002-2012, OpenNebula Project Leads (OpenNebula.org)
+
+###########################################################################
+#
+# This file is part of cxm.
+#
+# cxm is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+#
+###########################################################################
+
+DRIVER_PATH=$(dirname $0)
+
+source $DRIVER_PATH/../../scripts_common.sh
+source $DRIVER_PATH/../../cxmrc
+
+CFG_FILE=$1
+HOST=$2
+VM_ID=$3
+
+mkdir -p $(dirname $CFG_FILE)
+cat > $CFG_FILE
+
+# Rename the vm with it's FQDN
+VM_NAME=$(gen_vm_fqdn $VM_ID)
+sed -i "/name/s/['\"]\([^'\"]*\)['\"]/'$VM_NAME'/" $CFG_FILE
+echo "#O VM_ID = $VM_ID" >> $CFG_FILE
+
+# Move the configuration file to the configuration directory
+sudo mv -f $CFG_FILE $CFG_DIR/$VM_NAME
+ln -s $CFG_DIR/$VM_NAME $CFG_FILE
+
+# Start the vm
+exec_and_log "sudo xm create $CFG_DIR/$VM_NAME" "Could not start $VM_NAME" 
+
+echo $VM_NAME
+
+# vim: ts=4:sw=4:ai

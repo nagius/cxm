@@ -1,0 +1,431 @@
+#!/bin/bash
+
+# OpenNebula drivers for cxm
+# Copyleft 2012 - Nicolas AGIUS <nicolas.agius@lps-it.fr>
+#
+# Some part of code are inspired from OpenNebula 
+# Copyright 2002-2012, OpenNebula Project Leads (OpenNebula.org)
+
+###########################################################################
+#
+# This file is part of cxm.
+#
+# cxm is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+#
+###########################################################################
+
+# Volume Group to create logical volumes or snapshots in the cluster nodes 
+VG_NAME="LVM_XEN"
+
+# Prefix for each logical volume
+LV_PREFIX="lv-one"
+
+# Default size for logical volumes if not specified
+DEFAULT_LV_SIZE="8G"
+
+# Type of images to store in the filesystem datastore
+#
+# Could be TGZ, GZIP or RAW. Default: RAW
+#  - RAW : raw image is dumped into the lv
+#  - GZIP : raw image is (un)gzipped before dump
+#  - TGZ : image is a gzipped tarball extracted in a new filesystem
+# 
+# If you use TGZ, you will have to specify the TARGET device in the image template
+# Ex : TARGET=xvda1
+MODE="TGZ"
+
+# Compression level for TGZ and GZIP copy mode
+COMPRESS_LEVEL="1"
+
+# Block size used by dd
+BLOCK_SIZE="1M"
+
+# Default filesystem type for logical volumes if not in raw copy mode
+DEFAULT_FSTYPE="ext3"
+
+# Root directory used by mktemp(1) 
+TMP_ROOT="/var/tmp"
+
+# Directory used to store configuration file
+CFG_DIR="/etc/xen/vm/"
+
+# Template used to generate the FQDN of the vm.
+# This name is for internal use, it will not be set into the vm.
+#
+# %U will be replaced by the user name, %V by the vm name, %I the VM ID
+VM_FQDN_TEMPLATE="%U-%V.vm.vdi.s1.p.fti.net"
+
+# Name of the xpath perl tool
+XPATH="xpath"
+
+# Seconds to wait after shutdown until timeout
+SHUTDOWN_TIMEOUT=300
+
+# -------------------------------------------------------------------------- #
+# Helper functions for the LVM transfert manager                             #
+# -------------------------------------------------------------------------- #
+
+function get_vid 
+{
+    [[ $1 =~ datastores/[0-9]+/([0-9]+)/ ]] && echo ${BASH_REMATCH[1]}
+}
+
+function get_lv_name 
+{
+    VID=`get_vid $1`
+    DISK=`echo $1|awk -F. '{printf $NF}'`
+    echo "${LV_PREFIX}-${VID}-${DISK}"
+}
+
+function get_one_host
+{
+	echo $SSH_CLIENT | awk '{print $1;}'
+}
+
+function gen_vm_fqdn
+{
+	local VM_ID=$1
+	local XPATH="$(dirname $0)/../../datastore/xpath.rb --stdin"
+
+	local XML=$(ssh $(get_one_host) onevm show -x $VM_ID)
+	local USER_NAME=$(echo $XML | $XPATH /VM/UNAME)
+	local VM_NAME=$(echo $XML | $XPATH /VM/NAME)
+	
+	echo $VM_FQDN_TEMPLATE | sed "s/%U/$USER_NAME/g;s/%V/$VM_NAME/g;s/%I/$VM_ID/g"
+}
+
+function get_vm_name
+{
+	local VM_ID=$1
+
+	# Remember, the filename is the vm name
+	basename $(grep -l "VM_ID = $VM_ID" $CFG_DIR/*)
+}
+
+function send_rawfile_to_lv
+{
+    local DST_HOST=$1
+    local FILE=$2
+    local LV_NAME=$3
+
+    exec_and_log "eval cat $FILE | ssh $DST_HOST sudo dd of=/dev/$VG_NAME/$LV_NAME bs=$BLOCK_SIZE"
+}
+
+function send_gzipfile_to_lv
+{
+    local DST_HOST=$1
+    local FILE=$2
+    local LV_NAME=$3
+
+    exec_and_log "eval cat $FILE | ssh $DST_HOST 'gzip -d | sudo dd of=/dev/$VG_NAME/$LV_NAME bs=$BLOCK_SIZE'"
+}
+
+function send_tgzfile_to_lv
+{
+    local HOST=$1
+    local FILE=$2
+    local LV_NAME=$3
+    local FSTYPE=${4:-$DEFAULT_FSTYPE}
+
+    local TMP_DIR=$(ssh $HOST sudo mktemp -p $TMP_ROOT -d)
+    exec_and_log "eval ssh $HOST 'sudo $(mkfs_command /dev/$VG_NAME/$LV_NAME $FSTYPE) && sudo mount /dev/$VG_NAME/$LV_NAME $TMP_DIR'"
+    exec_and_log "eval cat $FILE | ssh $HOST 'sudo tar -xzf - -C $TMP_DIR'"
+    exec_and_log "eval ssh $HOST 'sudo umount $TMP_DIR && sudo rmdir $TMP_DIR'"
+}
+
+function get_rawfile_from_lv
+{
+    local HOST=$1
+    local FILE=$2
+    local LV=$3
+
+    exec_and_log "eval ssh $HOST sudo dd if=$LV bs=$BLOCK_SIZE | cat - >$FILE"
+}
+
+function get_gzipfile_from_lv
+{
+    local HOST=$1
+    local FILE=$2
+    local LV=$3
+
+    exec_and_log "eval ssh $HOST 'sudo dd if=$LV bs=$BLOCK_SIZE | gzip -$COMPRESS_LEVEL ' | cat - >$FILE"
+}
+
+function get_tgzfile_from_lv
+{
+    local HOST=$1
+    local FILE=$2
+    local LV=$3
+
+    TMP_DIR=$(ssh $HOST sudo mktemp -p $TMP_ROOT -d)
+    exec_and_log "ssh $HOST sudo mount $LV $TMP_DIR"
+    exec_and_log "eval ssh $HOST 'sudo tar -cf - -C $TMP_DIR . | gzip -$COMPRESS_LEVEL ' | cat - >$FILE"
+    exec_and_log "eval ssh $HOST 'sudo umount $TMP_DIR && sudo rmdir $TMP_DIR'"
+}
+
+function send_file_to_lv
+{
+    local HOST=$1
+    local FILE=$2
+    local LV_NAME=$3
+    local FSTYPE=${4:-$DEFAULT_FSTYPE}
+
+    MIME=$(file -b --mime-type $FILE)
+    case "$MIME" in
+        "application/x-gzip")
+            INNER_MIME=$(file -bz --mime-type $FILE)
+            case "$INNER_MIME" in
+                "application/x-tar")
+                    send_tgzfile_to_lv $HOST $FILE $LV_NAME $FSTYPE
+                    ;;
+                *)
+                    send_gzipfile_to_lv $HOST $FILE $LV_NAME
+                    ;;
+            esac
+            ;;
+        *)
+            send_rawfile_to_lv $HOST $FILE $LV_NAME
+            ;;
+    esac
+}
+
+function get_file_from_lv
+{
+    local HOST=$1
+    local FILE=$2
+    local LV=$3
+    local TYPE=$4
+
+    case "$MODE" in
+        "TGZ")
+            case "$TYPE" in
+                "FS")
+                    get_tgzfile_from_lv $HOST $FILE $LV
+                    ;;
+                *)
+                    get_gzipfile_from_lv $HOST $FILE $LV
+                    ;;
+            esac
+            ;;
+        "GZIP")
+            get_gzipfile_from_lv $HOST $FILE $LV
+            ;;
+        *)
+            get_rawfile_from_lv $HOST $FILE $LV
+            ;;
+    esac
+}
+
+function get_disk
+{
+    local SRC_HOST=$1
+    local SRC_PATH=$2
+    local DST_PATH=$3
+
+    # Retrieve informations on logical volume
+    read TYPE LV FSTYPE DUMMY < <(echo "
+        LV=\$(readlink $SRC_PATH)
+        MIME=\$(sudo file -bsL --mime-type \$LV)
+        case \"\$MIME\" in
+            \"application/octet-stream\")
+                # This is a filesystem, try to detect the type
+                TMP_DIR=\$(mktemp -p $TMP_ROOT -d)
+                sudo mount \$LV \$TMP_DIR 2>/dev/null
+                if [ \$? -eq 0 ]; then
+                    FSTYPE=\$(grep \$TMP_DIR /proc/mounts | awk {'print \$3'})
+                    echo \"FS \$LV \$FSTYPE\"
+                    sudo umount \$TMP_DIR
+                else
+                    echo \"RAW \$LV \"
+                fi
+                rmdir \$TMP_DIR
+                ;;
+            \"application/x-iso9660-image\")
+                echo \"RAW \$LV \"
+                ;;
+            *)
+                echo \"RAW \$LV \"
+                ;;
+        esac
+    " | ssh $SRC_HOST "bash -s")
+
+    if [ "$?" != "0" ]; then
+        log_error "Error retrieving LV informations."
+        exit 1
+    fi
+
+    get_file_from_lv $SRC_HOST $DST_PATH $LV $TYPE
+}
+
+function get_all_disks
+{
+    local SRC_HOST=$1
+    local SRC_PATH=$2
+    local DST_PATH=$3
+    local MAPFILE="$SRC_PATH/diskmap"
+
+    # Retrieve informations on logical volumes
+    echo "
+        echo -e \"declare -a DISKS\nDISKS=(\" > $MAPFILE
+        for DISK in \$(find $SRC_PATH -type l -regex '.*disk\.[0-9]+'); do
+            LV=\$(readlink \$DISK)
+            MIME=\$(sudo file -bsL --mime-type \$LV)
+            SIZE=\$(sudo lvs -o lv_size \$LV --noheadings)
+            case \"\$MIME\" in
+                \"application/octet-stream\")
+                    # This is a filesystem, try to detect the type
+                    TMP_DIR=\$(mktemp -p $TMP_ROOT -d)
+                    sudo mount \$LV \$TMP_DIR 2>/dev/null
+                    if [ \$? -eq 0 ]; then
+                        FSTYPE=\$(grep \$TMP_DIR /proc/mounts | awk {'print \$3'})
+						# Sometimes, file does'nt detect iso images
+						if [ \"\$FSTYPE\" == \"iso9660\" ]; then
+							echo \"\\\"RAW \$DISK \$LV \$SIZE\\\"\" >>$MAPFILE
+						else
+							echo \"\\\"FS \$DISK \$LV \$SIZE \$FSTYPE\\\"\" >>$MAPFILE
+						fi
+                        sudo umount \$TMP_DIR
+                    else
+                        echo \"\\\"RAW \$DISK \$LV \$SIZE\\\"\" >>$MAPFILE
+                    fi
+                    rmdir \$TMP_DIR
+                    ;;
+                \"application/x-iso9660-image\")
+                    echo \"\\\"RAW \$DISK \$LV \$SIZE\\\"\" >>$MAPFILE
+                    ;;
+                *)
+                    echo \"\\\"RAW \$DISK \$LV \$SIZE\\\"\" >>$MAPFILE
+                    ;;
+            esac
+        done
+        echo \")\" >> $MAPFILE
+    " | ssh $SRC_HOST "bash -s"
+
+    if [ "$?" != "0" ]; then
+        log_error "Error retrieving LV informations."
+        exit 1
+    fi
+
+	# Move back the configuration file in the deployment directory
+    local CMD=$(cat <<EOF
+        set -e
+		CFG_FILE=\$(readlink $SRC_PATH/deployment.0) 
+		rm -f $SRC_PATH/deployment.0
+		sudo mv \$CFG_FILE $SRC_PATH/deployment.0
+EOF
+    )
+    ssh_exec_and_log "$SRC_HOST" "$CMD" "Cannot get the configuration file"
+
+    # Transfert configuration files (will not transfert symlinks)
+    exec_and_log "rsync --compress-level=$COMPRESS_LEVEL -re ssh $SRC/* $DST_PATH"
+    local MAPFILE="$DST_PATH/diskmap"
+
+    # Dump logicals volume to file
+    [ -r "$MAPFILE" ] || log_error "Cannot read diskmap : $MAPFILE"
+    source $MAPFILE
+    for DISK in "${DISKS[@]}"; do
+        read TYPE NAME LV SIZE FSTYPE DUMMY < <(echo $DISK)
+        get_file_from_lv $SRC_HOST $NAME $LV $TYPE
+    done
+}
+
+function send_all_disks
+{
+    local SRC_PATH=$1
+    local DST_HOST=$2
+    local DST_PATH=$3
+    local MAPFILE="$SRC_PATH/diskmap"
+
+    # Send all fils but disks
+    exec_and_log "scp -r $(ls $SRC_PATH -I disk.\* | xargs -I{} echo $SRC_PATH/{}) $DST_HOST:$DST_PATH"
+	
+	# Move the configuration file to the configuration directory
+    local CMD=$(cat <<EOF
+        set -e
+		VM_NAME=\$(sed -n "s/name.*['\"]\([^'\"]*\)['\"]/\1/p" $DST_PATH/deployment.0)
+		sudo mv $DST_PATH/deployment.0 $CFG_DIR/\$VM_NAME
+		ln -s $CFG_DIR/\$VM_NAME $DST_PATH/deployment.0
+EOF
+    )
+    ssh_exec_and_log "$DST_HOST" "$CMD" "Cannot get the configuration file"
+
+    # Dump file to logical volumes
+    [ -r "$MAPFILE" ] || log_error "Cannot read diskmap : $MAPFILE"
+    source $MAPFILE
+    for DISK in "${DISKS[@]}"; do
+        read TYPE NAME LV SIZE FSTYPE DUMMY < <(echo $DISK)
+        LV_NAME=$(basename $LV)
+
+        # Create LV 
+        log "Creating LV $LV_NAME"
+        create_lv $DST_HOST $LV_NAME "$DST_PATH/$(basename $NAME)" $SIZE
+
+        send_file_to_lv $DST_HOST $NAME $LV_NAME $FSTYPE
+    done
+}
+
+
+function remove_lv
+{
+    local HOST=$1
+    local FILE=$2
+
+    local CMD=$(cat <<EOF
+        set -e
+        LV=\$(readlink $FILE)
+        sudo lvchange -an \$LV
+        sudo lvremove -f \$LV
+        sudo rm -f $FILE
+EOF
+    )
+
+    ssh_exec_and_log "$HOST" "$CMD" "Cannot remove LV $FILE"
+}
+
+function remove_all_lv
+{
+    local HOST=$1
+    local DST_PATH=$2
+
+    DISK_LIST=$(ssh $HOST "find $DST_PATH -type l -regex '.*disk\.[0-9]+'")
+
+    if [ "$?" != "0" ]; then
+        log_error "Error retrieving disks informations."
+        exit 1
+    fi
+
+    for DISK in $DISK_LIST; do
+        log "Deleting LV $DISK"
+        remove_lv $HOST $DISK
+    done
+}
+
+function create_lv
+{
+    local HOST=$1
+    local LV_NAME=$2
+    local FILE=$3
+    local SIZE=${4:-$DEFAULT_LV_SIZE}
+
+    local CMD=$(cat <<EOF
+        set -e
+        sudo lvcreate -L$SIZE -n $LV_NAME $VG_NAME
+        ln -s /dev/$VG_NAME/$LV_NAME $FILE
+EOF
+    )
+
+    ssh_exec_and_log "$HOST" "$CMD" "Cannot create LV $LV_NAME"
+}
+
+# vim: ts=4:sw=4:ai

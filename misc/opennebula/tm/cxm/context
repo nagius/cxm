@@ -1,0 +1,94 @@
+#!/bin/bash
+
+# tm/cxm - OpenNebula transfert manager for cxm
+# Copyleft 2012 - Nicolas AGIUS <nicolas.agius@lps-it.fr>
+#
+# Some part of code are inspired from OpenNebula 
+# Copyright 2002-2012, OpenNebula Project Leads (OpenNebula.org)
+
+###########################################################################
+#
+# This file is part of cxm.
+#
+# cxm is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+#
+###########################################################################
+
+# context context.sh file1 file2 ... fileN host:remote_system_ds/disk.i vmid 0
+#   - context.sh file are the contents of the context ISO
+#   - host is the target host to deploy the VM
+#   - remote_system_ds is the path for the system datastore in the host
+#   - vmid is the id of the VM
+#   - 0 is the target datastore (system)
+
+ARGV=("$@")
+
+DS_ID="${ARGV[$(($#-1))]}"
+VM_ID="${ARGV[$(($#-2))]}"
+DST="${ARGV[$(($#-3))]}"
+SRC="${ARGV[@]:0:$(($#-3))}"
+
+if [ -z "${ONE_LOCATION}" ]; then
+    TMCOMMON=/var/lib/one/remotes/tm/tm_common.sh
+else
+    TMCOMMON=$ONE_LOCATION/var/remotes/tm/tm_common.sh
+fi
+
+source $TMCOMMON
+source $(dirname $0)/../../cxmrc
+
+#-------------------------------------------------------------------------------
+# Set dst path and dirs
+#-------------------------------------------------------------------------------
+DST_PATH=`arg_path $DST`
+DST_HOST=`arg_host $DST`
+DST_DIR=`dirname $DST_PATH`
+
+ssh_make_path $DST_HOST $DST_DIR
+
+#-------------------------------------------------------------------------------
+# Build the Context Block device (locally) and copy it remotely
+#-------------------------------------------------------------------------------
+log "Generating context block device at $DST"
+
+VM_ID=`basename $DST_DIR`
+ISO_DIR="$DS_DIR/.isofiles/$VM_ID"
+ISO_FILE="$ISO_DIR/$VM_ID.iso"
+LV_NAME=`get_lv_name $DST_PATH`
+
+exec_and_log "mkdir -p $ISO_DIR" "Could not create tmp dir to make context dev"
+
+for f in $SRC; do
+    case $f in
+    http://*)
+        exec_and_log "wget -P $ISO_DIR $f" "Error downloading $f"
+        ;;
+    *)
+        exec_and_log "cp -R $f $ISO_DIR" "Error copying $f to $ISO_DIR"
+        ;;
+    esac
+done
+
+exec_and_log "$MKISOFS -o $ISO_FILE -J -R $ISO_DIR" "Error creating iso fs"
+SIZE="$(stat -c %s $ISO_FILE)B"
+
+log "Creating LV $LV_NAME"
+create_lv $DST_HOST $LV_NAME $DST_PATH $SIZE
+exec_and_log "eval cat $ISO_FILE | ssh $DST_HOST sudo dd of=/dev/$VG_NAME/$LV_NAME bs=$BLOCK_SIZE"
+
+rm -rf $ISO_DIR &>/dev/null
+
+exit 0
+
+# vim: ts=4:sw=4:ai

@@ -1,0 +1,44 @@
+#!/bin/bash
+
+# vmm/cxm - OpenNebula virtual machine manager for cxm
+# Copyleft 2012 - Nicolas AGIUS <nicolas.agius@lps-it.fr>
+#
+# Some part of code are inspired from OpenNebula 
+# Copyright 2002-2012, OpenNebula Project Leads (OpenNebula.org)
+
+###########################################################################
+#
+# This file is part of cxm.
+#
+# cxm is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+#
+###########################################################################
+
+DRIVER_PATH=$(dirname $0)
+
+source $DRIVER_PATH/../../scripts_common.sh
+source $DRIVER_PATH/../../cxmrc
+
+VM_NAME=$1
+FILE=$2
+VM_ID=$4
+
+if [ -e $FILE ]; then
+    log "Deleting old file $FILE"
+    exec_and_log "sudo rm -f $FILE" "Could not delete old file $FILE"
+fi
+
+exec_and_log "sudo xm save $VM_NAME $FILE" "Could not save $VM_NAME to $FILE"
+
+# vim: ts=4:sw=4:ai

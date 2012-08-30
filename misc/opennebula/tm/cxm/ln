@@ -1,0 +1,96 @@
+#!/bin/bash
+
+# tm/cxm - OpenNebula transfert manager for cxm
+# Copyleft 2012 - Nicolas AGIUS <nicolas.agius@lps-it.fr>
+#
+# Some part of code are inspired from OpenNebula 
+# Copyright 2002-2012, OpenNebula Project Leads (OpenNebula.org)
+
+###########################################################################
+#
+# This file is part of cxm.
+#
+# cxm is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+#
+###########################################################################
+
+# clone fe:SOURCE host:remote_system_ds/disk.i vmid dsid
+#   - fe is the front-end hostname
+#   - SOURCE is the path of the disk image in the form DS_BASE_PATH/disk
+#   - host is the target host to deploy the VM
+#   - remote_system_ds is the path for the system datastore in the host
+#   - vmid is the id of the VM
+#   - dsid is the target datastore (0 is the system datastore)
+
+SRC=$1
+DST=$2
+VM_ID=$3
+DS_ID=$4
+
+if [ -z "${ONE_LOCATION}" ]; then
+    TMCOMMON=/var/lib/one/remotes/tm/tm_common.sh
+else
+    TMCOMMON=$ONE_LOCATION/var/remotes/tm/tm_common.sh
+fi
+
+source $TMCOMMON
+source $(dirname $0)/../../cxmrc
+
+#-------------------------------------------------------------------------------
+# Set dst path and dir
+#-------------------------------------------------------------------------------
+
+SRC_PATH=`arg_path $SRC`
+DST_PATH=`arg_path $DST`
+DST_HOST=`arg_host $DST`
+
+DST_DIR=`dirname $DST_PATH`
+
+LV_NAME=`get_lv_name $DST_PATH`
+
+ssh_make_path $DST_HOST $DST_DIR
+
+#-------------------------------------------------------------------------------
+# Get SIZE and FSTYPE through XPATH
+#-------------------------------------------------------------------------------
+
+DISK_ID=$(echo $DST_PATH|awk -F. '{print $NF}')
+
+IMAGE_ID=$(onevm show -x $VM_ID | $XPATH "/VM/TEMPLATE/DISK[DISK_ID=$DISK_ID]/IMAGE_ID/text()" )
+SIZE=$(oneimage show -x $IMAGE_ID | $XPATH "/IMAGE/TEMPLATE/SIZE/text()" )
+
+FSTYPE=$(oneimage show -x $IMAGE_ID | $XPATH "/IMAGE/FSTYPE/text()" )
+[ "$FSTYPE" == "save_as" ] && FSTYPE=$DEFAULT_FSTYPE
+
+#-------------------------------------------------------------------------------
+# Copy files to the remote host
+#-------------------------------------------------------------------------------
+
+log "Creating LV $LV_NAME"
+create_lv $DST_HOST $LV_NAME $DST_PATH $SIZE
+
+case $SRC in
+http://*)
+    log "Downloading $SRC into /dev/$VG_NAME/$LV_NAME"
+    RMT_CMD="wget $SRC -q -O- | sudo dd of=/dev/$VG_NAME/$LV_NAME bs=$BLOCK_SIZE"
+    exec_and_log "eval ssh $DST_HOST '$RMT_CMD'" "Error downloading $SRC"
+    ;;
+
+*)
+    log "Dumping $SRC into /dev/$VG_NAME/$LV_NAME..."
+    send_file_to_lv $DST_HOST $SRC_PATH $LV_NAME $FSTYPE
+    ;;
+esac
+
+# vim: ts=4:sw=4:ai
