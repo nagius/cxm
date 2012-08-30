@@ -373,6 +373,13 @@ class Node:
 			time.sleep(1)
 			timout += 1
 
+		# If vm is still running, destroy it
+		if self.is_vm_started(vmname):
+			if not core.cfg['QUIET']:
+				print " Timeout !\nNo response from VM, destroying it ..."
+			self.server.xenapi.VM.hard_shutdown(vm)
+			time.sleep(1)
+
 		self.deactivate_lv(vmname)
 	
 	def get_vm(self, vmname):

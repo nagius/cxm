@@ -35,6 +35,7 @@ class NodeTests(MockerTestCase):
 		cxm.core.cfg['DISABLE_FENCING'] = False
 		cxm.core.cfg['QUIET']=True
 		cxm.core.cfg['API_DEBUG']=False
+		cxm.core.cfg['SHUTDOWN_TIMEOUT']=1
 
 		# Mock xen session object
 		xs_mock = Mocker()
@@ -293,6 +294,8 @@ class NodeTests(MockerTestCase):
 		is_vm_started(vmname)
 		n_mocker.result(False)
 		n_mocker.count(2)
+		deactivate_lv = n_mocker.replace(self.node.deactivate_lv)
+		deactivate_lv(vmname)
 		n_mocker.replay()
 
 		xs = self.mocker.mock()
@@ -316,6 +319,8 @@ class NodeTests(MockerTestCase):
 		is_vm_started(vmname)
 		n_mocker.result(False)
 		n_mocker.count(2)
+		deactivate_lv = n_mocker.replace(self.node.deactivate_lv)
+		deactivate_lv(vmname)
 		n_mocker.replay()
 
 		xs = self.mocker.mock()
@@ -326,6 +331,30 @@ class NodeTests(MockerTestCase):
 		self.node.server=xs
 		
 		self.node.shutdown(vmname, True)		
+
+		n_mocker.verify()
+
+	def test_shutdown__freezed(self):
+		vmname="test1.home.net"
+
+		n_mocker = Mocker()
+		is_vm_started = n_mocker.replace(self.node.is_vm_started)
+		is_vm_started(vmname)
+		n_mocker.result(True)
+		n_mocker.count(5)
+		deactivate_lv = n_mocker.replace(self.node.deactivate_lv)
+		deactivate_lv(vmname)
+		n_mocker.replay()
+
+		xs = self.mocker.mock()
+		xs.xenapi.VM.get_by_name_label(vmname)
+		self.mocker.result(['39cb706a-eae1-b5cd-2ed0-fbbd7cbb8ee8'])
+		xs.xenapi.VM.clean_shutdown('39cb706a-eae1-b5cd-2ed0-fbbd7cbb8ee8')
+		xs.xenapi.VM.hard_shutdown('39cb706a-eae1-b5cd-2ed0-fbbd7cbb8ee8')
+		self.mocker.replay()
+		self.node.server=xs
+
+		self.node.shutdown(vmname)		
 
 		n_mocker.verify()
 
