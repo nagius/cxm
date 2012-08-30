@@ -42,6 +42,14 @@ VM_NAME=$(gen_vm_fqdn $VM_ID)
 sed -i "/name/s/['\"]\([^'\"]*\)['\"]/'$VM_NAME'/" $CFG_FILE
 echo "#O VM_ID = $VM_ID" >> $CFG_FILE
 
+# Replace disk path by logical volume path
+for DISK in $(find $(dirname $CFG_FILE) -type l -regex '.*disk\.[0-9]+'); do
+    LV=$(readlink $DISK)
+    if [ -n "$LV" ]; then
+        sed -i "s@$DISK@$LV@" $CFG_FILE
+    fi
+done
+
 # Move the configuration file to the configuration directory
 sudo mv -f $CFG_FILE $CFG_DIR/$VM_NAME
 ln -s $CFG_DIR/$VM_NAME $CFG_FILE
