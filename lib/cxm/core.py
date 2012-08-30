@@ -78,6 +78,7 @@ cfg = {
 	'TIMER': 3,					# Main timer for failover, in seconds (3 is good)
 	'UNIX_PORT': "/var/run/cxmd.socket",
 	'HB_DISK': None,			# (string) Mandatory for cxmd
+	'SHUTDOWN_TIMEOUT': 60,
 	}
 
 # Types for configuration entries
@@ -101,6 +102,7 @@ cfg_type = {
 	'TIMER': 				int,
 	'UNIX_PORT': 			str,
 	'HB_DISK': 				str,
+	'SHUTDOWN_TIMEOUT':		int,
 	}
 
 def get_api_version():

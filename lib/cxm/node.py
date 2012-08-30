@@ -353,8 +353,6 @@ class Node:
 		If 'hard' is True, do a hard shutdown (destroy).
 		Raise a NotRunningVmError if the vm is not running.
 		"""
-		MAX_TIMOUT=50	# Time waiting for VM shutdown 
-
 		if not self.is_vm_started(vmname):
 			raise NotRunningVmError(self.get_hostname(),vmname)
 
@@ -368,7 +366,7 @@ class Node:
 		# Wait until VM is down
 		time.sleep(1)
 		timout=0
-		while(self.is_vm_started(vmname) and timout<=MAX_TIMOUT):
+		while(self.is_vm_started(vmname) and timout<=core.cfg['SHUTDOWN_TIMEOUT']):
 			if not core.cfg['QUIET']: 
 				sys.stdout.write(".")
 				sys.stdout.flush()
