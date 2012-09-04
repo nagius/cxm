@@ -127,6 +127,18 @@ def cxm_shutdown(cluster, options, vm):
 	if not core.cfg['QUIET'] : print "Shutting down",vm,"on",node.get_hostname(),"..."
 	node.shutdown(vm)
 
+def cxm_reboot(cluster, options, vm):
+	"""Reboot the specified VM. 
+
+	If options.node is not given, search for the vm over the cluster.
+	"""
+
+	vm=os.path.basename(vm)
+	node=select_node_by_vm(cluster, vm, options)
+
+	if not core.cfg['QUIET'] : print "Rebooting",vm,"on",node.get_hostname(),"..."
+	node.reboot(vm)
+
 def cxm_destroy(cluster, options, vm):
 	"""Terminate the specified VM immediately. 
 
@@ -438,6 +450,7 @@ commands = {
     "create": cxm_create,
     "shutdown": cxm_shutdown,
     "destroy": cxm_destroy,
+    "reboot": cxm_reboot,
     "migrate": cxm_migrate,
     "loadbalance": cxm_loadbalance,
     "search": cxm_search,
@@ -464,13 +477,16 @@ SUBCOMMAND_HELP = {
 		'If --force-node is not given, the vm will be starting on the node holding the ’auto’ symlink.'),
 	'shutdown'		: ('<fqdn>', 
 		'Shutdown the virtual machine.',
-		'If --force-node is not given, the vm will be search on the cluster.'),
+		'If --force-node is not given, the vm will be searched on the cluster.'),
+	'reboot'		: ('<fqdn>', 
+		'Reboot the virtual machine.',
+		'If --force-node is not given, the vm will be searched on the cluster.'),
 	'destroy'		: ('<fqdn>', 
 		'Immediately terminate the virtual machine.',
-		'If --force-node is not given, the vm will be search on the cluster.'),
+		'If --force-node is not given, the vm will be searched on the cluster.'),
 	'migrate'		: ('<fqdn> <dest_node>', 
 		'Live migrate the virtual machine.',
-		'If --force-node is not given, the vm will be search on the cluster.'),
+		'If --force-node is not given, the vm will be searched on the cluster.'),
 	'loadbalance'	: ('', 
 		'Run the loadbalancer to equilibrate load.'),
 	'search'		: ('<fqdn>', 
