@@ -366,10 +366,10 @@ class Node:
 		If 'hard' is True, do a hard shutdown (destroy).
 		Raise a NotRunningVmError if the vm is not running.
 		"""
-		if not self.is_vm_started(vmname):
+		try:
+			vm=self.server.xenapi.VM.get_by_name_label(vmname)[0]
+		except IndexError:
 			raise NotRunningVmError(self.get_hostname(),vmname)
-
-		vm=self.server.xenapi.VM.get_by_name_label(vmname)[0]
 
 		if hard:
 			self.server.xenapi.VM.hard_shutdown(vm)

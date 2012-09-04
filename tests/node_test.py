@@ -313,8 +313,6 @@ class NodeTests(MockerTestCase):
 		n_mocker = Mocker()
 		is_vm_started = n_mocker.replace(self.node.is_vm_started)
 		is_vm_started(vmname)
-		n_mocker.result(True)
-		is_vm_started(vmname)
 		n_mocker.result(False)
 		n_mocker.count(2)
 		deactivate_lv = n_mocker.replace(self.node.deactivate_lv)
@@ -337,8 +335,6 @@ class NodeTests(MockerTestCase):
 
 		n_mocker = Mocker()
 		is_vm_started = n_mocker.replace(self.node.is_vm_started)
-		is_vm_started(vmname)
-		n_mocker.result(True)
 		is_vm_started(vmname)
 		n_mocker.result(False)
 		n_mocker.count(2)
@@ -364,7 +360,7 @@ class NodeTests(MockerTestCase):
 		is_vm_started = n_mocker.replace(self.node.is_vm_started)
 		is_vm_started(vmname)
 		n_mocker.result(True)
-		n_mocker.count(5)
+		n_mocker.count(4)
 		deactivate_lv = n_mocker.replace(self.node.deactivate_lv)
 		deactivate_lv(vmname)
 		n_mocker.replay()
@@ -384,10 +380,11 @@ class NodeTests(MockerTestCase):
 	def test_shutdown__not_running(self):
 		vmname="test1.home.net"
 
-		is_vm_started = self.mocker.replace(self.node.is_vm_started)
-		is_vm_started(vmname)
-		self.mocker.result(False)
+		xs = self.mocker.mock()
+		xs.xenapi.VM.get_by_name_label(vmname)
+		self.mocker.result([])
 		self.mocker.replay()
+		self.node.server=xs
 
 		self.assertRaises(cxm.node.NotRunningVmError,self.node.shutdown,vmname) 
 
