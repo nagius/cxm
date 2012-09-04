@@ -319,6 +319,19 @@ class Node:
 			#main.serverType=main.SERVER_XEN_API
 			#main.xm_importcommand("create" , args)
 
+	def reboot(self, vmname):
+		"""Reboot the specified VM on this node.
+
+		vmname - (String) VM hostname 
+		Raise a NotRunningVmError if the vm is not running.
+		"""
+
+		try:
+			vm=self.server.xenapi.VM.get_by_name_label(vmname)[0]
+		except IndexError:
+			raise NotRunningVmError(self.get_hostname(),vmname)
+		self.server.xenapi.VM.clean_reboot(vm)
+
 	def migrate(self, vmname, dest_node):
 		"""Live migration of specified VM to the given node.
 

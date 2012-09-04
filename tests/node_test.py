@@ -261,6 +261,29 @@ class NodeTests(MockerTestCase):
 		cxm.node.main=xm
 		self.node.start_vm(vmname)
 	
+	def test_reboot_running(self):
+		vmname="test1.home.net"
+
+		xs = self.mocker.mock()
+		xs.xenapi.VM.get_by_name_label(vmname)
+		self.mocker.result(['39cb706a-eae1-b5cd-2ed0-fbbd7cbb8ee8'])
+		xs.xenapi.VM.clean_reboot('39cb706a-eae1-b5cd-2ed0-fbbd7cbb8ee8')
+		self.mocker.replay()
+		self.node.server=xs
+		
+		self.node.reboot(vmname)		
+
+	def test_reboot_not_running(self):
+		vmname="test1.home.net"
+
+		xs = self.mocker.mock()
+		xs.xenapi.VM.get_by_name_label(vmname)
+		self.mocker.result([])
+		self.mocker.replay()
+		self.node.server=xs
+		
+		self.assertRaises(cxm.node.NotRunningVmError,self.node.reboot,vmname) 
+
 	def test_migrate_running(self):
 		vmname="test1.home.net"
 
