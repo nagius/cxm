@@ -293,11 +293,12 @@ def cxm_list(cluster, options):
 			for vm in sorted(node.get_vms(),key=lambda x: x.name):
 				msg += vm.name + "\n"
 		else:
+			# Max 80 columns wide
 			msg = "\nOn %s :\n" % (node.get_hostname())
 			msg += "-----" + "-" * len(node.get_hostname()) + '\n'
-			msg += '\n    %-40s %4s  %5s  %6s\n' % ("Name","Mem", "VCPUs","State")
+			msg += '\n  %-60s %4s %5s %6s\n' % ("Name","Mem", "VCPUs","State")
 			for vm in sorted(node.get_vms(),key=lambda x: x.name):
-				msg += '    %-40s %4d  %5d  %6s\n' % (vm.name, vm.ram, vm.vcpu, vm.state)
+				msg += '  %-60s %4d %5d %6s\n' % (vm.name, vm.ram, vm.vcpu, vm.state)
 
 		return (node.get_hostname(), msg)
 
