@@ -248,18 +248,18 @@ class NodeTests(MockerTestCase):
 	def test_activate_lv(self):
 		self.node.activate_lv("test1.home.net")
 
-	def test_start_vm(self):
+	def test_start(self):
 		vmname="test1.home.net"
 
 		xm = self.mocker.mock()
 		xm.server = ANY
-		bidon = xm.SERVER_LEGACY_XMLRPC
+		dummy = xm.SERVER_LEGACY_XMLRPC
 		xm.serverType=None
 		xm.xm_importcommand('create', [cxm.core.cfg['VMCONF_DIR'] + vmname])
 		self.mocker.replay()
 
 		cxm.node.main=xm
-		self.node.start_vm(vmname)
+		self.node.start(vmname)
 	
 	def test_reboot_running(self):
 		vmname="test1.home.net"

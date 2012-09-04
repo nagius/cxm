@@ -298,7 +298,7 @@ class Node:
 		self.refresh_lvm(self.get_vgs(lvs))
 		self.run("lvchange -aly " + " ".join(lvs))
 		
-	def start_vm(self, vmname):
+	def start(self, vmname):
 		"""Start the specified VM on this node.
 
 		vmname - (String) VM hostname 

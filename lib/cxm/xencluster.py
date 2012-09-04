@@ -274,7 +274,7 @@ class XenCluster:
 		# Start the VM
 		self.activate_vm(node,vmname)
 		try:
-			node.start_vm(vmname)
+			node.start(vmname)
 		except Exception, e:
 			node.deactivate_lv(vmname)
 			raise e
@@ -595,7 +595,7 @@ class XenCluster:
 				self.activate_vm(node,vm.name)
 
 				try:
-					selected_node.start_vm(vm.name)
+					selected_node.start(vm.name)
 				except SystemExit, e:
 					# SystemExit are raised by Xen when xm_create fail
 					node.deactivate_lv(vm.name)
