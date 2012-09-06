@@ -127,6 +127,9 @@ class VM:
 			return "".join([state_on_off(state) for state in states])
 		else:
 			return "=" * len(states)
+	
+	def get_metrics(self):
+		return self.metrics
 
 	def attach_console(self):
 		"""Attach the local console to this vm."""
