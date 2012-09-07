@@ -357,7 +357,7 @@ class MetricsTests(MockerTestCase):
 		vm3_mocker.replay()
 
 		get_vms = self.mocker.replace(self.node.get_vms)
-		get_vms()
+		get_vms(True)
 		self.mocker.count(1,None)
 		self.mocker.result([vm1, vm2, vm3])
 		self.mocker.replay()
@@ -402,17 +402,17 @@ class MetricsTests(MockerTestCase):
 		self.node.legacy_server=xenlegacy
 
 		# First call (init)
-		result=self.metrics.get_vms_cpu_usage()
+		result=self.metrics.get_vms_cpu_usage(True)
 		self.assertEqual(result, {'vm1': 0, 'vm3': 0, 'vm2': 0})
 
 		# Second call
-		result=self.metrics.get_vms_cpu_usage()
+		result=self.metrics.get_vms_cpu_usage(True)
 		self.assertEqual(type(result['vm1']), float)
 		self.assertEqual(type(result['vm2']), float)
 		self.assertEqual(result['vm3'], 0)
 
 		# Third call with vm rebooted
-		result=self.metrics.get_vms_cpu_usage()
+		result=self.metrics.get_vms_cpu_usage(True)
 		self.assertEqual(result, {'vm1': 0, 'vm3': 0, 'vm2': 0})
 
 		xenlegacy_mock.verify()
@@ -433,7 +433,7 @@ class MetricsTests(MockerTestCase):
 			}
 
 		get_vms_cpu_usage = self.mocker.replace(self.metrics.get_vms_cpu_usage)
-		get_vms_cpu_usage()
+		get_vms_cpu_usage(True)
 		self.mocker.result({'test15.home.net': 0.0, 'test22.home.net': 0.0})
 		get_vms_net_io = self.mocker.replace(self.metrics.get_vms_net_io)
 		get_vms_net_io(ANY)

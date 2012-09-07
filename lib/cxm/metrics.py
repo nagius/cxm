@@ -53,7 +53,7 @@ class Metrics:
 		get_vms_disk_io_rate() will return dict with zero values.
 		"""
 		# First call to feed cache with current value
-		self.get_vms_cpu_usage() 
+		self.get_vms_cpu_usage(True) 
 		self.get_vms_disk_io_rate()
 
 	def __repr__(self):
@@ -86,9 +86,10 @@ class Metrics:
 		log.debug("[API]", self.node.get_hostname(), "dom0_record=", dom0_record)
 		return int(dom0_record['VCPUs_max'])
 
-	def get_vms_cpu_usage(self):
+	def get_vms_cpu_usage(self, nocache=False):
 		"""
 		Return a dict with the computed CPU usage for all runing VMs.
+		Result will be cached for 5 seconds, unless 'nocache' is True.
 
 		The result is a percetage relative to one CPU (eg. 2 fully-used CPU -> 200%)
 		Warning: paused VM will be reported with zero values. 
@@ -97,47 +98,50 @@ class Metrics:
 		If you want a string with less precision, you can use "%.1f" % round(xxx).
 		If you want a number with less precision, you can use the Decimal module.
 		"""
-		cpu=dict()
+		def _get_vms_cpu_usage():
+			cpu=dict()
 
-		# Get domains' infos
-		doms=self.node.legacy_server.xend.domains(True)
-		log.debug("[Legacy-API]", self.node.get_hostname(), "doms=", doms)
+			# Get domains' infos
+			doms=self.node.legacy_server.xend.domains(True)
+			log.debug("[Legacy-API]", self.node.get_hostname(), "doms=", doms)
 
-		# Timestamp used to compute CPU percentage
-		timestamp=time.time()
+			# Timestamp used to compute CPU percentage
+			timestamp=time.time()
 
-		# Initialize result with 0 for all vm
-		# This is because legacy api do not report paused vm
-		for vm in self.node.get_vms(): # 5s of cache is ok, this func is designed to be run every 60s
-			cpu[vm.name]=0
+			# Initialize result with 0 for all vm
+			# This is because legacy api do not report paused vm
+			for vm in self.node.get_vms(nocache): # 5s of cache is ok, this func is designed to be run every 60s
+				cpu[vm.name]=0
 
-		for dom in doms:
-			dom_info=main.parse_doms_info(dom)
+			for dom in doms:
+				dom_info=main.parse_doms_info(dom)
 
-			try:
-				# String version with one digit after dot
-				# See http://stackoverflow.com/questions/56820/round-in-python-doesnt-seem-to-be-rounding-properly for reasons.
-				#cpu[dom_info['name']]="%.1f" % round(
-				#	(dom_info['cpu_time']-self.cpu_cache[dom_info['name']])*100/(timestamp-self.cpu_cache['timestamp']),1
-				#)
-				cpu[dom_info['name']]=(dom_info['cpu_time']-self.cpu_cache[dom_info['name']])*100/(timestamp-self.cpu_cache['timestamp'])
+				try:
+					# String version with one digit after dot
+					# See http://stackoverflow.com/questions/56820/round-in-python-doesnt-seem-to-be-rounding-properly for reasons.
+					#cpu[dom_info['name']]="%.1f" % round(
+					#	(dom_info['cpu_time']-self.cpu_cache[dom_info['name']])*100/(timestamp-self.cpu_cache['timestamp']),1
+					#)
+					cpu[dom_info['name']]=(dom_info['cpu_time']-self.cpu_cache[dom_info['name']])*100/(timestamp-self.cpu_cache['timestamp'])
 
-			except KeyError: # First call: return zero values
-				cpu[dom_info['name']]=0
-			except ZeroDivisionError:
-				cpu[dom_info['name']]=0
+				except KeyError: # First call: return zero values
+					cpu[dom_info['name']]=0
+				except ZeroDivisionError:
+					cpu[dom_info['name']]=0
 
-			# In case of reboot, remove negative values
-			if cpu[dom_info['name']] < 0:
-				cpu[dom_info['name']]=0
+				# In case of reboot, remove negative values
+				if cpu[dom_info['name']] < 0:
+					cpu[dom_info['name']]=0
 
-			# Update cpu_cache with the new value
-			self.cpu_cache[dom_info['name']]=dom_info['cpu_time']
+				# Update cpu_cache with the new value
+				self.cpu_cache[dom_info['name']]=dom_info['cpu_time']
 
-		# Update timestamp
-		self.cpu_cache['timestamp']=timestamp
+			# Update timestamp
+			self.cpu_cache['timestamp']=timestamp
 
-		return cpu
+			return cpu
+
+		return self._cache.cache(5, nocache, _get_vms_cpu_usage)
 
 	def get_vms_disk_io(self,nocache=False):
 		"""
@@ -302,7 +306,7 @@ class Metrics:
 		log.debug("[API]", self.node.get_hostname(), "dom_recs=", dom_recs)
 		
 		# Fetch all datas once
-		vms_cpu=self.get_vms_cpu_usage()
+		vms_cpu=self.get_vms_cpu_usage(True)
 		vms_net_io=self.get_vms_net_io(True)
 		vms_disk_io=self.get_vms_disk_io(True)
 
