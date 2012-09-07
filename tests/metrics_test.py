@@ -213,13 +213,12 @@ class MetricsTests(MockerTestCase):
 		val= {  'test1.home.net': {'Read': 6, 'Write': 68 }, 
 				'test2.home.net': {'Read': 1931, 'Write': 2293}}
 
-		xs = self.mocker.mock()
-		xs.xenapi.VM.get_all_records()
+		get_dom_records = self.mocker.replace(self.metrics.get_dom_records)
+		get_dom_records(True)
 		self.mocker.result(vm_records)
 		self.mocker.replay()
-		self.metrics.server=xs
 
-		result=self.metrics.get_vms_disk_io()
+		result=self.metrics.get_vms_disk_io(True)
 		self.assertEqual(result, val)
 
 	def test_get_vms_disk_io_rate(self):

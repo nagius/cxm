@@ -139,35 +139,39 @@ class Metrics:
 
 		return cpu
 
-	def get_vms_disk_io(self,dom_recs=None):
+	def get_vms_disk_io(self,nocache=False):
 		"""
 		Return a dict with disks'IO stats for all runing VMs (including Dom0) since boot. 
+		Result will be cached for 5 seconds, unless 'nocache' is True.
 		
 		Unit: Requests
 		"""
-		if not dom_recs: dom_recs = self.server.xenapi.VM.get_all_records()
+		def _get_vms_disk_io():
+			dom_recs = self.get_dom_records(nocache)
 
-		io=dict()
-		for dom_rec in dom_recs.values():
-			if dom_rec['power_state'] == "Halted":
-				continue # Discard non instantiated vm
+			io=dict()
+			for dom_rec in dom_recs.values():
+				if dom_rec['power_state'] == "Halted":
+					continue # Discard non instantiated vm
 
-			# We use *_req and report Requests instead of Bytes because *_sect values are not self-consistent
-			io_read=[ int(val) for val in \
-				self.node.run("cat /sys/bus/xen-backend/devices/vbd-" + dom_rec['domid'] + "-*/statistics/rd_req 2>/dev/null || true").readlines() ]
-			io_write=[ int(val) for val in \
-				self.node.run("cat /sys/bus/xen-backend/devices/vbd-" + dom_rec['domid'] + "-*/statistics/wr_req 2>/dev/null || true").readlines() ]
-			io[dom_rec['name_label']]={ 'Read': sum(io_read), 'Write': sum(io_write) }
-		return io
+				# We use *_req and report Requests instead of Bytes because *_sect values are not self-consistent
+				io_read=[ int(val) for val in \
+					self.node.run("cat /sys/bus/xen-backend/devices/vbd-" + dom_rec['domid'] + "-*/statistics/rd_req 2>/dev/null || true").readlines() ]
+				io_write=[ int(val) for val in \
+					self.node.run("cat /sys/bus/xen-backend/devices/vbd-" + dom_rec['domid'] + "-*/statistics/wr_req 2>/dev/null || true").readlines() ]
+				io[dom_rec['name_label']]={ 'Read': sum(io_read), 'Write': sum(io_write) }
+			return io
 
-	def get_vms_disk_io_rate(self,dom_recs=None):
+		return self._cache.cache(5, nocache, _get_vms_disk_io)
+
+	def get_vms_disk_io_rate(self):
 		"""Return a dict with disks'IO bandwith for all runing VMs. Unit: Requests/s"""
 		io_rate=dict()
 
 		# Timestamp used to compute per second rate
 		timestamp=time.time()
 
-		io=self.get_vms_disk_io(dom_recs)
+		io=self.get_vms_disk_io(True)
 		for vm in io.keys():
 			io_rate[vm]=dict()
 			try:
@@ -300,7 +304,7 @@ class Metrics:
 		# Fetch all datas once
 		vms_cpu=self.get_vms_cpu_usage()
 		vms_net_io=self.get_vms_net_io(True)
-		vms_disk_io=self.get_vms_disk_io(dom_recs)
+		vms_disk_io=self.get_vms_disk_io(True)
 
 		vms_record=dict()
 		for vm in vms_cpu.keys():
