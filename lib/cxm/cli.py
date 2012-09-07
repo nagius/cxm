@@ -102,7 +102,7 @@ def cxm_create(cluster, options, vm):
 	if not core.cfg['QUIET'] : print "Starting",vm,"on",node.get_hostname(),"..."
 	cluster.start_vm(node,vm,options.console)
 
-def cxm_migrate(cluster, options, vm, dest):
+def cxm_migrate(cluster, options, vm, dst):
 	"""Live migrate the vm to the specified dest.
 
 	If options.node is not given, search for the vm over the cluster.
@@ -111,9 +111,13 @@ def cxm_migrate(cluster, options, vm, dest):
 	vm=os.path.basename(vm)
 	node=select_node_by_vm(cluster, vm, options)
 
-	src_hostname=node.get_hostname()
-	if not core.cfg['QUIET'] : print "Migrating",vm,"from",src_hostname,"to",dest,"..."
-	cluster.migrate(vm, src_hostname, dest)
+	src=node.get_hostname()
+	
+	if src == dst:
+		if not core.cfg['QUIET']: print "Nothing to do, %s is already on %s." % (vm,dst)
+	else:	
+		if not core.cfg['QUIET'] : print "Migrating %s from %s to %s..." % (vm,src,dst)
+		cluster.migrate(vm, src, dst)
 
 def cxm_shutdown(cluster, options, vm):
 	"""Properly shutdown the specified VM. 
