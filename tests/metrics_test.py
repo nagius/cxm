@@ -450,7 +450,7 @@ class MetricsTests(MockerTestCase):
 		})
 		self.mocker.replay()
 
-		result=self.metrics.get_vms_record()
+		result=self.metrics.get_vms_record(True)
 		self.assertEqual(result, val)
 
 	def test_get_lvs_size__empty(self):

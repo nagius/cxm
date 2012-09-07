@@ -293,31 +293,33 @@ class Metrics:
 
 		return io
 
-	def get_vms_record(self):
+	def get_vms_record(self, nocache=False):
 		"""
 		Return a tree with CPU, disks'IO and network IO for all running VMs.
+		Result will be cached for 5 seconds, unless 'nocache' is True.
 
 		Units: 
 			CPU: Percetage
 			Disk: Requests
 			Net: Bytes
 		"""
-		dom_recs = self.server.xenapi.VM.get_all_records()
-		log.debug("[API]", self.node.get_hostname(), "dom_recs=", dom_recs)
 		
-		# Fetch all datas once
-		vms_cpu=self.get_vms_cpu_usage(True)
-		vms_net_io=self.get_vms_net_io(True)
-		vms_disk_io=self.get_vms_disk_io(True)
+		def _get_vms_record():
+			# Fetch all datas once
+			vms_cpu=self.get_vms_cpu_usage(nocache)
+			vms_net_io=self.get_vms_net_io(nocache)
+			vms_disk_io=self.get_vms_disk_io(nocache)
 
-		vms_record=dict()
-		for vm in vms_cpu.keys():
-			vms_record[vm]=dict()
-			vms_record[vm]['disk']=vms_disk_io[vm]
-			vms_record[vm]['cpu']=vms_cpu[vm]
-			vms_record[vm]['net']=vms_net_io[vm]
+			vms_record=dict()
+			for vm in vms_cpu.keys():
+				vms_record[vm]=dict()
+				vms_record[vm]['disk']=vms_disk_io[vm]
+				vms_record[vm]['cpu']=vms_cpu[vm]
+				vms_record[vm]['net']=vms_net_io[vm]
 
-		return vms_record
+			return vms_record
+
+		return self._cache.cache(5, nocache, _get_vms_record)
 
 	def get_used_irq(self, nocache=False):
 		"""
