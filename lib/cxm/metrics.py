@@ -59,6 +59,21 @@ class Metrics:
 	def __repr__(self):
 		return "<Metrics Instance : "+ self.node.hostname +">"
 
+	def get_dom_records(self, nocache=False):
+		"""
+		Return a dict with complete dom records from API.
+		Only usefull for internal use.
+
+		Result will be cached for 5 seconds, unless 'nocache' is True.
+		"""
+
+		def _get_dom_records():
+			dom_recs = self.server.xenapi.VM.get_all_records()
+			log.debug("[API]", self.node.get_hostname(), "dom_recs=", dom_recs)
+			return dom_recs
+
+		return self._cache.cache(5, nocache, _get_dom_records)
+
 	def get_host_nr_cpus(self):
 		"""Return the number (int) of CPU on the host."""
 		host_record = self.server.xenapi.host.get_record(self.server.xenapi.session.get_this_host(self.server.getSession()))
@@ -181,27 +196,34 @@ class Metrics:
 
 		return io_rate
 
-	def get_vms_net_io(self,dom_recs=None):
-		"""Return a dict with network IO stats for all runing VMs. Unit: Bytes"""
-		if not dom_recs: dom_recs = self.server.xenapi.VM.get_all_records()
+	def get_vms_net_io(self, nocache=False):
+		"""
+		Return a dict with network IO stats for all runing VMs. Unit: Bytes
+		Result will be cached for 5 seconds, unless 'nocache' is True.
+		"""
 
-		vif_metrics_recs = self.server.xenapi.VIF_metrics.get_all_records()
-		log.debug("[API]", self.node.get_hostname(), "vif_metrics_recs=", vif_metrics_recs)
+		def _get_vms_net_io():
+			dom_recs = self.get_dom_records(nocache)
 
-		vifs_doms_metrics=dict()
-		for dom_rec in dom_recs.values():
-			if dom_rec['power_state'] == "Halted":
-				continue # Discard non instantiated vm
+			vif_metrics_recs = self.server.xenapi.VIF_metrics.get_all_records()
+			log.debug("[API]", self.node.get_hostname(), "vif_metrics_recs=", vif_metrics_recs)
 
-			vifs_metrics=list()
-			for vif in dom_rec['VIFs']:
-				vifs_metrics.append({
-					'Rx': int(float(vif_metrics_recs[vif]['io_total_read_kbs'])*1024),
-					'Tx': int(float(vif_metrics_recs[vif]['io_total_write_kbs'])*1024)
-				})
-			vifs_doms_metrics[dom_rec['name_label']]= vifs_metrics
+			vifs_doms_metrics=dict()
+			for dom_rec in dom_recs.values():
+				if dom_rec['power_state'] == "Halted":
+					continue # Discard non instantiated vm
 
-		return vifs_doms_metrics
+				vifs_metrics=list()
+				for vif in dom_rec['VIFs']:
+					vifs_metrics.append({
+						'Rx': int(float(vif_metrics_recs[vif]['io_total_read_kbs'])*1024),
+						'Tx': int(float(vif_metrics_recs[vif]['io_total_write_kbs'])*1024)
+					})
+				vifs_doms_metrics[dom_rec['name_label']]= vifs_metrics
+
+			return vifs_doms_metrics
+
+		return self._cache.cache(5, nocache, _get_vms_net_io)
 
 	def get_host_net_io(self):
 		"""Return a dict with network IO stats for the host. Unit: Bytes"""
@@ -277,7 +299,7 @@ class Metrics:
 		
 		# Fetch all datas once
 		vms_cpu=self.get_vms_cpu_usage()
-		vms_net_io=self.get_vms_net_io(dom_recs)
+		vms_net_io=self.get_vms_net_io(True)
 		vms_disk_io=self.get_vms_disk_io(dom_recs)
 
 		vms_record=dict()

@@ -262,16 +262,43 @@ class MetricsTests(MockerTestCase):
 
 		val = {'test2.home.net': [{'Rx': 7900011, 'Tx': 1010}, {'Rx': 8531582, 'Tx': 384}], 'test1.home.net': []}
 
-		xs = self.mocker.mock()
-		xs.xenapi.VM.get_all_records()
+		get_dom_records = self.mocker.replace(self.metrics.get_dom_records)
+		get_dom_records(True)
 		self.mocker.result(vm_records)
+
+		xs = self.mocker.mock()
 		xs.xenapi.VIF_metrics.get_all_records()
 		self.mocker.result(vif_records)
 		self.mocker.replay()
 		self.metrics.server=xs
-		
-		result=self.metrics.get_vms_net_io()
+
+		result=self.metrics.get_vms_net_io(True)
 		self.assertEqual(result, val)
+
+	def test_get_dom_records(self):
+		vm_records= {
+			'6ab3fd4c-d1d3-158e-d72d-3fc4831ae1e5': {
+				'VIFs': [],
+				'power_state': 'Running',
+				'name_label': 'test1.home.net'},
+			'3ab9fd2c-d5d6-176e-d82d-2fc5028ae4e7': {
+				'VIFs': [],
+				'power_state': 'Halted',
+				'name_label': 'test3.home.net'},
+			 '7efcbac8-4714-88ee-007c-0246a3cb52b8': {
+				'name_label': 'test2.home.net',
+				'power_state': 'Running',
+				'VIFs': [ 'a7d7bd0d-8885-6989-53e5-4e56559a286c', 'c31514fb-1471-194b-14eb-3bd54bdbf4cb' ]}
+			}
+		
+		xs = self.mocker.mock()
+		xs.xenapi.VM.get_all_records()
+		self.mocker.result(vm_records)
+		self.mocker.replay()
+		self.metrics.server=xs
+
+		result=self.metrics.get_dom_records(True)
+		self.assertEqual(vm_records, result)
 
 	def test_get_ram_infos(self):
 		host_record = {'memory_free': '900210688', 'memory_total': '4118376448'}
