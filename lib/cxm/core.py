@@ -60,7 +60,7 @@ import logs as log
 # Default configuration
 cfg = { 
 	'VMCONF_DIR': "/etc/xen/vm/",
-	'PATH': "",					# Only usefull for testing
+	'PATH': None,				# Only usefull for testing
 	'NOREFRESH': False,
 	'API_DEBUG': False,			# For API and CLI
 	'DAEMON_DEBUG': False,		# For cxmd
@@ -126,7 +126,8 @@ def load_cfg():
 
 		# Check type of configuration entries
 		for key in cfg_type.keys():
-			assert type(cfg[key]) == cfg_type[key], "%s should be %s." % (key, type_map[cfg_type[key]])
+			if cfg[key]:
+				assert type(cfg[key]) == cfg_type[key], "%s should be %s." % (key, type_map[cfg_type[key]])
 
 	except Exception,e:
 		log.err("Configuration file error:", e)
