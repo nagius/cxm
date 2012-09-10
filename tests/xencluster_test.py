@@ -34,6 +34,7 @@ class XenClusterTests(MockerTestCase):
 		cxm.core.cfg['PATH'] = "tests/stubs/bin/"
 		cxm.core.cfg['VMCONF_DIR'] = "tests/stubs/cfg/"
 		cxm.core.cfg['QUIET']=True
+		cxm.core.cfg['POST_MIGRATION_HOOK']=None
 
 		# Dummy mocker
 		dummy_mock = Mocker()
@@ -265,6 +266,43 @@ class XenClusterTests(MockerTestCase):
 		n1.migrate(vmname,n2)
 		n1.deactivate_lv(vmname)
 		n1.disable_vm_autostart(vmname)
+		n1_mocker.replay()
+
+		self.cluster.nodes={'host1': n1, 'host2': n2}
+
+		self.cluster.migrate(vmname, 'host1', 'host2')
+		
+		n1_mocker.verify()
+		n2_mocker.verify()
+
+	def test_migrate__hook(self):
+		vmname="test1.home.net"
+		cxm.core.cfg['POST_MIGRATION_HOOK']="hook"
+
+		n2_mocker = Mocker()
+		n2 = n2_mocker.mock()
+		n2.is_vm_started(vmname)
+		n2_mocker.result(False)
+		n2.metrics.get_free_ram()
+		n2_mocker.result(1024)
+		n2.activate_lv(vmname)
+		n2.enable_vm_autostart(vmname)
+		n2.get_hostname()
+		n2_mocker.result('host2')
+		n2_mocker.replay()
+
+		n1_mocker = Mocker()
+		n1 = n1_mocker.mock()
+		n1.is_vm_started(vmname)
+		n1_mocker.result(True)
+		n1.get_vm(vmname).get_ram()
+		n1_mocker.result(512)
+		n1.migrate(vmname,n2)
+		n1.deactivate_lv(vmname)
+		n1.disable_vm_autostart(vmname)
+		n1.get_hostname()
+		n1_mocker.result('host1')
+		n1.run('(hook test1.home.net host1 host2 2>&- >&- <&- &)&')
 		n1_mocker.replay()
 
 		self.cluster.nodes={'host1': n1, 'host2': n2}

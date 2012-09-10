@@ -329,6 +329,14 @@ class XenCluster:
 		src_node.deactivate_lv(vmname)
 		src_node.disable_vm_autostart(vmname)
 		dst_node.enable_vm_autostart(vmname)
+
+		if core.cfg['POST_MIGRATION_HOOK']:
+			# Run post migration script in background without error handling
+			try:
+				# Double fork with all filehandles closed, if not, run() hang
+				src_node.run("(%s %s %s %s 2>&- >&- <&- &)&" % (core.cfg['POST_MIGRATION_HOOK'], vmname, src_node.get_hostname(), dst_node.get_hostname()))
+			except Exception, e:
+				log.warn("Post-migration hook failed : %s" % (e))
 		
 	def emergency_eject(self, ejected_node):
 		"""Migrate all running VMs on ejected_node to the others nodes.

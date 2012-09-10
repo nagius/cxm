@@ -79,6 +79,7 @@ cfg = {
 	'UNIX_PORT': "/var/run/cxmd.socket",
 	'HB_DISK': None,			# (string) Mandatory for cxmd
 	'SHUTDOWN_TIMEOUT': 60,
+	'POST_MIGRATION_HOOK': None,	
 	}
 
 # Types for configuration entries
@@ -103,6 +104,7 @@ cfg_type = {
 	'UNIX_PORT': 			str,
 	'HB_DISK': 				str,
 	'SHUTDOWN_TIMEOUT':		int,
+	'POST_MIGRATION_HOOK':	str,	
 	}
 
 def get_api_version():
