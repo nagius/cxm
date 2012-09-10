@@ -148,9 +148,16 @@ class Node:
 			proc=popen2.Popen3(cmd, True) # Run cmd
 
 			# Load output in the buffers and rewind them
-			stdout.write(proc.fromchild.read())
-			stderr.write(proc.childerr.read())
+			try:
+				stdout.write(proc.fromchild.read())
+			except IOError:
+				pass # Discard broken pipe for backgrounded commands
 			stdout.seek(0)
+
+			try:
+				stderr.write(proc.childerr.read())
+			except IOError:
+				pass
 			stderr.seek(0)
 
 			exitcode=proc.wait()
