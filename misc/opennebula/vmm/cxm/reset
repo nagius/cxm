@@ -33,9 +33,16 @@ source $DRIVER_PATH/../../cxmrc
 VM_NAME=$1
 VM_ID=$3
 
-# xm reset does not work if vm is already down
-sudo xm destroy $VM_NAME &>/dev/null || true 
-sleep 2
-exec_and_log "sudo xm create $CFG_DIR/$VM_NAME" "Could not re-create domain $VM_NAME"
+if is_in_cluster; then
+	# No reset option with cxm
+	sudo HOME=/root cxm destroy $VM_NAME --quiet &>/dev/null || true 
+	sleep 2
+	exec_and_log "sudo HOME=/root cxm create $VM_NAME" "Could not reset domain $VM_NAME"
+else
+	# xm reset does not work if vm is already down
+	sudo xm destroy $VM_NAME &>/dev/null || true 
+	sleep 2
+	exec_and_log "sudo xm create $CFG_DIR/$VM_NAME" "Could not reset domain $VM_NAME"
+fi
 
 # vim: ts=4:sw=4:ai

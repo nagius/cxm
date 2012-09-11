@@ -1,0 +1,120 @@
+#!/usr/bin/sudo python 
+#-*- coding:Utf-8 -*-
+
+# vmm/cxm - OpenNebula virtual machine manager for cxm
+# Copyleft 2012 - Nicolas AGIUS <nicolas.agius@lps-it.fr>
+
+###########################################################################
+#
+# This file is part of cxm.
+#
+# cxm is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+#
+###########################################################################
+
+# Argument passed to this script : 
+# $1 : VM_NAME
+# $2 : HOST
+# $3 : VM_ID
+
+import sys, yaml, base64
+from cxm.node import *
+from cxm.core import *
+
+# Don't print internal messages
+cfg['QUIET']=True
+
+def get_vm_info(vmname, node):
+	try:
+		vm=node.get_vm(vmname)
+		metrics=node.get_metrics()
+
+		results={'name': vmname}
+
+		# Translate xen state to opennebula state
+		state_map = {
+			'running': 'a',
+			'blocked': 'a',
+			'paused': 'p',
+			'shutdown': 'a',
+			'crashed': 'e',
+			'dying': 'a',
+		}
+		try:
+			results['state']=state_map[vm.metrics['state'][0]]
+		except IndexError:
+			results['state']='-'
+
+		# Real memmory in kilobytes
+		results['usedmemory']=int(vm.metrics['memory_actual'])/1024
+
+		# Calculate instant CPU usage
+		results['usedcpu']=round(sum(vm.metrics['VCPUs_utilisation'].values()))
+		
+		# Network consumption
+		try:
+			net=metrics.get_vms_net_io()[vmname]
+			results['netrx']=sum(vif['Rx'] for vif in net)
+			results['nettx']=sum(vif['Tx'] for vif in net)
+		except KeyError:
+			results['netrx']=0
+			results['nettx']=0
+
+	except (NotRunningVmError, IOError):
+		results=None
+
+	return results
+
+
+def print_one_vm_info(vmname):
+	node=Node.getLocalInstance()
+	vmi=get_vm_info(vmname, node)
+		
+	if vmi:
+		print "STATE=%s USEDMEMORY=%s USEDCPU=%.1f NETRX=%s NETTX=%s NAME=%s" % (
+			vmi['state'], 
+			vmi['usedmemory'], 
+			vmi['usedcpu'], 
+			vmi['netrx'], 
+			vmi['nettx'], 
+			vmi['name']
+		)
+	else:
+		print "STATE=d"
+
+
+def print_all_vm_info():
+	node=Node.getLocalInstance()
+	vms_name=node.get_vms_names()
+
+	# Aggregate VM infos
+	results=dict()
+	for vmname in vms_name:
+		vmi=get_vm_info(vmname, node)
+		if vmi:
+			results[vmname]=vmi
+		else:
+			results[vmname]={'state':'d'}
+
+	print base64.b64encode(yaml.dump(results, default_flow_style=False))
+
+
+if __name__ == "__main__":
+	if len(sys.argv)>1:
+		print_one_vm_info(sys.argv[1])
+	else:
+		print_all_vm_info()
+
+
+# vim: ts=4:sw=4:ai

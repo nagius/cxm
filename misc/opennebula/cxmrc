@@ -113,6 +113,16 @@ function get_vm_name
 	basename $(grep -l "VM_ID = $VM_ID" $CFG_DIR/*)
 }
 
+function is_in_cluster
+{
+	if [ -x "$(which cxmd_ctl)" ]; then
+		cxmd_ctl --ping &>/dev/null
+		return $?
+	else
+		return 1
+	fi
+}
+
 function send_rawfile_to_lv
 {
     local DST_HOST=$1
