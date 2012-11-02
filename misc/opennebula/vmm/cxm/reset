@@ -30,8 +30,8 @@ DRIVER_PATH=$(dirname $0)
 source $DRIVER_PATH/../../scripts_common.sh
 source $DRIVER_PATH/../../cxmrc
 
-VM_NAME=$1
 VM_ID=$3
+VM_NAME=$(get_vm_name $VM_ID)
 
 if is_in_cluster; then
 	# No reset option with cxm

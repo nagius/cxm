@@ -30,9 +30,9 @@ DRIVER_PATH=$(dirname $0)
 source $DRIVER_PATH/../../scripts_common.sh
 source $DRIVER_PATH/../../cxmrc
 
-VM_NAME=$1
 DEST_HOST=$2
 VM_ID=$4
+VM_NAME=$(get_vm_name $VM_ID)
 
 if is_in_cluster; then
 	exec_and_log "sudo HOME=/root cxm migrate $VM_NAME $DEST_HOST" "Could not migrate $VM_NAME to $DEST_HOST"

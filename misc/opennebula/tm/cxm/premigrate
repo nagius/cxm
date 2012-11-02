@@ -1,6 +1,6 @@
-#!/bin/bash 
+#!/bin/bash
 
-# vmm/cxm - OpenNebula virtual machine manager for cxm
+# tm/cxm - OpenNebula transfert manager for cxm
 # Copyleft 2012 - Nicolas AGIUS <nicolas.agius@lps-it.fr>
 #
 # Some part of code are inspired from OpenNebula 
@@ -25,23 +25,4 @@
 #
 ###########################################################################
 
-DRIVER_PATH=$(dirname $0)
-
-source $DRIVER_PATH/../../scripts_common.sh
-source $DRIVER_PATH/../../cxmrc
-
-VM_ID=$3
-VM_NAME=$(get_vm_name $VM_ID)
-
-if is_in_cluster; then
-	CMD="HOME=/root cxm destroy --quiet $VM_NAME"
-else
-	CMD="xm destroy $VM_NAME"
-fi	
-
-exec_and_log "sudo $CMD" "Could not destroy $VM_NAME"
-
-# Just a small sleep, not a loop as 'xm destroy' exit immediately
-sleep 1
-
-# vim: ts=4:sw=4:ai
+exit 0

@@ -26,7 +26,7 @@
 ###########################################################################
 
 # Enable debug mode. If 'True', write all bash trace in /tmp
-DEBUG="True"
+DEBUG="False"
 
 # Volume Group to create logical volumes or snapshots in the cluster nodes 
 VG_NAME="LVM_XEN"
