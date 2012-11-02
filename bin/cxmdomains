@@ -4,10 +4,10 @@
 # /etc/init.d/cxmdomains
 # Start / stop domains automatically when domain 0 boots / shuts down.
 #
-# This file is part of ClusteredXenMgt and based upon xendomains.
+# This file is part of cxm and based upon xendomains.
 #
 # chkconfig: 345 99 00
-# description: Start / stop Xen domains.
+# description: Start / stop clustered Xen domains.
 #
 # This script offers fairly basic functionality.  It should work on Redhat
 # but also on LSB-compliant SuSE releases and on Debian with the LSB package
@@ -507,7 +507,7 @@ case "$1" in
 	;;
 
     check)
-	echo "Checking for XenCluster sanity:" 
+	echo "Checking for cxm sanity:" 
 	cxm check
 	rc_status -v
 	;;
