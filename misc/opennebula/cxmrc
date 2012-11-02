@@ -25,6 +25,9 @@
 #
 ###########################################################################
 
+# Enable debug mode. If 'True', write all bash trace in /tmp
+DEBUG="True"
+
 # Volume Group to create logical volumes or snapshots in the cluster nodes 
 VG_NAME="LVM_XEN"
 
@@ -64,7 +67,7 @@ CFG_DIR="/etc/xen/vm/"
 # This name is for internal use, it will not be set into the vm.
 #
 # %U will be replaced by the user name, %V by the vm name, %I the VM ID
-VM_FQDN_TEMPLATE="%U-%V.vm.vdi.s1.p.fti.net"
+VM_FQDN_TEMPLATE="%U-%V.vm.home.net"
 
 # Name of the xpath perl tool
 XPATH="xpath"
@@ -75,6 +78,14 @@ SHUTDOWN_TIMEOUT=300
 # -------------------------------------------------------------------------- #
 # Helper functions for the LVM transfert manager                             #
 # -------------------------------------------------------------------------- #
+
+# Turn on debugging
+if [ "$DEBUG" == "True" ]; then
+	DEBUG_FILE="/tmp/$(basename $0).$$"
+	echo "$@" >$DEBUG_FILE
+	exec > >(tee -a $DEBUG_FILE) 2> >(tee -a $DEBUG_FILE >&2)
+	set -x
+fi
 
 function get_vid 
 {
