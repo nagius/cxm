@@ -257,6 +257,7 @@ function get_disk
     # Retrieve informations on logical volume
     read TYPE LV FSTYPE DUMMY < <(echo "
         LV=\$(readlink $SRC_PATH)
+        sudo lvchange -aly \$LV
         MIME=\$(sudo file -bsL --mime-type \$LV)
         case \"\$MIME\" in
             \"application/octet-stream\")
@@ -301,6 +302,7 @@ function get_all_disks
         echo -e \"declare -a DISKS\nDISKS=(\" > $MAPFILE
         for DISK in \$(find $SRC_PATH -type l -regex '.*disk\.[0-9]+'); do
             LV=\$(readlink \$DISK)
+            sudo lvchange -aly \$LV
             MIME=\$(sudo file -bsL --mime-type \$LV)
             SIZE=\$(sudo lvs -o lv_size \$LV --noheadings)
             case \"\$MIME\" in

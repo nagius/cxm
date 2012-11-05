@@ -47,15 +47,11 @@ fi
 source $TMCOMMON
 source $(dirname $0)/../../cxmrc
 
-set_ds_location
-
 #-------------------------------------------------------------------------------
 # Set dst path and dir
 #-------------------------------------------------------------------------------
 SRC_PATH=`arg_path $SRC`
 DST_PATH=`arg_path $DST`
-
-DST_PATH="$RMT_DS_DIR/${DST_PATH##"$DS_DIR/"}"
 
 SRC_HOST=`arg_host $SRC`
 
