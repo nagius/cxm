@@ -126,7 +126,7 @@ function get_vm_name
 
 function is_in_cluster
 {
-	if [ -x "$(which cxmd_ctl)" ]; then
+	if [ -x "$(which cxmd_ctl 2>/dev/null)" ]; then
 		cxmd_ctl --ping &>/dev/null
 		return $?
 	else
