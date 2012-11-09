@@ -26,20 +26,6 @@ List of diagrams explaining cxmd behavior :
 * states.dia   : States charts
 
 
-Prerequistes:
--------------
-
-* The heartbeat system needs a shared storage over a SAN, like a rack disk with a Fibre Channel or a SAS network. All ethernet-based solutions, such as iSCSI, NFS or NBD should be avoided, as they rely on an ethernet network, and thus cannot be used to detect when a network partition splits the cluster.
-* All virtual machines have to be named within Xen with their FQDN, with a valid DNS record.
-* All VM configuration files should be named with the FQDN of the corresponding virtual machine.
-* All files in the VM configuration directory (/etc/xen/vm) must contain valid xen syntax, where disk devices must exist. Any incorrect file will put the cxmd daemon in panic mode.
-* The VM configuration directory (/etc/xen/vm) must be shared and synchronized between all nodes. You can use SVNWatcher to do this.
-* All servers, both physical and virtual, must be configured to answer a ping request that can be sent from anywhere in the cluster. fping is used to check whether virtual machines are alive.
-* All disk devices used by virtual machines must be defined as LVM logical volumes, using the 'phy:/' prefix. tap or file devices are not supported.
-* All nodes must be allowed to connect to each other with SSH without requesting a password. You need to deploy SSH keys over all nodes and to accept all servers keys.
-* Of course, live migration must be operational between all nodes.
-
-
 Xend Configuration:
 ------------------
 
@@ -47,12 +33,10 @@ Cxm need an access to xen API to manage vm. It use both LegacyAPI and new XEN-AP
 
 You have to change the folowing parameters in /etx/xen/xend.conf:
 
-`(xend-relocation-server yes)
-(xen-api-server ((9363 'none') (unix)))
-(xend-tcp-xmlrpc-server yes)
-(xend-tcp-xmlrpc-server-address '')`
-
-
+    (xend-relocation-server yes)
+    (xen-api-server ((9363 'none') (unix)))
+    (xend-tcp-xmlrpc-server yes)
+    (xend-tcp-xmlrpc-server-address '')
 
 Error handling
 --------------
@@ -65,7 +49,7 @@ To recover from this state, you have to :
 
 1. Check the logs to find the root cause. File /var/log/cxm/cxmd.log is a good start.
 2. Fix the problem and cleanup the system
-3. Run 'cxmd_ctl --recover' to switch back to normal mode.
+3. Run `cxmd_ctl --recover` to switch back to normal mode.
 
 
 Configuration file modification
@@ -117,7 +101,7 @@ Heartbeat disk
 The heartbeat disk is use as a second channel to propagate timestamps between nodes.
 It must be a partition or a logical volume on the shared storage, and all nodes must have simultaneous read/write access as a raw block device.
 
-The command cxmd_ctl --format will initialize it with the following struture :
+The command `cxmd_ctl --format` will initialize it with the following struture :
 
 Block 1       | Block 2        |
 --------------|----------------|

@@ -23,7 +23,7 @@
 ###########################################################################
 
 # Hostname of the OpenNebula frontend managing this node
-ONE_HOST="xen0vdi01.preprod.virt.s1.p.fti.net"
+ONE_HOST="opennebula.home.net"
 
 # Directory used to store configuration file
 CFG_DIR="/etc/xen/vm/"
