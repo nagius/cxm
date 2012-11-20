@@ -54,6 +54,9 @@ done
 sudo mv -f $CFG_FILE $CFG_DIR/$VM_NAME
 ln -s $CFG_DIR/$VM_NAME $CFG_FILE
 
+# Create the autostart link
+sudo ln -s $CFG_DIR/$VM_NAME $AUTO_DIR/
+
 # Start the vm
 if is_in_cluster; then
 	CMD="HOME=/root cxm create $VM_NAME"

@@ -68,6 +68,9 @@ else
 	kill $ALARMPID &>/dev/null
 fi
 
+# Cleanup the autostart link
+exec_and_log "sudo rm -f $AUTO_DIR/$VM_NAME" "Could not delete autostart link"
+
 exit 0
 
 # vim: ts=4:sw=4:ai

@@ -41,6 +41,9 @@ fi
 
 exec_and_log "sudo $CMD" "Could not destroy $VM_NAME"
 
+# Cleanup the autostart link
+exec_and_log "sudo rm -f $AUTO_DIR/$VM_NAME" "Could not delete autostart link"
+
 # Just a small sleep, not a loop as 'xm destroy' exit immediately
 sleep 1
 

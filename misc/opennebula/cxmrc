@@ -63,6 +63,9 @@ TMP_ROOT="/var/tmp"
 # Directory used to store configuration file
 CFG_DIR="/etc/xen/vm/"
 
+# Directory used to store Xen autostart links
+AUTO_DIR="/etc/xen/auto/"
+
 # Template used to generate the FQDN of the vm.
 # This name is for internal use, it will not be set into the vm.
 #
