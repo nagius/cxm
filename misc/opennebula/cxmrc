@@ -114,7 +114,7 @@ function gen_vm_fqdn
 
 	local XML=$(ssh $(get_one_host) onevm show -x $VM_ID)
 	local USER_NAME=$(echo $XML | $XPATH /VM/UNAME)
-	local VM_NAME=$(echo $XML | $XPATH /VM/NAME)
+	local VM_NAME=$(echo $XML | $XPATH /VM/NAME | tr -cd '[:alnum:]')
 	
 	echo $VM_FQDN_TEMPLATE | sed "s/%U/$USER_NAME/g;s/%V/$VM_NAME/g;s/%I/$VM_ID/g"
 }
