@@ -449,7 +449,7 @@ class MasterService(Service):
 			raise NodeRefusedError("Node not allowed to join this cluster.")
 
 		if name in self.status:
-			log.warn("None %s is already joined ! Cannot re-join." % (name))
+			log.warn("Node %s is already joined ! Cannot re-join." % (name))
 			raise NodeRefusedError("Node already in cluster")
 
 		# Check if hostname is valid
