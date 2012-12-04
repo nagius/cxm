@@ -65,25 +65,6 @@ class DiskHeartbeatTests(MockerTestCase):
 		
 		self.assertEquals(DiskHeartbeat.is_in_use(), False)
 
-	def test_get_nr_node(self):
-		file=self.mocker.mock()
-#		file.write(ANY)
-#		self.mocker.count(35, None)
-#		file.seek(0)
-#		file.seek(4096)
-		file.close()
-
-		openmock=self.mocker.replace("__builtin__.open")
-		openmock()
-		#openmock("hbdisk", "wb", 0)
-		self.mocker.result(file)
-
-		self.mocker.replay()
-		
-		ds=DiskHeartbeat()
-
-		self.assertEquals(ds.get_nr_node(), 3)
-
 if __name__ == "__main__":
     unittest.main()
 
