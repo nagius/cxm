@@ -31,16 +31,21 @@
 import sys, yaml, base64
 from cxm.node import *
 from cxm.core import *
+from cxm.persistentcache import *
 
 # Don't print internal messages
 cfg['QUIET']=True
 
-def get_vm_info(vmname, node):
-	try:
-		vm=node.get_vm(vmname)
-		metrics=node.get_metrics()
+@PersistentCache("/var/tmp/.onecxmpoll.cache", ttl=700, timeout=30)
+def get_vms_info():
+	node=Node.getLocalInstance()
+	vms_net_io=node.get_metrics().get_vms_net_io()
+	vms=node.get_vms()
 
-		results={'name': vmname}
+	infos=dict()
+
+	for vm in vms:
+		results={'name': vm.name}
 
 		# Translate xen state to opennebula state
 		state_map = {
@@ -64,57 +69,39 @@ def get_vm_info(vmname, node):
 		
 		# Network consumption
 		try:
-			net=metrics.get_vms_net_io()[vmname]
-			results['netrx']=sum(vif['Rx'] for vif in net)
-			results['nettx']=sum(vif['Tx'] for vif in net)
+			results['netrx']=sum(vif['Rx'] for vif in vms_net_io[vm.name])
+			results['nettx']=sum(vif['Tx'] for vif in vms_net_io[vm.name])
 		except KeyError:
 			results['netrx']=0
 			results['nettx']=0
 
-	except (NotRunningVmError, IOError):
-		results=None
+		infos[vm.name]=results
 
-	return results
+	return infos
 
-
-def print_one_vm_info(vmname):
-	node=Node.getLocalInstance()
-	vmi=get_vm_info(vmname, node)
-		
-	if vmi:
+def print_one_vm_info(infos, vmname):
+	try:
 		print "STATE=%s USEDMEMORY=%s USEDCPU=%.1f NETRX=%s NETTX=%s NAME=%s" % (
-			vmi['state'], 
-			vmi['usedmemory'], 
-			vmi['usedcpu'], 
-			vmi['netrx'], 
-			vmi['nettx'], 
-			vmi['name']
+			infos[vmname]['state'], 
+			infos[vmname]['usedmemory'], 
+			infos[vmname]['usedcpu'], 
+			infos[vmname]['netrx'], 
+			infos[vmname]['nettx'], 
+			vmname
 		)
-	else:
+	except KeyError:
 		print "STATE=d"
 
-
-def print_all_vm_info():
-	node=Node.getLocalInstance()
-	vms_name=node.get_vms_names()
-
-	# Aggregate VM infos
-	results=dict()
-	for vmname in vms_name:
-		vmi=get_vm_info(vmname, node)
-		if vmi:
-			results[vmname]=vmi
-		else:
-			results[vmname]={'state':'d'}
-
-	print base64.b64encode(yaml.dump(results, default_flow_style=False))
-
+def print_all_vm_info(infos):
+	print base64.b64encode(yaml.dump(infos, default_flow_style=False))
 
 if __name__ == "__main__":
-	if len(sys.argv)>1:
-		print_one_vm_info(sys.argv[1])
-	else:
-		print_all_vm_info()
+	# Get all info once
+	infos=get_vms_info()
 
+	if len(sys.argv)>1:
+		print_one_vm_info(infos, sys.argv[1])
+	else:
+		print_all_vm_info(infos)
 
 # vim: ts=4:sw=4:ai
