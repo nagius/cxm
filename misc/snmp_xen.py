@@ -166,14 +166,19 @@ def update_data():
 		oid=pp.encode(vm.name)
 		pp.add_str('1.9.1.'+oid,vm.name)
 		pp.add_int('1.9.2.'+oid,vm.id)
-		# CPU Percentage relative to the host capacity and *100 to pass decimal through snmpd
-		pp.add_gau('1.9.3.'+oid,"%d" % (round(vms_stat[vm.name]['cpu']/nr_cpu,2)*100)) 
 		pp.add_gau('1.9.4.'+oid,vm.get_vcpu())
 		pp.add_gau('1.9.5.'+oid,vm.get_ram())
-		pp.add_cnt_32bit('1.9.6.'+oid,vms_stat[vm.name]['disk']['Read'])
-		pp.add_cnt_32bit('1.9.7.'+oid,vms_stat[vm.name]['disk']['Write'])
-		pp.add_cnt_32bit('1.9.8.'+oid,sum([ vif['Rx'] for vif in vms_stat[vm.name]['net'] ]))
-		pp.add_cnt_32bit('1.9.9.'+oid,sum([ vif['Tx'] for vif in vms_stat[vm.name]['net'] ]))
+
+		try:
+			# CPU Percentage relative to the host capacity and *100 to pass decimal through snmpd
+			pp.add_gau('1.9.3.'+oid,"%d" % (round(vms_stat[vm.name]['cpu']/nr_cpu,2)*100)) 
+			pp.add_cnt_32bit('1.9.6.'+oid,vms_stat[vm.name]['disk']['Read'])
+			pp.add_cnt_32bit('1.9.7.'+oid,vms_stat[vm.name]['disk']['Write'])
+			pp.add_cnt_32bit('1.9.8.'+oid,sum([ vif['Rx'] for vif in vms_stat[vm.name]['net'] ]))
+			pp.add_cnt_32bit('1.9.9.'+oid,sum([ vif['Tx'] for vif in vms_stat[vm.name]['net'] ]))
+		except KeyError, TypeError:
+			# If a VM has disappeared
+			continue
 
 	# For the dom0
 	oid=pp.encode("Domain-0")

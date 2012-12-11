@@ -312,10 +312,14 @@ class Metrics:
 
 			vms_record=dict()
 			for vm in vms_cpu.keys():
-				vms_record[vm]=dict()
-				vms_record[vm]['disk']=vms_disk_io[vm]
-				vms_record[vm]['cpu']=vms_cpu[vm]
-				vms_record[vm]['net']=vms_net_io[vm]
+				try:
+					vms_record[vm]=dict()
+					vms_record[vm]['disk']=vms_disk_io[vm]
+					vms_record[vm]['cpu']=vms_cpu[vm]
+					vms_record[vm]['net']=vms_net_io[vm]
+				except KeyError:
+					# Delete all infos if the vm has disappeared
+					del vms_record[vm]
 
 			return vms_record
 

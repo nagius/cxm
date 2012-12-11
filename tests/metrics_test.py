@@ -453,6 +453,43 @@ class MetricsTests(MockerTestCase):
 		result=self.metrics.get_vms_record(True)
 		self.assertEqual(result, val)
 
+	def test_get_vms_record__missing(self):
+		val =  {
+			'test22.home.net': {
+				'net': [], 
+				'disk': {'Read': 1931, 'Write': 2293}, 
+				'cpu': 0.0}, 
+			'test15.home.net': {
+				'net': [{'Rx': 7900011, 'Tx': 1010}, {'Rx': 8531582, 'Tx': 384}], 
+				'disk': {'Read': 6, 'Write': 68}, 
+				'cpu': 0.0}
+			}
+
+		get_vms_cpu_usage = self.mocker.replace(self.metrics.get_vms_cpu_usage)
+		get_vms_cpu_usage(True)
+		self.mocker.result({
+			'test15.home.net': 0.0, 
+			'test22.home.net': 0.0,
+			'deleted.vm': 0.0,
+		})
+		get_vms_net_io = self.mocker.replace(self.metrics.get_vms_net_io)
+		get_vms_net_io(ANY)
+		self.mocker.result({
+			'test15.home.net': [{'Rx': 7900011, 'Tx': 1010}, {'Rx': 8531582, 'Tx': 384}], 
+			'test22.home.net': []
+		})
+		get_vms_disk_io = self.mocker.replace(self.metrics.get_vms_disk_io)
+		get_vms_disk_io(ANY)
+		self.mocker.result({
+			'test15.home.net': {'Read': 6, 'Write': 68 },
+			'test22.home.net': {'Read': 1931, 'Write': 2293},
+			'test47.home.net': {'Read': 13, 'Write': 23}
+		})
+		self.mocker.replay()
+
+		result=self.metrics.get_vms_record(True)
+		self.assertEqual(result, val)
+
 	def test_get_lvs_size__empty(self):
 		self.assertEqual(self.metrics.get_lvs_size([]), dict())
 		
