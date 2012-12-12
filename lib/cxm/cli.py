@@ -131,6 +131,22 @@ def cxm_shutdown(cluster, options, vm):
 	if not core.cfg['QUIET'] : print "Shutting down",vm,"on",node.get_hostname(),"..."
 	node.shutdown(vm)
 
+def cxm_shutdown_all(cluster, options):
+	"""Properly shutdown all VMs."""
+
+	def success(result):
+		print "Done."
+
+	if not core.cfg['QUIET']: 
+		print "Shutting down all VMs..."
+		if(raw_input("Are you really sure ? [y/N]:").upper() != "Y"):
+			print "Aborded by user."
+			return
+
+	d=cluster.shutdown_all()
+	d.addCallback(success)
+	return d
+
 def cxm_reboot(cluster, options, vm):
 	"""Reboot the specified VM. 
 
@@ -453,6 +469,7 @@ commands = {
     "list": cxm_list,
     "create": cxm_create,
     "shutdown": cxm_shutdown,
+    "shutdown-all": cxm_shutdown_all,
     "destroy": cxm_destroy,
     "reboot": cxm_reboot,
     "migrate": cxm_migrate,
@@ -482,6 +499,8 @@ SUBCOMMAND_HELP = {
 	'shutdown'		: ('<fqdn>', 
 		'Shutdown the virtual machine.',
 		'If --force-node is not given, the vm will be searched on the cluster.'),
+	'shutdown-all'		: ('', 
+		'Shutdown all the virtuals machines.'),
 	'reboot'		: ('<fqdn>', 
 		'Reboot the virtual machine.',
 		'If --force-node is not given, the vm will be searched on the cluster.'),

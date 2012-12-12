@@ -205,4 +205,26 @@ class XenClusterTrialTests(unittest.TestCase, MockerTestCase):
 		d=self.cluster.get_vm_started()
 		return self.assertFailure(d, Exception)
 
+	def test_shutdown_all(self):
+		n1_mocker = Mocker()
+		n1 = n1_mocker.mock()
+		n1.shutdown_all(False)
+		n1_mocker.replay()
+
+		n2_mocker = Mocker()
+		n2 = n2_mocker.mock()
+		n2.shutdown_all(False)
+		n2_mocker.replay()
+
+		def verify(result):
+			n1_mocker.verify()
+			n2_mocker.verify()
+
+		self.cluster.nodes={'node1': n1, 'node2': n2}
+		
+		d=self.cluster.shutdown_all()
+		d.addCallback(verify)
+		return d
+
+
 # vim: ts=4:sw=4:ai

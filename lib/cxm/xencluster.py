@@ -198,6 +198,19 @@ class XenCluster:
 		dl.addCallback(computeNumber)
 		return dl
 
+	def shutdown_all(self, hard=False):
+		"""Shutdown all running vm on the cluster.
+
+		If 'hard' is True, do a hard shutdown (destroy).
+		"""
+		ds=list()
+		for node in self.get_nodes():
+			d=threads.deferToThread(lambda x: x.shutdown_all(hard), node)
+			ds.append(d)
+
+		dl=defer.DeferredList(ds, consumeErrors=True)
+		return dl
+
 	def is_in_cluster(self, hostname):
 		"""Return True if the specified hostname is a node of the cluster."""
 		return hostname in self.nodes

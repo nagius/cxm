@@ -47,7 +47,7 @@ class Node:
 		This constructor open SSH and XenAPI connections to the node.
 		If the node is not online, this will fail with an uncatched exception from paramiko or XenAPI.
 		"""
-		log.info("Connecting to ", hostname, "...")
+		log.info("Connecting to", hostname, "...")
 		self.hostname=hostname
 
 		# Open SSH channel (localhost use popen2)
@@ -402,6 +402,18 @@ class Node:
 
 		self.deactivate_lv(vmname)
 	
+	def shutdown_all(self, hard=False):
+		"""Shutdown all running vm on this node.
+
+		If 'hard' is True, do a hard shutdown (destroy).
+		"""
+
+		for vmname in self.get_vms_names():
+			try:
+				self.shutdown(vmname, hard)
+			except NotRunningVmError:
+				continue
+
 	def get_vm(self, vmname):
 		"""Return the VM instance corresponding to the given vmname."""
 		if core.cfg['USESSH']:

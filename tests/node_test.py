@@ -388,6 +388,19 @@ class NodeTests(MockerTestCase):
 
 		self.assertRaises(cxm.node.NotRunningVmError,self.node.shutdown,vmname) 
 
+	def test_shutdown_all(self):
+	
+		get_vms_names=self.mocker.replace(self.node.get_vms_names)
+		get_vms_names()
+		self.mocker.result(['vm1', 'vm2'])
+		shutdown=self.mocker.replace(self.node.shutdown)
+		shutdown('vm1', False)
+		shutdown('vm2', False)
+		self.mocker.throw(cxm.node.NotRunningVmError('vm2'))
+		self.mocker.replay()
+
+		self.assertEqual(self.node.shutdown_all(), None)
+
 	def test_get_vm_running(self):
 		vmname="test1.home.net"
 		vm_record= { 
