@@ -60,16 +60,16 @@ class LoadBalancerTests(unittest.TestCase):
 			'node3': { 'ram' : 3000 },
 		}
 		sol={0: [cxm.loadbalancer.Solution({'node1': ['vm1'], 'node3': ['vm5', 'vm6'], 'node2': ['vm2', 'vm3', 'vm4']})],
-		 1: [cxm.loadbalancer.Solution({'node1': [], 'node3': ['vm5', 'vm6'], 'node2': ['vm2', 'vm3', 'vm4', 'vm1']}),
-			 cxm.loadbalancer.Solution({'node1': ['vm1', 'vm5'], 'node3': ['vm6'], 'node2': ['vm2', 'vm3', 'vm4']}),
-			 cxm.loadbalancer.Solution({'node1': ['vm1'], 'node3': ['vm6'], 'node2': ['vm2', 'vm3', 'vm4', 'vm5']}),
-			 cxm.loadbalancer.Solution({'node1': ['vm1', 'vm6'], 'node3': ['vm5'], 'node2': ['vm2', 'vm3', 'vm4']}),
-			 cxm.loadbalancer.Solution({'node1': ['vm1'], 'node3': ['vm5'], 'node2': ['vm2', 'vm3', 'vm4', 'vm6']}),
-			 cxm.loadbalancer.Solution({'node1': ['vm1', 'vm2'], 'node3': ['vm5', 'vm6'], 'node2': ['vm3', 'vm4']}),
-			 cxm.loadbalancer.Solution({'node1': ['vm1'], 'node3': ['vm5', 'vm6', 'vm2'], 'node2': ['vm3', 'vm4']}),
-			 cxm.loadbalancer.Solution({'node1': ['vm1', 'vm3'], 'node3': ['vm5', 'vm6'], 'node2': ['vm2', 'vm4']}),
-			 cxm.loadbalancer.Solution({'node1': ['vm1', 'vm4'], 'node3': ['vm5', 'vm6'], 'node2': ['vm2', 'vm3']})]}
-		
+		 1: [	cxm.loadbalancer.Solution({'node1': ['vm1', 'vm3'], 'node3': ['vm5', 'vm6'], 'node2': ['vm2', 'vm4']}),
+				cxm.loadbalancer.Solution({'node1': ['vm1', 'vm5'], 'node3': ['vm6'], 'node2': ['vm2', 'vm3', 'vm4']}),
+				cxm.loadbalancer.Solution({'node1': [], 'node3': ['vm5', 'vm6'], 'node2': ['vm2', 'vm3', 'vm4', 'vm1']}),
+				cxm.loadbalancer.Solution({'node1': ['vm1'], 'node3': ['vm6'], 'node2': ['vm2', 'vm3', 'vm4', 'vm5']}),
+				cxm.loadbalancer.Solution({'node1': ['vm1', 'vm6'], 'node3': ['vm5'], 'node2': ['vm2', 'vm3', 'vm4']}),
+				cxm.loadbalancer.Solution({'node1': ['vm1'], 'node3': ['vm5'], 'node2': ['vm2', 'vm3', 'vm4', 'vm6']}),
+				cxm.loadbalancer.Solution({'node1': ['vm1', 'vm2'], 'node3': ['vm5', 'vm6'], 'node2': ['vm3', 'vm4']}),
+				cxm.loadbalancer.Solution({'node1': ['vm1'], 'node3': ['vm5', 'vm6', 'vm2'], 'node2': ['vm3', 'vm4']}),
+				cxm.loadbalancer.Solution({'node1': ['vm1', 'vm4'], 'node3': ['vm5', 'vm6'], 'node2': ['vm2', 'vm3']})]}
+
 		map(lambda x: x.compute_score(self.vm_metrics),[ item for sublist in sol.values() for item in sublist ])
 
 		self.lb.set_metrics(self.vm_metrics,node_metrics)

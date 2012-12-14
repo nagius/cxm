@@ -130,7 +130,15 @@ class LoadBalancer:
 
 					# Add this solution to the pool if constraints are respected
 					if solution.is_constraints_ok(self.vm_metrics, self.node_metrics):
-						self.solutions.setdefault(layer,[]).append(solution)
+						try:
+							if solution.score < self.solutions[layer][0].score:
+								# Put the best solution on top of the list
+								self.solutions[layer].insert(0,solution)
+							else:
+								self.solutions[layer].append(solution)
+						except KeyError:
+							# Set the first solution of this layer
+							self.solutions[layer]=[solution]
 					
 	def get_efficient_solution(self):
 		"""Get a better solution at the minimal cost.
@@ -150,10 +158,6 @@ class LoadBalancer:
 				return None # No more solutions, giving up.
 
 			# Get the best solution of this layer
-			#   best_solution = min(self.solutions[layer],key=lambda x: x.score) # Only with python >= 2.5
-			#   with python 2.4, need to:
-			# Sort the solutions by score, the better is the lower, and take the first
-			self.solutions[layer].sort(key=lambda x: x.score)
 			best_solution = self.solutions[layer][0]
 
 			# Compare initial solution to the best solution of this layer
