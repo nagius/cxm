@@ -416,12 +416,10 @@ class XenCluster:
 
 			# Get VM's metrics
 			cpu=node.metrics.get_vms_cpu_usage()
-			io=node.metrics.get_vms_disk_io_rate()
 			for vm in vms:
 				vm_metrics[vm.name]={}
 				vm_metrics[vm.name]['ram']=vm.get_ram()
 				vm_metrics[vm.name]['cpu']=cpu[vm.name]
-				vm_metrics[vm.name]['io']=io[vm.name]['Read']+io[vm.name]['Write']
 
 		# Initialize loadbalancer
 		lb=loadbalancer.LoadBalancer(current_state)

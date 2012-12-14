@@ -33,12 +33,12 @@ class LoadBalancerTests(unittest.TestCase):
 
 	def setUp(self):
 		self.vm_metrics = {
-			'vm1': { 'io':120 , 'cpu':10 , 'ram':1024 },
-			'vm2': { 'io':100 , 'cpu':20 , 'ram':256 }, 
-			'vm3': { 'io':900 , 'cpu':10 , 'ram':512 },
-			'vm4': { 'io':0 , 'cpu':0 , 'ram':1024 },
-			'vm5': { 'io':90 , 'cpu':0 , 'ram':512 },
-			'vm6': { 'io':0 , 'cpu':20 , 'ram':2048 },
+			'vm1': { 'cpu':10 , 'ram':1024 },
+			'vm2': { 'cpu':20 , 'ram':256 }, 
+			'vm3': { 'cpu':10 , 'ram':512 },
+			'vm4': { 'cpu':0 , 'ram':1024 },
+			'vm5': { 'cpu':0 , 'ram':512 },
+			'vm6': { 'cpu':20 , 'ram':2048 },
 		}
 		state = {
 			'node1': ['vm1'],
@@ -48,7 +48,7 @@ class LoadBalancerTests(unittest.TestCase):
 		self.lb=cxm.loadbalancer.LoadBalancer(state)
 
 	def test_set_metrics(self):
-		val=82.262661852077585
+		val=43.902592653775656
 
 		self.lb.set_metrics(self.vm_metrics,{})
 		self.assertEquals(self.lb.root.score,val)
@@ -67,7 +67,8 @@ class LoadBalancerTests(unittest.TestCase):
 			 cxm.loadbalancer.Solution({'node1': ['vm1'], 'node3': ['vm5'], 'node2': ['vm2', 'vm3', 'vm4', 'vm6']}),
 			 cxm.loadbalancer.Solution({'node1': ['vm1', 'vm2'], 'node3': ['vm5', 'vm6'], 'node2': ['vm3', 'vm4']}),
 			 cxm.loadbalancer.Solution({'node1': ['vm1'], 'node3': ['vm5', 'vm6', 'vm2'], 'node2': ['vm3', 'vm4']}),
-			 cxm.loadbalancer.Solution({'node1': ['vm1', 'vm3'], 'node3': ['vm5', 'vm6'], 'node2': ['vm2', 'vm4']})]}
+			 cxm.loadbalancer.Solution({'node1': ['vm1', 'vm3'], 'node3': ['vm5', 'vm6'], 'node2': ['vm2', 'vm4']}),
+			 cxm.loadbalancer.Solution({'node1': ['vm1', 'vm4'], 'node3': ['vm5', 'vm6'], 'node2': ['vm2', 'vm3']})]}
 		
 		map(lambda x: x.compute_score(self.vm_metrics),[ item for sublist in sol.values() for item in sublist ])
 
@@ -85,15 +86,15 @@ class LoadBalancerTests(unittest.TestCase):
 		}
 		
 		self.lb.set_metrics(self.vm_metrics,node_metrics)
-		val=cxm.loadbalancer.Solution({'node1': ['vm1', 'vm2'], 'node3': ['vm5', 'vm6'], 'node2': ['vm3', 'vm4']})
+		val=cxm.loadbalancer.Solution({'node1': ['vm1', 'vm3'], 'node3': ['vm5', 'vm6'], 'node2': ['vm2', 'vm4']})
 		val.compute_score(self.vm_metrics)
 		
 		sol=self.lb.get_solution()
 		self.assertEquals(sol,val)
 		self.assertEquals(len(sol.get_path()),1)
 
-	def test_get_solution__2mig(self):
-		cxm.core.cfg['LB_MIN_GAIN']=10
+	def test_get_solution__1mig(self):
+		cxm.core.cfg['LB_MIN_GAIN']=50
 		cxm.core.cfg['LB_MAX_LAYER']=50
 		node_metrics = {
 			'node1': { 'ram' : 4096 },
@@ -102,7 +103,7 @@ class LoadBalancerTests(unittest.TestCase):
 		}
 		
 		self.lb.set_metrics(self.vm_metrics,node_metrics)
-		val=cxm.loadbalancer.Solution({'node1': ['vm1', 'vm6'], 'node3': ['vm5', 'vm2'], 'node2': ['vm3', 'vm4']})
+		val=cxm.loadbalancer.Solution({'node1': ['vm1', 'vm3'], 'node3': ['vm6'], 'node2': ['vm2', 'vm4', 'vm5']})
 		val.compute_score(self.vm_metrics)
 		
 		sol=self.lb.get_solution()
@@ -110,7 +111,7 @@ class LoadBalancerTests(unittest.TestCase):
 		self.assertEquals(len(sol.get_path()),2)
 
 	def test_get_solution__none(self):
-		cxm.core.cfg['LB_MIN_GAIN']=50
+		cxm.core.cfg['LB_MIN_GAIN']=90
 		cxm.core.cfg['LB_MAX_LAYER']=50
 		node_metrics = {
 			'node1': { 'ram' : 4096 },
@@ -138,9 +139,9 @@ class SolutionTests(unittest.TestCase):
 	def test_compute_score(self):
 		val=96.280427996998981
 		metrics = {
-                'vm1': { 'io':120, 'cpu':20},
-                'vm2': { 'io':100, 'cpu':12}, 
-                'vm3': { 'io':500, 'cpu':99}, 
+                'vm1': { 'ram':120, 'cpu':20},
+                'vm2': { 'ram':100, 'cpu':12}, 
+                'vm3': { 'ram':500, 'cpu':99}, 
 		}
 
 		self.s.compute_score(metrics)

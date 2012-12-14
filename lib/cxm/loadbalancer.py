@@ -39,6 +39,9 @@ class LoadBalancer:
 	algorithm (can be see like an approximate algo)
 	The goal is to seek for the first better solution that satisfy all constraints.
 
+	Network IO and disk IO are not considered because bottlenecks are generally not on the 
+	node but on uplink LAN or SAN switches, whereas RAM is considered to optimize balooning.
+
 	Example of usage :
 
 	lb=LoadBalancer(current_state)
@@ -72,9 +75,9 @@ class LoadBalancer:
 
 		Example of metrics' dict:
 		vm_metrics = {
-				'vm1': { 'io':120  , 'cpu':10 , 'ram':1024 },
-				'vm2': { 'io':1280 , 'cpu':23 , 'ram':512 },
-				'vm3': { 'io':10   , 'cpu':0  , 'ram':128 },
+				'vm1': { 'cpu':10 , 'ram':1024 },
+				'vm2': { 'cpu':23 , 'ram':512 },
+				'vm3': { 'cpu':0  , 'ram':128 },
 			}
 		
 		node_metrics = {
@@ -199,30 +202,30 @@ class Solution:
 		metrics is a dict containing informations about cpu and io used by VMs.
 		Example:
 			metrics = {
-				'vm1': { 'io':120, 'cpu':0},
-				'vm2': { 'io':120, 'cpu':0}, 
+				'vm1': { 'ram':512, 'cpu':0},
+				'vm2': { 'ram':128, 'cpu':0}, 
 				}
 		"""
-		# Compute IO/CPU sums of each vm, on each node
-		IOs = [ sum([ metrics[vm]['io'] for vm in self.state[node] ]) for node in self.state ]
+		# Compute RAM/CPU sums of each vm, on each node
+		RAMs = [ sum([ metrics[vm]['ram'] for vm in self.state[node] ]) for node in self.state ]
 		CPUs = [ sum([ metrics[vm]['cpu'] for vm in self.state[node] ]) for node in self.state ]
 
 		# Compute load deviation between the node with the highest load and the node with the lower load.
 		# delta_* are percentages relatives to the current cluster (total) load.
 		try:
-			delta_IOs= float((max(IOs)-min(IOs))*100)/sum(IOs)
+			delta_RAMs= float((max(RAMs)-min(RAMs))*100)/sum(RAMs)
 		except ZeroDivisionError:
-			delta_IOs=0
+			delta_RAMs=0
 
 		try:
 			delta_CPUs= float((max(CPUs)-min(CPUs))*100)/sum(CPUs)
 		except ZeroDivisionError:
 			delta_CPUs=0
 
-		# The score is the Euclidean distance between the symbolic point (delta_IO,delta_CPU) 
+		# The score is the Euclidean distance between the symbolic point (delta_RAM,delta_CPU) 
 		# reflecting the solution, and the origin (0,0).
 		#
-		# (delta IO)
+		# (delta RAM)
 		#      100% |
 		#           |
 		#           |   + (score)
@@ -234,7 +237,7 @@ class Solution:
 		#        ________________________
 		# AB = \/ ( Xb-Xa )² + ( Yb-Ya )²
 		#
-		self.score=math.sqrt(math.pow(delta_IOs,2)+math.pow(delta_CPUs,2))
+		self.score=math.sqrt(math.pow(delta_RAMs,2)+math.pow(delta_CPUs,2))
 	
 	def set_path(self,path):
 		"""Set the current path to this solution."""
