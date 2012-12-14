@@ -146,7 +146,7 @@ class LoadBalancer:
 		Return the choosen solution, or None if there's no solution.
 		"""
 		layer=1 # Layer 0 is filled with the initial solution
-		while layer <= core.cfg['LB_MAX_LAYER']:
+		while layer <= core.cfg['LB_MAX_MIGRATION']:
 			# Create current layer's solutions from previous layer
 			for previous_solution in self.solutions[layer-1]:
 				self.create_layer(previous_solution, layer)

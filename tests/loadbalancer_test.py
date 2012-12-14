@@ -95,7 +95,7 @@ class LoadBalancerTests(unittest.TestCase):
 
 	def test_get_efficient_solution__1mig(self):
 		cxm.core.cfg['LB_MIN_GAIN']=50
-		cxm.core.cfg['LB_MAX_LAYER']=50
+		cxm.core.cfg['LB_MAX_MIGRATION']=50
 		node_metrics = {
 			'node1': { 'ram' : 4096 },
 			'node2': { 'ram' : 4096 },
@@ -112,7 +112,7 @@ class LoadBalancerTests(unittest.TestCase):
 
 	def test_get_efficient_solution__none(self):
 		cxm.core.cfg['LB_MIN_GAIN']=90
-		cxm.core.cfg['LB_MAX_LAYER']=50
+		cxm.core.cfg['LB_MAX_MIGRATION']=50
 		node_metrics = {
 			'node1': { 'ram' : 4096 },
 			'node2': { 'ram' : 4096 },

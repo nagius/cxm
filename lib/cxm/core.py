@@ -67,7 +67,7 @@ cfg = {
 	'QUIET': False,
 	'USESSH': False,
 	'LB_MAX_VM_PER_NODE': 20,
-	'LB_MAX_LAYER': 4,
+	'LB_MAX_MIGRATION': 3,
 	'LB_MIN_GAIN': 5,
 	'FENCE_CMD': "cxm_fence",	# Take the node's name as first param
 	'DISABLE_FENCING': False,
@@ -92,7 +92,7 @@ cfg_type = {
 	'QUIET': 				bool,
 	'USESSH': 				bool,
 	'LB_MAX_VM_PER_NODE': 	int,
-	'LB_MAX_LAYER': 		int,
+	'LB_MAX_MIGRATION': 	int,
 	'LB_MIN_GAIN': 			int,
 	'FENCE_CMD': 			str,
 	'DISABLE_FENCING': 		bool,
