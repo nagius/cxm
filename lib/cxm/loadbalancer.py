@@ -132,8 +132,8 @@ class LoadBalancer:
 					if solution.is_constraints_ok(self.vm_metrics, self.node_metrics):
 						self.solutions.setdefault(layer,[]).append(solution)
 					
-	def get_solution(self):
-		"""Get the best solution at the minimal cost.
+	def get_efficient_solution(self):
+		"""Get a better solution at the minimal cost.
 
 		Return the choosen solution, or None if there's no solution.
 		"""

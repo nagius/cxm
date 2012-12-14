@@ -77,7 +77,7 @@ class LoadBalancerTests(unittest.TestCase):
 
 		self.assertEquals(self.lb.solutions,sol)
 
-	def test_get_solution__1mig(self):
+	def test_get_efficient_solution__1mig(self):
 		cxm.core.cfg['LB_MIN_GAIN']=1
 		node_metrics = {
 			'node1': { 'ram' : 4096 },
@@ -89,11 +89,11 @@ class LoadBalancerTests(unittest.TestCase):
 		val=cxm.loadbalancer.Solution({'node1': ['vm1', 'vm3'], 'node3': ['vm5', 'vm6'], 'node2': ['vm2', 'vm4']})
 		val.compute_score(self.vm_metrics)
 		
-		sol=self.lb.get_solution()
+		sol=self.lb.get_efficient_solution()
 		self.assertEquals(sol,val)
 		self.assertEquals(len(sol.get_path()),1)
 
-	def test_get_solution__1mig(self):
+	def test_get_efficient_solution__1mig(self):
 		cxm.core.cfg['LB_MIN_GAIN']=50
 		cxm.core.cfg['LB_MAX_LAYER']=50
 		node_metrics = {
@@ -106,11 +106,11 @@ class LoadBalancerTests(unittest.TestCase):
 		val=cxm.loadbalancer.Solution({'node1': ['vm1', 'vm3'], 'node3': ['vm6'], 'node2': ['vm2', 'vm4', 'vm5']})
 		val.compute_score(self.vm_metrics)
 		
-		sol=self.lb.get_solution()
+		sol=self.lb.get_efficient_solution()
 		self.assertEquals(sol,val)
 		self.assertEquals(len(sol.get_path()),2)
 
-	def test_get_solution__none(self):
+	def test_get_efficient_solution__none(self):
 		cxm.core.cfg['LB_MIN_GAIN']=90
 		cxm.core.cfg['LB_MAX_LAYER']=50
 		node_metrics = {
@@ -121,7 +121,7 @@ class LoadBalancerTests(unittest.TestCase):
 		
 		self.lb.set_metrics(self.vm_metrics,node_metrics)
 		
-		sol=self.lb.get_solution()
+		sol=self.lb.get_efficient_solution()
 		self.assertEquals(sol,None)
 	
 

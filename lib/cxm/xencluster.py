@@ -424,7 +424,7 @@ class XenCluster:
 		# Initialize loadbalancer
 		lb=loadbalancer.LoadBalancer(current_state)
 		lb.set_metrics(vm_metrics, node_metrics)
-		solution=lb.get_solution()
+		solution=lb.get_efficient_solution()
 
 		if not solution:
 			log.info("No better solution found with a minimal gain of %s%%." % core.cfg['LB_MIN_GAIN'])
