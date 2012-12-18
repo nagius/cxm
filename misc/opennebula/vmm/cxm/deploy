@@ -55,6 +55,7 @@ sudo mv -f $CFG_FILE $CFG_DIR/$VM_NAME
 ln -s $CFG_DIR/$VM_NAME $CFG_FILE
 
 # Create the autostart link
+[ -L $AUTO_DIR/$VM_NAME ] && sudo rm -f $AUTO_DIR/$VM_NAME
 sudo ln -s $CFG_DIR/$VM_NAME $AUTO_DIR/
 
 # Start the vm
