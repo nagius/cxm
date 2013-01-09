@@ -408,10 +408,16 @@ function remove_lv
     local FILE=$2
 
     local CMD=$(cat <<EOF
-        set -e
-        LV=\$(readlink $FILE)
-        sudo lvchange -an \$LV
-        sudo lvremove -f \$LV
+		LV=\$(readlink $FILE)
+		COUNT=$(($SHUTDOWN_TIMEOUT/5))
+		while [ -L \$LV -a \$COUNT -gt 0 ]; do
+			sleep 5
+			sudo lvremove -f \$LV
+			let "COUNT-=1"
+		done
+		if [ \$COUNT -le 0 ]; then
+			logger -p daemon.warning "Failed to remove \$LV"
+		fi
         sudo rm -f $FILE
 EOF
     )

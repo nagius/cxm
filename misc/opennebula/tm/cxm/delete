@@ -55,9 +55,6 @@ DST_HOST=`arg_host $DST`
 # Delete files on the remote host
 #-------------------------------------------------------------------------------
 
-# Wait few seconds for VM to be shutdown, this is ugly but it's working
-sleep 10
-
 if [ `is_disk $DST_PATH` -eq 1 ]; then
     # Disk
     log "Deleting LV $DST_PATH"
