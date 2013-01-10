@@ -31,7 +31,7 @@ source $DRIVER_PATH/../../scripts_common.sh
 source $DRIVER_PATH/../../cxmrc
 
 VM_ID=$3
-VM_NAME=$(get_vm_name $VM_ID)
+VM_NAME=$1
 
 if is_in_cluster; then
 	CMD="HOME=/root cxm destroy --quiet $VM_NAME"
