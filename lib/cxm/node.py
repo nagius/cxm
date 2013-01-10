@@ -290,8 +290,9 @@ class Node:
 			raise RunningVmError(self.hostname,vmname) 
 		else:
 			lvs=VM(vmname).get_lvs()
-			self.refresh_lvm(self.get_vgs(lvs))
-			self.run("lvchange -aln " + " ".join(lvs))
+			if lvs:
+				self.refresh_lvm(self.get_vgs(lvs))
+				self.run("lvchange -aln " + " ".join(lvs))
 
 	def deactivate_all_lv(self):
 		"""Deactivate all the logicals volumes used by stopped VM on this node."""
@@ -302,8 +303,9 @@ class Node:
 	def activate_lv(self,vmname):
 		"""Activate the logicals volumes of the specified VM on this node."""
 		lvs=VM(vmname).get_lvs()
-		self.refresh_lvm(self.get_vgs(lvs))
-		self.run("lvchange -aly " + " ".join(lvs))
+		if lvs:
+			self.refresh_lvm(self.get_vgs(lvs))
+			self.run("lvchange -aly " + " ".join(lvs))
 		
 	def start(self, vmname):
 		"""Start the specified VM on this node.

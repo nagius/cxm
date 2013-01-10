@@ -204,11 +204,10 @@ class NodeTests(MockerTestCase):
 	def test_deactivate_lv(self):
 		vmname="test1.home.net"
 
-		n = self.mocker.mock()
-		n.is_vm_started(ANY)
+		is_vm_started = self.mocker.replace(self.node.is_vm_started)
+		is_vm_started(ANY)
 		self.mocker.result(False)
 		self.mocker.replay()
-		self.node.is_vm_started=n.is_vm_started
 
 		self.node.deactivate_lv(vmname)
 
@@ -223,14 +222,16 @@ class NodeTests(MockerTestCase):
 		self.assertRaises(cxm.node.RunningVmError,self.node.deactivate_lv,vmname) 
 
 	def test_deactivate_lv_bad_input(self):
+		vmname="nonexist"
 
 		n = self.mocker.mock()
 		is_vm_started = self.mocker.replace(self.node.is_vm_started)
 		is_vm_started(ANY)
 		self.mocker.result(False)
+		run = self.mocker.replace(self.node.run)
 		self.mocker.replay()
 
-		self.assertRaises(IOError,self.node.deactivate_lv,"nonexist") 
+		self.node.deactivate_lv(vmname)
 
 	def test_deactivate_all_lv(self):
 		names=['test1.home.net', 'test2.home.net', 'testcfg.home.net']

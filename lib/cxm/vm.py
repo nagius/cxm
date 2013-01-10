@@ -49,9 +49,14 @@ class VM:
 		self.devices=dict()
 
 		try:
-			execfile("%s/%s.cfg" % (core.cfg['VMCONF_DIR'],vmname) ,dict(),self.config)
+			try:
+				execfile("%s/%s" % (core.cfg['VMCONF_DIR'],vmname) ,dict(),self.config)
+			except IOError:
+				execfile("%s/%s.cfg" % (core.cfg['VMCONF_DIR'],vmname) ,dict(),self.config)
 		except IOError:
-			execfile("%s/%s" % (core.cfg['VMCONF_DIR'],vmname) ,dict(),self.config)
+			if not core.cfg['QUIET']:
+				log.warn("Missing configuration file: %s" % (vmname))
+			
 		log.debug("[VM]", vmname, self.config)
 
 		# Get devices from config file

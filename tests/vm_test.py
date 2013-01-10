@@ -38,7 +38,7 @@ class VMTests(unittest.TestCase):
 		self.assertTrue(isinstance(cxm.vm.VM("testcfg.home.net"), cxm.vm.VM))
 
 	def test_vm_error(self):
-		self.assertRaises(IOError, cxm.vm.VM,"non-exist")
+		self.assertTrue(isinstance(cxm.vm.VM("non-exist"), cxm.vm.VM))
 
 	def test_get_lvs(self):
 		lvs = ['/dev/LVM_XEN/usr-test1.home.net', '/dev/vgrack/WOO-test1.home.net', '/dev/vgrack/root-test1.home.net']
