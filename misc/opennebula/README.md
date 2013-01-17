@@ -58,7 +58,7 @@ Prerequisite
     Defaults:oneadmin env_keep+="HOME"
     Defaults:oneadmin !requiretty
 
-* The system datastore /var/lib/one/datastores/0 must be shared between hosts (but not with the frontend). You can dedicate one LV on the SAN, with GFS2. Yyou can also use NFS, but as you are using cxm, you surely have cman and clvmd already running, so GFS2 is a good choice.
+* The system datastore /var/lib/one/datastores/0 must be shared between hosts (but not with the frontend). You can dedicate one LV on the SAN, with GFS2. You can also use NFS, but as you are using cxm, you surely have cman and clvmd already running, so GFS2 is a good choice.
 This datastore is not used to store images, as we use LVM block devices, but is needed to share some configuration files and links. A few gigabytes is enough.
 
 Installation 
@@ -108,6 +108,9 @@ For each datastore, use :
 
     DS_MAD="fs"
     TM_MAD="cxm"
+	NO_DECOMPRESS="yes"
+
+You need to add 'NO_DECOMPRESS="yes"' in the datastore template in order to upload TGZ filesystems.
 
 * Hosts
 
