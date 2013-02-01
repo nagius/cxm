@@ -50,6 +50,12 @@ for DISK in $(find $(dirname $CFG_FILE) -type l -regex '.*disk\.[0-9]+'); do
 	fi
 done
 
+# Check for duplicate name
+if [ -e "$CFG_DIR/$VM_NAME" ]; then
+	log_error "$VM_NAME already exist !"
+	exit 2
+fi
+
 # Move the configuration file to the configuration directory
 sudo mv -f $CFG_FILE $CFG_DIR/$VM_NAME
 ln -s $CFG_DIR/$VM_NAME $CFG_FILE
