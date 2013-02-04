@@ -181,8 +181,11 @@ class InotifyPP(protocol.ProcessProtocol):
 					raise Exception(result[1].getErrorMessage())
 
 		def doClusterUpdate(result):
+			nodes=result.get_nodes()
+			nodes.remove(result.get_local_node())
+
 			ds=list()
-			for node in result.get_nodes():
+			for node in nodes:
 				d=doNodeUpdate(node)
 				ds.append(d)
 
