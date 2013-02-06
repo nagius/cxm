@@ -111,6 +111,7 @@ class InotifyPP(protocol.ProcessProtocol):
 				self.node.run("svn add " + " ".join(map(lambda x: core.cfg['VMCONF_DIR']+x, added)))
 			if len(deleted) > 0:
 				self.node.run("svn delete " + " ".join(map(lambda x: core.cfg['VMCONF_DIR']+x, deleted)))
+
 			self.node.run("svn --non-interactive commit -m 'svnwatcher autocommit' "+core.cfg['VMCONF_DIR'])
 
 		def commitEnded(result):
@@ -152,10 +153,21 @@ class InotifyPP(protocol.ProcessProtocol):
 				self.rescheduleCommit()
 				return defer.succeed(None)
 
+		# Get files versionned in svn
+		versionned=[
+			line.split()[-1].replace(core.cfg['VMCONF_DIR'],'') 
+			for line in self.node.run("svn status --verbose "+core.cfg['VMCONF_DIR']).readlines()
+		]
+
+		# Keep the intersection: do not try to delete already deleted files
+		self.deleted=list(set(self.deleted) & set(versionned))
+
 		# Don't commit if there is no updates
-		log.debugd("Trigger commit: ADD%s DEL%s UP%s" % (self.added, self.deleted, self.updated))
 		if len(self.added+self.deleted+self.updated) <= 0:
+			log.debugd("Trigger commit: nothing to commit.")
 			return defer.succeed(None)
+
+		log.debugd("Trigger commit: ADD%s DEL%s UP%s" % (self.added, self.deleted, self.updated))
 
 		# Check for locks of a previous commit still running
 		if self.agent:
