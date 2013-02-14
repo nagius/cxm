@@ -484,6 +484,10 @@ class XenCluster:
 		if not self.check_cfg():
 			safe=False
 
+		# Check CPU configuration
+		if not self.check_cpu_flags():
+			safe=False
+
 		# Check existence of used logicals volumes
 		if not self.get_local_node().check_missing_lvs():
 			safe=False
@@ -554,6 +558,25 @@ class XenCluster:
 		for node in missing.keys():
 			if missing[node]:
 				log.info(" ** WARNING : Missing configuration files on %s : %s" % (node,", ".join(list(Set(missing[node])))))
+				safe=False
+
+		return safe
+
+	def check_cpu_flags(self):
+		"""Perform a check of CPUs configuration.
+
+		Return False if CPU are not all identical.
+		"""
+		log.info("Checking CPU configuration...")
+		safe=True
+
+		# Get the flag of the local node for comparison
+		ref=self.get_local_node().get_metrics().get_host_hw_caps()
+
+		# Loop through the others nodes
+		for node in self.get_nodes():
+			if node.get_metrics().get_host_hw_caps() != ref:
+				log.info(" ** WARNING : CPU configuration mismatch on %s" % (node))
 				safe=False
 
 		return safe

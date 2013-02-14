@@ -461,6 +461,9 @@ class XenClusterTests(MockerTestCase):
 		check_cfg =  self.mocker.replace(self.cluster.check_cfg)
 		check_cfg()
 		self.mocker.result(True)
+		check_cpu =  self.mocker.replace(self.cluster.check_cpu_flags)
+		check_cpu()
+		self.mocker.result(True)
 		self.mocker.replay()
 
 		self.cluster.nodes={'node1': n1, 'node2': n2}
@@ -554,6 +557,64 @@ class XenClusterTests(MockerTestCase):
 		self.cluster.nodes={'node1': n1, 'node2': n2}
 
 		self.assertEqual(self.cluster.check_cfg(),True)
+
+	def test_check_cpu_flags__ok(self):
+		
+		n1_mocker = Mocker()
+		n1 = n1_mocker.mock()
+		n1.get_hostname()
+		n1_mocker.result("node1")
+		n1.get_metrics().get_host_hw_caps()
+		n1_mocker.result('078bf3ff:e3d3fbff:00000000:00000010:00000001:00000000:00000000:00000000')
+		n1_mocker.replay()
+
+		n2_mocker = Mocker()
+		n2 = n2_mocker.mock()
+		n2.get_hostname()
+		n2_mocker.result('node2')
+		n2.get_metrics().get_host_hw_caps()
+		n2_mocker.result('078bf3ff:e3d3fbff:00000000:00000010:00000001:00000000:00000000:00000000')
+		n2.get_metrics().get_host_hw_caps()
+		n2_mocker.result('078bf3ff:e3d3fbff:00000000:00000010:00000001:00000000:00000000:00000000')
+		n2_mocker.replay()
+
+		get_local_node = self.mocker.replace(self.cluster.get_local_node)
+		get_local_node()
+		self.mocker.result(n2)
+		self.mocker.replay()
+
+		self.cluster.nodes={'node1': n1, 'node2': n2}
+
+		self.assertEqual(self.cluster.check_cpu_flags(), True)
+
+	def test_check_cpu_flags__nok(self):
+		
+		n1_mocker = Mocker()
+		n1 = n1_mocker.mock()
+		n1.get_hostname()
+		n1_mocker.result("node1")
+		n1.get_metrics().get_host_hw_caps()
+		n1_mocker.result('078bf3ff:e3d3fbff:00000000:00000000:00000000:00000000:00000000:00000000')
+		n1_mocker.replay()
+
+		n2_mocker = Mocker()
+		n2 = n2_mocker.mock()
+		n2.get_hostname()
+		n2_mocker.result('node2')
+		n2.get_metrics().get_host_hw_caps()
+		n2_mocker.result('078bf3ff:e3d3fbff:00000000:00000010:00000001:00000000:00000000:00000000')
+		n2.get_metrics().get_host_hw_caps()
+		n2_mocker.result('078bf3ff:e3d3fbff:00000000:00000010:00000001:00000000:00000000:00000000')
+		n2_mocker.replay()
+
+		get_local_node = self.mocker.replace(self.cluster.get_local_node)
+		get_local_node()
+		self.mocker.result(n2)
+		self.mocker.replay()
+
+		self.cluster.nodes={'node1': n1, 'node2': n2}
+
+		self.assertEqual(self.cluster.check_cpu_flags(), False)
 
 	def test_emergency_eject__ok(self):
 		migrate = self.mocker.replace(self.cluster.migrate)
