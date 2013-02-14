@@ -94,6 +94,20 @@ class Metrics:
 		"""Return the number (int) of CPU on the host."""
 		return int(self.get_host_record()['cpu_configuration']['nr_cpus'])
 
+	def get_host_hw_caps(self, nocache=False):
+		"""
+		Return the features flags of the physical CPU. (string)
+
+		Result will be cached for 5 seconds, unless 'nocache' is True.
+		"""
+
+		def _get_host_hw_caps():
+			host_cpu_records = map(self.server.xenapi.host_cpu.get_record, self.get_host_record(nocache)["host_CPUs"])
+			log.debug("[API]", self.node.get_hostname(), "host_cpu_records=", host_cpu_records)
+			return host_cpu_records[0]['features']
+
+		return self._cache.cache(5, nocache, _get_host_hw_caps)
+
 	def get_dom0_nr_cpus(self):
 		"""Return the number (int) of VCPU for the Domain-0."""
 		dom0_record = self.server.xenapi.VM.get_record('00000000-0000-0000-0000-000000000000')

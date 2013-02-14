@@ -185,6 +185,32 @@ class MetricsTests(MockerTestCase):
 		result=self.metrics.get_used_irq()
 		self.assertEqual(result, val)
 		
+	def test_get_host_hw_caps(self):
+		val='078bf3ff:e3d3fbff:00000000:00000010:00000001:00000000:00000000:00000000'
+		host_record={
+			'host_CPUs': ['d8f9904e-a743-d945-3d56-e8c2bb56f8b1',
+				'fd8abd4f-0ec9-21d8-d62d-f80b1d9d5a52'],
+		}
+		cpu_record={'features': '078bf3ff:e3d3fbff:00000000:00000010:00000001:00000000:00000000:00000000'}
+		
+		xs = self.mocker.mock()
+		xs.getSession()
+		xs.xenapi.session.get_this_host(ANY)
+		xs.xenapi.host.get_record(ANY)
+		self.mocker.result(host_record)
+
+		xs.xenapi.host_cpu.get_record('d8f9904e-a743-d945-3d56-e8c2bb56f8b1')
+		self.mocker.result(cpu_record)
+
+		xs.xenapi.host_cpu.get_record('fd8abd4f-0ec9-21d8-d62d-f80b1d9d5a52')
+		self.mocker.result(cpu_record)
+
+		self.mocker.replay()
+		self.metrics.server=xs
+
+		result=self.metrics.get_host_hw_caps()
+		self.assertEqual(result, val)
+
 	def	test_get_host_nr_cpus(self):
 		val=2	
 
