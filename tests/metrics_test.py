@@ -95,6 +95,25 @@ class MetricsTests(MockerTestCase):
 		xenapi_mock.verify()
 		xenapi_mock.restore()
 
+	def test_get_host_record(self):
+		val={
+			'API_version_major': '1',
+			'API_version_minor': '0',
+			'uuid': '189d34f9-42ef-97ab-6783-70c9f8457286'
+		}
+
+		xs = self.mocker.mock()
+		xs.getSession()
+		xs.xenapi.session.get_this_host(ANY)
+		xs.xenapi.host.get_record(ANY)
+		self.mocker.result(val)
+		self.mocker.replay()
+		self.metrics.server=xs
+
+		result=self.metrics.get_host_record()
+		self.assertEqual(result, val)
+		self.assertEqual(type(result), dict)
+
 	def test_get_host_net_io(self):
 		val = {'bridges': {
 					'xenbr12': {'Rx': '0', 'Tx': '468'}, 

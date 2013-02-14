@@ -74,6 +74,22 @@ class Metrics:
 
 		return self._cache.cache(5, nocache, _get_dom_records)
 
+	def get_host_record(self, nocache=False):
+		"""
+		Return a dict with the host record from API.
+		Only usefull for internal use.
+
+		Result will be cached for 5 seconds, unless 'nocache' is True.
+		"""
+
+		def _get_host_record():
+			host_uuid=self.server.xenapi.session.get_this_host(self.server.getSession())
+			host_record = self.server.xenapi.host.get_record(host_uuid)
+			log.debug("[API]", self.node.get_hostname(), "host_record=", host_record)
+			return host_record
+
+		return self._cache.cache(5, nocache, _get_host_record)
+
 	def get_host_nr_cpus(self):
 		"""Return the number (int) of CPU on the host."""
 		host_record = self.server.xenapi.host.get_record(self.server.xenapi.session.get_this_host(self.server.getSession()))
