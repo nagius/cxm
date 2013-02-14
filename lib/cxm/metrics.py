@@ -92,9 +92,7 @@ class Metrics:
 
 	def get_host_nr_cpus(self):
 		"""Return the number (int) of CPU on the host."""
-		host_record = self.server.xenapi.host.get_record(self.server.xenapi.session.get_this_host(self.server.getSession()))
-		log.debug("[API]", self.node.get_hostname(), "host_record=", host_record)
-		return int(host_record['cpu_configuration']['nr_cpus'])
+		return int(self.get_host_record()['cpu_configuration']['nr_cpus'])
 
 	def get_dom0_nr_cpus(self):
 		"""Return the number (int) of VCPU for the Domain-0."""
@@ -375,8 +373,7 @@ class Metrics:
 				vals=map(int, self.node.run('xm info | grep -E total_memory\|free_memory | cut -d: -f 2').read().strip().split())
 				ram_infos = { 'total':vals[0], 'free':vals[1], 'used':vals[0]-vals[1] }
 			else:
-				host_record = self.server.xenapi.host.get_record(self.server.xenapi.session.get_this_host(self.server.getSession()))
-				host_metrics_record = self.server.xenapi.host_metrics.get_record(host_record["metrics"])
+				host_metrics_record = self.server.xenapi.host_metrics.get_record(self.get_host_record(nocache)["metrics"])
 				log.debug("[API]", self.node.get_hostname(), "host_metrics_record=", host_metrics_record)
 
 				total=int(host_metrics_record["memory_total"])/1024/1024
