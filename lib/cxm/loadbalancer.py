@@ -175,6 +175,47 @@ class LoadBalancer:
 
 		return None # No better solution found at all, giving up.
 
+	# TODO: optimize CPU consumption
+	def get_best_solution(self):
+		"""Get the best solution whatever the cost.
+		WARNING: this is really time-consuming !
+
+		Return the choosen solution, or None if there's no solution.
+		"""
+
+		# Set initial solution
+		best_solution=self.root
+
+		# Loop to find all solutions
+		# Layer 0 is filled with the initial solution
+		for layer in range(1, core.cfg['LB_MAX_MIGRATION']):
+			# Create current layer's solutions from previous layer
+			for previous_solution in self.solutions[layer-1]:
+				self.create_layer(previous_solution, layer)
+
+			# Give up if no more solutions
+			try:
+				if not len(self.solutions[layer]) > 0:
+					break
+			except KeyError:
+				break
+
+			# Get the best solution of this layer
+			if self.solutions[layer][0].score < best_solution.score:
+				best_solution=self.solutions[layer][0]
+
+		# Compare initial solution to the best solution
+		if best_solution.score < self.root.score:
+			log.debug(" [LB]", "Found", best_solution)
+
+			# Compute the gain (in percetage) of this solution
+			gain = ((self.root.score-best_solution.score)*100)/self.root.score
+			if gain >= core.cfg['LB_MIN_GAIN']:
+				log.debug(" [LB]", "Pickup this one, migration plan:", best_solution.path)
+				return best_solution
+           
+		return None # No better solution found at all, giving up.
+
 class Solution:
 	"""This class represent a solution for the loadbalancer, ie. a state of the cluster and a path to reach it.
 
