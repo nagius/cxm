@@ -836,8 +836,6 @@ class XenClusterTests(MockerTestCase):
 		n1.metrics.init_cache()
 		n1.metrics.get_vms_cpu_usage()
 		n1_mocker.result({'vm1': 12.0, 'vm2': 99.0})
-		n1.metrics.get_vms_disk_io_rate()
-		n1_mocker.result({'vm1': {'Read': 0, 'Write': 20 },'vm2': {'Read': 100, 'Write': 2 }})
 		n1_mocker.replay()
 
 		n2_mocker = Mocker()
@@ -852,8 +850,6 @@ class XenClusterTests(MockerTestCase):
 		n2.metrics.init_cache()
 		n2.metrics.get_vms_cpu_usage()
 		n2_mocker.result({'vm3': 30.0})
-		n2.metrics.get_vms_disk_io_rate()
-		n2_mocker.result({'vm3': {'Read': 10, 'Write': 20 }})
 		n2_mocker.replay()
 
 		n3_mocker = Mocker()
@@ -867,8 +863,6 @@ class XenClusterTests(MockerTestCase):
 		n3_mocker.result(512)
 		n3.metrics.init_cache()
 		n3.metrics.get_vms_cpu_usage()
-		n3_mocker.result({})
-		n3.metrics.get_vms_disk_io_rate()
 		n3_mocker.result({})
 		n3_mocker.replay()
 
