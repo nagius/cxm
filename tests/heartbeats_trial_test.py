@@ -34,9 +34,7 @@ from mocker import *
 # Argh, multiple inheritance in diamond is really bad ! But there is no other way to mock twisted...
 class SlaveHearbeatServiceTests(unittest.TestCase, MockerTestCase):
 
-#    def setUp(self):
-
-
+	# TODO: this test is not working
 	def test_startService(self):
 		master=self.mocker.mock()
 		master.getActiveMaster()	

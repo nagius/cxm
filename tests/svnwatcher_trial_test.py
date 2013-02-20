@@ -282,14 +282,16 @@ class InotifyTests(unittest.TestCase):
 
 	def test_doUpdate__cluster(self):
 		agent=mock()
-		when(agent).getNodesList().thenReturn(defer.succeed(["node1", "node2"]))
+		when(agent).getNodesList().thenReturn(defer.succeed(["node1", "node2", "node3"]))
 
 		n1=mock()
 		n2=mock()
+		n3=mock()
 		cluster=mock()
-		when(cluster).get_nodes().thenReturn([n1, n2])
+		when(cluster).get_nodes().thenReturn([n1, n2, n3])
+		when(cluster).get_local_node().thenReturn(n3)
 
-		when(cxm.xencluster.XenCluster).getDeferInstance(["node1", "node2"]).thenReturn(defer.succeed(cluster))
+		when(cxm.xencluster.XenCluster).getDeferInstance(["node1", "node2", "node3"]).thenReturn(defer.succeed(cluster))
 
 		pp=InotifyPP(None, agent)
 		d=pp.doUpdate()
@@ -297,8 +299,9 @@ class InotifyTests(unittest.TestCase):
 		def verifyCalls(dummy):
 			verify(agent).getNodesList()
 			verifyNoMoreInteractions(agent)
-			verify(cxm.xencluster.XenCluster).getDeferInstance(["node1", "node2"])
+			verify(cxm.xencluster.XenCluster).getDeferInstance(["node1", "node2", "node3"])
 			verify(cluster).get_nodes()
+			verify(cluster).get_local_node()
 			verifyNoMoreInteractions(cluster)
 			verify(n1).run("svn update tests/stubs/cfg/")
 			verify(n2).run("svn update tests/stubs/cfg/")
