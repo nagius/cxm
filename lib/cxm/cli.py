@@ -449,9 +449,6 @@ def get_parser():
 	parser.add_option("-n", "--no-refresh",
 					  action="store_true", dest="norefresh", default=core.cfg['NOREFRESH'],
 					  help="Don't refresh LVM metadatas (DANGEROUS)")
-	parser.add_option("-s", "--use-ssh",
-					  action="store_true", dest="usessh", default=core.cfg['USESSH'],
-					  help="Use SSH instead of Xen-API")
 	parser.add_option("-c", "--console",
 					  action="store_true", dest="console", default=False,
 					  help="Attach console to the domain as soon as it has started.")
@@ -604,7 +601,6 @@ def run():
 	# Override default behavior
 	core.cfg['API_DEBUG']=options.debug
 	core.cfg['QUIET']=options.quiet
-	core.cfg['USESSH']=options.usessh
 	core.cfg['NOREFRESH']=options.norefresh
 
 	# Get the subcommand

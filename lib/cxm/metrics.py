@@ -383,17 +383,13 @@ class Metrics:
 		"""
 
 		def _get_ram_infos():
-			if core.cfg['USESSH']:
-				vals=map(int, self.node.run('xm info | grep -E total_memory\|free_memory | cut -d: -f 2').read().strip().split())
-				ram_infos = { 'total':vals[0], 'free':vals[1], 'used':vals[0]-vals[1] }
-			else:
-				host_metrics_record = self.server.xenapi.host_metrics.get_record(self.get_host_record(nocache)["metrics"])
-				log.debug("[API]", self.node.get_hostname(), "host_metrics_record=", host_metrics_record)
+			host_metrics_record = self.server.xenapi.host_metrics.get_record(self.get_host_record(nocache)["metrics"])
+			log.debug("[API]", self.node.get_hostname(), "host_metrics_record=", host_metrics_record)
 
-				total=int(host_metrics_record["memory_total"])/1024/1024
-				free=int(host_metrics_record["memory_free"])/1024/1024
+			total=int(host_metrics_record["memory_total"])/1024/1024
+			free=int(host_metrics_record["memory_free"])/1024/1024
 
-				ram_infos = { 'total': total, 'free':free, 'used':total-free }
+			ram_infos = { 'total': total, 'free':free, 'used':total-free }
 
 			return ram_infos
 

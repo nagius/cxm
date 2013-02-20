@@ -65,7 +65,6 @@ cfg = {
 	'API_DEBUG': False,			# For API and CLI
 	'DAEMON_DEBUG': False,		# For cxmd
 	'QUIET': False,
-	'USESSH': False,
 	'LB_MAX_VM_PER_NODE': 20,
 	'LB_MAX_MIGRATION': 3,
 	'LB_MIN_GAIN': 5,
@@ -90,7 +89,6 @@ cfg_type = {
 	'API_DEBUG': 			bool,
 	'DAEMON_DEBUG': 		bool,
 	'QUIET': 				bool,
-	'USESSH': 				bool,
 	'LB_MAX_VM_PER_NODE': 	int,
 	'LB_MAX_MIGRATION': 	int,
 	'LB_MIN_GAIN': 			int,

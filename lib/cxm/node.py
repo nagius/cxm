@@ -51,13 +51,13 @@ class Node:
 		self.hostname=hostname
 
 		# Open SSH channel (localhost use popen2)
-		if not self.is_local_node() or core.cfg['USESSH']:
+		if not self.is_local_node():
 			self.ssh = paramiko.SSHClient()
 			self.ssh.load_system_host_keys()
 			#self.ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
 			self.ssh.connect(hostname,22,'root', timeout=2)
 
-		# Open Xen-API Session (even if USESSH is true...)
+		# Open Xen-API Session 
 		if self.is_local_node():
 			# Use unix socket on localhost
 			self.server = XenAPI.Session("httpu:///var/run/xend/xen-api.sock")
@@ -128,7 +128,7 @@ class Node:
 #		else:
 		
 # Deadlock bug if cmd's output is bigger than 65k
-#       if(self.is_local_node() and not core.cfg['USESSH']):
+#       if(self.is_local_node()):
 #           if core.cfg['DEBUG'] : print "DEBUG SHELL: "+ self.get_hostname() +" -> "+cmd
 #           stdout, stdin, stderr = popen2.popen3(cmd,9300000)
 #           msg=stderr.read()
@@ -138,7 +138,7 @@ class Node:
 		if(core.cfg['PATH']):
 			cmd=core.cfg['PATH'] + "/" + cmd
 
-		if(self.is_local_node() and not core.cfg['USESSH']):
+		if(self.is_local_node()):
 			log.debug("[SHL]", self.hostname, "->", cmd)
 
 			# Create buffers
@@ -186,18 +186,12 @@ class Node:
 		
 	def is_vm_started(self, vmname):
 		"""Return True if the specified vm is started on this node."""
-		if core.cfg['USESSH']:
-			for vm in self.run("xm list | awk '{print $1;}'").readlines():
-				if vmname == vm.strip():
-					return True
+		vm=self.server.xenapi.VM.get_by_name_label(vmname)
+		log.debug("[API]", self.hostname, "vm=", vm)
+		try:
+			return self.server.xenapi.VM.get_power_state(vm[0]) != "Halted"
+		except IndexError:
 			return False
-		else:
-			vm=self.server.xenapi.VM.get_by_name_label(vmname)
-			log.debug("[API]", self.hostname, "vm=", vm)
-			try:
-				return self.server.xenapi.VM.get_power_state(vm[0]) != "Halted"
-			except IndexError:
-				return False
 
 	def is_vm_autostart_enabled(self, vmname):
 		"""Return True if the autostart link is present for the specified vm on this node."""
@@ -237,12 +231,7 @@ class Node:
 		Result will be cached for 5 seconds, unless 'nocache' is True.
 		"""
 
-		if core.cfg['USESSH']:
-			vm_started = int(self.run('xenstore-list /local/domain | wc -l').read())-1 # don't count Dom0
-		else:
-			vm_started = len(self.get_vms_names(nocache))
-
-		return vm_started
+		return len(self.get_vms_names(nocache))
 
 	def get_vgs(self,lvs):
 		"""Return the list of volumes groups associated with the given logicals volumes."""
@@ -314,19 +303,17 @@ class Node:
 		"""
 
 		args = [core.cfg['VMCONF_DIR'] + vmname]
-		if core.cfg['USESSH']:
-			self.run("xm create " + args[0])
-		else:
-			# Use Legacy XMLRPC because Xen-API is sometimes buggy
-			main.server=self.get_legacy_server()
-			main.serverType=main.SERVER_LEGACY_XMLRPC
-			main.xm_importcommand("create" , args)
 
-			# Stupid bug : does'nt work with a bridge named xenbr2010 ...
-			#args.append('--skipdtd') # Because file /usr/share/xen/create.dtd is missing
-			#main.server=self.server
-			#main.serverType=main.SERVER_XEN_API
-			#main.xm_importcommand("create" , args)
+		# Use Legacy XMLRPC because Xen-API is sometimes buggy
+		main.server=self.get_legacy_server()
+		main.serverType=main.SERVER_LEGACY_XMLRPC
+		main.xm_importcommand("create" , args)
+
+		# Stupid bug : does'nt work with a bridge named xenbr2010 ...
+		#args.append('--skipdtd') # Because file /usr/share/xen/create.dtd is missing
+		#main.server=self.server
+		#main.serverType=main.SERVER_XEN_API
+		#main.xm_importcommand("create" , args)
 
 	def reboot(self, vmname):
 		"""Reboot the specified VM on this node.
@@ -346,21 +333,17 @@ class Node:
 
 		Raise a NotRunningVmError if the vm is not started on this node.
 		"""
-		if core.cfg['USESSH']:
-			self.run("xm migrate -l " + vmname + " " + dest_node.get_hostname())
-		else:
-#			if self.is_local_node():
-#				# Use Legacy XMLRPC because Xen-API is sometimes buggy
-#				server=self.get_legacy_server()
-#				server.xend.domain.migrate(vmname, dest_node.get_hostname(), True, 0, -1, None)
-#			else:
-				try:
-					vm=self.server.xenapi.VM.get_by_name_label(vmname)[0]
-				except IndexError:
-					raise NotRunningVmError(self.get_hostname(),vmname)
-				self.server.xenapi.VM.migrate(vm,dest_node.get_hostname(),True,{'port':0,'node':-1,'ssl':None})
+#		if self.is_local_node():
+#			# Use Legacy XMLRPC because Xen-API is sometimes buggy
+#			server=self.get_legacy_server()
+#			server.xend.domain.migrate(vmname, dest_node.get_hostname(), True, 0, -1, None)
+#		else:
+		try:
+			vm=self.server.xenapi.VM.get_by_name_label(vmname)[0]
+		except IndexError:
+			raise NotRunningVmError(self.get_hostname(),vmname)
+		self.server.xenapi.VM.migrate(vm,dest_node.get_hostname(),True,{'port':0,'node':-1,'ssl':None})
 
-		
 	def enable_vm_autostart(self, vmname):
 		"""Create the autostart link for the specified vm."""
 		self.run("test -L /etc/xen/auto/%s || ln -s /etc/xen/vm/%s /etc/xen/auto/" % (vmname, vmname))
@@ -418,21 +401,14 @@ class Node:
 
 	def get_vm(self, vmname):
 		"""Return the VM instance corresponding to the given vmname."""
-		if core.cfg['USESSH']:
-			line=self.run("xm list | grep " + vmname + " | awk '{print $1,$2,$3,$4;}'").read()
-			if len(line)<1:
-				raise NotRunningVmError(self.get_hostname(),vmname)
-			(name, id, ram, vcpu)=line.strip().split()
-			return VM(name, id, ram, vcpu)
-		else:
-			try:
-				uuid=self.server.xenapi.VM.get_by_name_label(vmname)[0]
-			except IndexError:
-				raise NotRunningVmError(self.get_hostname(),vmname)
-			vm_rec=self.server.xenapi.VM.get_record(uuid)
-			vm=VM(vm_rec['name_label'],vm_rec['domid'])
-			vm.metrics=self.server.xenapi.VM_metrics.get_record(vm_rec['metrics'])
-			return vm
+		try:
+			uuid=self.server.xenapi.VM.get_by_name_label(vmname)[0]
+		except IndexError:
+			raise NotRunningVmError(self.get_hostname(),vmname)
+		vm_rec=self.server.xenapi.VM.get_record(uuid)
+		vm=VM(vm_rec['name_label'],vm_rec['domid'])
+		vm.metrics=self.server.xenapi.VM_metrics.get_record(vm_rec['metrics'])
+		return vm
 
 	def get_vms(self, nocache=False):
 		"""
@@ -442,30 +418,23 @@ class Node:
 
 		def _get_vms():
 			vms=list()
-			if core.cfg['USESSH']:
-				for line in self.run("xm list | awk '{print $1,$2,$3,$4;}' | tail -n +3").readlines():
-					(name, id, ram, vcpu)=line.strip().split()
-					if name.startswith("migrating-"):
-						continue
-					vms.append(VM(name, id, ram, vcpu))
-			else:
-				dom_recs = self.server.xenapi.VM.get_all_records()
-				dom_metrics_recs = self.server.xenapi.VM_metrics.get_all_records()
-				log.debug("[API]", self.hostname, "dom_recs=", dom_recs)
-				log.debug("[API]", self.hostname, "dom_metrics_recs=", dom_metrics_recs)
+			dom_recs = self.server.xenapi.VM.get_all_records()
+			dom_metrics_recs = self.server.xenapi.VM_metrics.get_all_records()
+			log.debug("[API]", self.hostname, "dom_recs=", dom_recs)
+			log.debug("[API]", self.hostname, "dom_metrics_recs=", dom_metrics_recs)
 
-				for dom_rec in dom_recs.values():
-					if dom_rec['name_label'] == "Domain-0":
-						continue # Discard Dom0
-					if dom_rec['name_label'].startswith("migrating-"):
-						continue # Discard migration temporary vm
-					if dom_rec['power_state'] == "Halted":
-						# power_state could be: Halted, Paused, Running, Suspended, Crashed, Unknown
-						continue # Discard non instantiated vm
+			for dom_rec in dom_recs.values():
+				if dom_rec['name_label'] == "Domain-0":
+					continue # Discard Dom0
+				if dom_rec['name_label'].startswith("migrating-"):
+					continue # Discard migration temporary vm
+				if dom_rec['power_state'] == "Halted":
+					# power_state could be: Halted, Paused, Running, Suspended, Crashed, Unknown
+					continue # Discard non instantiated vm
 
-					vm=VM(dom_rec['name_label'],dom_rec['domid'])
-					vm.metrics=dom_metrics_recs[dom_rec['metrics']]
-					vms.append(vm)
+				vm=VM(dom_rec['name_label'],dom_rec['domid'])
+				vm.metrics=dom_metrics_recs[dom_rec['metrics']]
+				vms.append(vm)
 
 			return vms
 
@@ -479,26 +448,19 @@ class Node:
 
 		def _get_vms_names():
 			vms_names=list()
-			if core.cfg['USESSH']:
-				for line in self.run("xm list | awk '{print $1}' | tail -n +3").readlines():
-					name=line.strip()
-					if name.startswith("migrating-"):
-						continue
-					vms_names.append(name)
-			else:
-				dom_recs = self.server.xenapi.VM.get_all_records()
-				log.debug("[API]", self.hostname, "dom_recs=", dom_recs)
+			dom_recs = self.server.xenapi.VM.get_all_records()
+			log.debug("[API]", self.hostname, "dom_recs=", dom_recs)
 
-				for dom_rec in dom_recs.values():
-					if dom_rec['name_label'] == "Domain-0":
-						continue # Discard Dom0
-					if dom_rec['name_label'].startswith("migrating-"):
-						continue # Discard migration temporary vm
-					if dom_rec['power_state'] == "Halted":
-						# power_state could be: Halted, Paused, Running, Suspended, Crashed, Unknown
-						continue # Discard non instantiated vm
+			for dom_rec in dom_recs.values():
+				if dom_rec['name_label'] == "Domain-0":
+					continue # Discard Dom0
+				if dom_rec['name_label'].startswith("migrating-"):
+					continue # Discard migration temporary vm
+				if dom_rec['power_state'] == "Halted":
+					# power_state could be: Halted, Paused, Running, Suspended, Crashed, Unknown
+					continue # Discard non instantiated vm
 
-					vms_names.append(dom_rec['name_label'])
+				vms_names.append(dom_rec['name_label'])
 
 			return vms_names
 
