@@ -484,10 +484,6 @@ class XenCluster:
 		if not self.check_cfg():
 			safe=False
 
-		# Check CPU configuration
-		if not self.check_cpu_flags():
-			safe=False
-
 		# Check existence of used logicals volumes
 		if not self.get_local_node().check_missing_lvs():
 			safe=False

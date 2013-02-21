@@ -461,9 +461,6 @@ class XenClusterTests(MockerTestCase):
 		check_cfg =  self.mocker.replace(self.cluster.check_cfg)
 		check_cfg()
 		self.mocker.result(True)
-		check_cpu =  self.mocker.replace(self.cluster.check_cpu_flags)
-		check_cpu()
-		self.mocker.result(True)
 		self.mocker.replay()
 
 		self.cluster.nodes={'node1': n1, 'node2': n2}
