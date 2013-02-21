@@ -576,7 +576,7 @@ class XenCluster:
 		# Loop through the others nodes
 		for node in self.get_nodes():
 			if node.get_metrics().get_host_hw_caps() != ref:
-				log.info(" ** WARNING : CPU configuration mismatch on %s" % (node))
+				log.info(" ** WARNING : CPU configuration mismatch on %s" % (node.get_hostname()))
 				safe=False
 
 		return safe
