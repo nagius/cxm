@@ -363,6 +363,12 @@ def cxm_check(cluster, options):
 		print " -> Errors has been found. You should correct it."
 		raise SystemExit(2)
 
+def cxm_check_cpu(cluster, options):
+	"""Run a cluster-wide CPU check."""
+	if not cluster.check_cpu_flags():
+		print " -> Errors has been found. You should correct it."
+		raise SystemExit(2)
+
 def cxm_init(cluster, options):
 	"""Initialize the cluster at startup."""
 
@@ -476,6 +482,7 @@ commands = {
     "activate": cxm_activate,
     "deactivate": cxm_deactivate,
     "check": cxm_check,
+    "check-cpu": cxm_check_cpu,
     "eject": cxm_eject,
     "fence": cxm_fence,
     "init": cxm_init,
@@ -524,6 +531,9 @@ SUBCOMMAND_HELP = {
 	'check'			: ('', 
 		'Perform a sanity check of the cluster.',
 		'Miss-activation or missing VM are reported.'),
+	'check-cpu'			: ('', 
+		'Perform a CPU check of the cluster.',
+		'Miss-configured CPU are reported.'),
 	'eject'			: ('', 
 		'Migrate all running VM on this node to others nodes.'),
 	'fence'			: ('<node>', 
