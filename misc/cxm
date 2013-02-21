@@ -15,8 +15,8 @@ _cxm()
 
     case $COMP_CWORD in
         1)
-            COMPREPLY=( $( compgen -W " console create destroy list infos check\
-            migrate shutdown search activate fence eject loadbalance deactivate" -- $cur ) )
+            COMPREPLY=( $( compgen -W " console create destroy list infos check check-cpu\
+            migrate shutdown shutdown-all search activate fence eject loadbalance deactivate" -- $cur ) )
             ;;
         2)
             case $command in
